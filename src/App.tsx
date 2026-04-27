@@ -54,8 +54,11 @@ const ConocenosPage = safeLazy(() => import("@/features/shop/ConocenosPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: 1000 * 60 * 10, // 10 minutes cache
+      gcTime: 1000 * 60 * 60 * 24, // Keep in garbage collector for 24h
       refetchOnWindowFocus: false,
+      refetchOnReconnect: 'always',
+      retry: 1,
     },
   },
 });

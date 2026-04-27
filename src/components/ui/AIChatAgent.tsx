@@ -7,12 +7,16 @@ import { pipeline, env } from '@xenova/transformers';
 // Configuración para evitar errores de carga de modelos en producción
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+env.remoteHost = 'https://huggingface.co';
+env.remotePathTemplate = '{model}/resolve/{revision}/';
 
 // Singleton para el modelo de IA de vectores
 let embedderPromise: Promise<any> | null = null;
 const getEmbedder = () => {
   if (!embedderPromise) {
-    embedderPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    embedderPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+      revision: 'main',
+    });
   }
   return embedderPromise;
 };
@@ -93,24 +97,40 @@ export const AIChatAgent = () => {
     setIsLoading(true);
 
     try {
-      // 1. Generar Vector de la pregunta del usuario
-      const extractor = await getEmbedder();
-      const output = await extractor(userMsg, { pooling: 'mean', normalize: true });
-      const embedding = Array.from(output.data);
+      let matchedProducts = [];
+      let searchMethod = 'semantic';
 
-      // 2. Búsqueda Semántica en Supabase
-      const { data: matchedProducts, error: rpcError } = await supabase.rpc('match_products', {
-        query_embedding: embedding,
-        match_threshold: 0.3, // Umbral de similitud
-        match_count: 8       // Top 8 resultados
-      });
+      try {
+        // 1. Intentar Búsqueda Semántica (Vectorial)
+        const extractor = await getEmbedder();
+        const output = await extractor(userMsg, { pooling: 'mean', normalize: true });
+        const embedding = Array.from(output.data);
 
-      if (rpcError) throw rpcError;
+        const { data, error: rpcError } = await supabase.rpc('match_products', {
+          query_embedding: embedding,
+          match_threshold: 0.3,
+          match_count: 8
+        });
+
+        if (rpcError) throw rpcError;
+        matchedProducts = data || [];
+      } catch (vectorError) {
+        console.warn('Vector search failed, falling back to keywords:', vectorError);
+        searchMethod = 'keyword';
+        // 2. Fallback: Búsqueda por palabras clave (como antes)
+        const { data: keywordProducts } = await supabase
+          .from('products')
+          .select('*, categories(name)')
+          .ilike('name', `%${userMsg}%`)
+          .limit(8);
+        
+        matchedProducts = keywordProducts || [];
+      }
 
       // 3. Preparar info para el prompt
-      const productsInfo = matchedProducts && matchedProducts.length > 0 
-        ? matchedProducts.map((p: any) => `Artículo: ${p.name} (${p.category || 'Moda'}). Precio: ${p.price}€. Detalles: ${p.description}`).join('\n---\n')
-        : 'No hay artículos específicos en el catálogo que coincidan semánticamente.';
+      const productsInfo = matchedProducts.length > 0 
+        ? matchedProducts.map((p: any) => `Artículo: ${p.name} (${p.category || p.categories?.name || 'Moda'}). Precio: ${p.price}€. Detalles: ${p.description}`).join('\n---\n')
+        : 'No hay artículos específicos en el catálogo que coincidan.';
 
       const conversationHistory = messages.slice(1).map(m => ({
         role: m.isBot ? 'assistant' : 'user',

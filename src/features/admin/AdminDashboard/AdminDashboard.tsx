@@ -58,21 +58,27 @@ export const AdminDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
       setIsModalOpen(false);
       const isNew = !editingProduct;
+      const wasDraft = editingProduct && !editingProduct.is_published;
       setEditingProduct(null);
 
-      if (isNew) {
+      if (isNew || wasDraft) {
         openModal({
-          title: '¡Producto Creado!',
-          message: `El producto "${product.name}" se ha creado correctamente. ¿Cómo quieres proceder?`,
+          title: isNew ? '¡Producto Creado!' : '¡Cambios Guardados!',
+          message: isNew 
+            ? `El producto "${product.name}" se ha creado correctamente. ¿Cómo quieres proceder?`
+            : `El producto "${product.name}" se ha actualizado. Actualmente está oculto, ¿quieres publicarlo ahora?`,
           type: 'product_created',
           actionLabel: 'Publicar y Ver',
           onAction: async () => {
             await api.products.update(product.product_id, { is_published: true });
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
             window.open(`/producto/${product.product_id}`, '_blank');
           },
           secondaryActionLabel: 'Dejar en Borrador',
           onSecondaryAction: async () => {
             await api.products.update(product.product_id, { is_published: false });
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
           }
         });
       } else {

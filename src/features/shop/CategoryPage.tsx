@@ -169,10 +169,16 @@ const CategoryPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center py-20">
               <motion.div
                 animate={{ 
-                  scale: [1, 1.1, 1],
-                  opacity: [0.5, 1, 0.5]
+                  scale: [1, 1.15, 1.05, 1.3, 1],
+                  rotate: [0, -5, 5, -5, 0],
+                  opacity: [0.6, 1, 0.8, 1, 0.6]
                 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  times: [0, 0.2, 0.4, 0.6, 1]
+                }}
                 className="relative"
               >
                 <img src="/logo-corona.png" alt="Cargando..." className="w-12 h-12 object-contain" />

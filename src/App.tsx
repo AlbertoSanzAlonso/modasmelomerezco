@@ -68,21 +68,23 @@ const Skeleton: FC = () => (
   <div className="min-h-screen bg-accent flex items-center justify-center">
     <motion.div
       animate={{ 
-        scale: [1, 1.1, 1],
-        opacity: [0.5, 1, 0.5]
+        scale: [1, 1.15, 1.05, 1.3, 1],
+        rotate: [0, -5, 5, -5, 0],
+        opacity: [0.6, 1, 0.8, 1, 0.6]
       }}
       transition={{ 
-        duration: 2, 
+        duration: 1.5, 
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut",
+        times: [0, 0.2, 0.4, 0.6, 1]
       }}
       className="relative"
     >
       <img src="/logo-corona.png" alt="Cargando..." className="w-16 h-16 object-contain" />
       <motion.div 
-        animate={{ scale: [1, 1.5, 1], opacity: [0, 0.2, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="absolute inset-0 bg-primary rounded-full blur-2xl"
+        animate={{ scale: [1, 2, 1], opacity: [0, 0.3, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity, times: [0, 0.5, 1] }}
+        className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
       />
     </motion.div>
   </div>

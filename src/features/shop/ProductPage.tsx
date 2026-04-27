@@ -266,11 +266,11 @@ const ProductPage = () => {
       {/* Fullscreen Image Modal */}
       {showFullscreen && (
         <div 
-          className={`fixed inset-0 z-[100] bg-black/95 flex cursor-pointer overflow-auto p-4 md:p-12 ${isZoomed ? 'items-start justify-start' : 'items-center justify-center'}`}
+          className={`fixed inset-0 z-[100] bg-black/95 flex cursor-pointer overflow-auto p-4 md:p-12 items-start justify-start`}
           onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
         >
           <div 
-            className={`relative mx-auto ${isZoomed ? 'cursor-zoom-out mt-12 mb-24' : 'cursor-zoom-in'}`}
+            className={`relative m-auto ${isZoomed ? 'cursor-zoom-out my-12' : 'cursor-zoom-in'}`}
             onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
           >
             <img 

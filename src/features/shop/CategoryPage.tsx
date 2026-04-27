@@ -165,7 +165,7 @@ const CategoryPage: React.FC = () => {
         </header>
 
         {isLoading && page === 1 ? (
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
              {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse rounded-3xl" />)}
            </div>
         ) : allProducts.length === 0 ? (
@@ -174,29 +174,31 @@ const CategoryPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-20">
-            {/* Grid wrapper with key only for filter changes */}
-            <motion.div 
-              key={`${categoryId}-${selectedSub}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className="columns-1 sm:columns-2 lg:columns-4 gap-x-10 gap-y-20"
-            >
-              {allProducts.map((product: Product) => (
-                <div key={product.product_id} className="break-inside-avoid mb-20">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
+              {allProducts.map((product: Product, index: number) => (
+                <motion.div 
+                  key={product.product_id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.6, 
+                    delay: (index % pageSize) * 0.05,
+                    ease: [0.21, 0, 0.07, 1]
+                  }}
+                >
                   <ProductCard product={product} />
-                </div>
+                </motion.div>
               ))}
-            </motion.div>
+            </div>
 
             {hasMore && (
               <div className="flex justify-center pt-12">
                 <button 
                   onClick={() => setPage(prev => prev + 1)}
                   disabled={isFetching}
-                  className="px-12 py-4 bg-transparent border-2 border-secondary text-secondary text-[10px] font-black uppercase tracking-[0.3em] hover:bg-secondary hover:text-white transition-all disabled:opacity-50"
+                  className="px-12 py-4 bg-transparent border-2 border-secondary text-secondary text-[10px] font-black uppercase tracking-[0.3em] hover:bg-secondary hover:text-white transition-all disabled:opacity-50 rounded-full"
                 >
-                  {isFetching ? 'Cargando...' : 'Ver más artículos'}
+                  {isFetching ? 'Cargando más piezas...' : 'Ver más artículos'}
                 </button>
               </div>
             )}

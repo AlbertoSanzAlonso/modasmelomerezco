@@ -52,21 +52,23 @@ export const AdminDashboard: React.FC = () => {
       if (editingProduct) return api.products.update(editingProduct.product_id, data);
       return api.products.create(data as Omit<Product, 'product_id'>);
     },
-    onSuccess: (product: Product) => {
+    onSuccess: (product: Product, variables: Partial<Product>) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
       setIsModalOpen(false);
+      
       const isNew = !editingProduct;
-      const wasDraft = editingProduct && !editingProduct.is_published;
+      const isPublishedInForm = variables.is_published === true;
       setEditingProduct(null);
 
-      if (isNew || wasDraft) {
+      // Only show the "Publish?" prompt if it's NOT already published in the form
+      if (!isPublishedInForm) {
         openModal({
           title: isNew ? '¡Producto Creado!' : '¡Cambios Guardados!',
           message: isNew 
-            ? `El producto "${product.name}" se ha creado correctamente. ¿Cómo quieres proceder?`
-            : `El producto "${product.name}" se ha actualizado. Actualmente está oculto, ¿quieres publicarlo ahora?`,
+            ? `El producto "${product.name}" se ha creado como borrador. ¿Quieres publicarlo ahora para que sea visible?`
+            : `El producto "${product.name}" sigue en modo borrador (oculto). ¿Quieres publicarlo ya?`,
           type: 'product_created',
           actionLabel: 'Publicar y Ver',
           onAction: async () => {
@@ -77,14 +79,16 @@ export const AdminDashboard: React.FC = () => {
           },
           secondaryActionLabel: 'Dejar en Borrador',
           onSecondaryAction: async () => {
-            await api.products.update(product.product_id, { is_published: false });
+            // Keep as draft (already is)
             queryClient.invalidateQueries({ queryKey: ['admin-products'] });
           }
         });
       } else {
         openModal({
-          title: '¡Producto Actualizado!',
-          message: `Los cambios en "${product.name}" se han guardado correctamente.`,
+          title: isNew ? '¡Producto Publicado!' : '¡Producto Actualizado!',
+          message: isNew
+            ? `El producto "${product.name}" ya está disponible en la tienda.`
+            : `Los cambios en "${product.name}" se han guardado correctamente.`,
           type: 'success',
           actionLabel: 'Ver el producto',
           onAction: () => {

@@ -9,14 +9,13 @@ import { es } from 'date-fns/locale';
 
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthStore();
-  const defaultAddress = user?.addresses?.find(a => a.isDefault) || user?.addresses?.[0];
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  const { data: orders, isLoading, error } = useQuery({
+  const { data: orders = [], isLoading, error } = useQuery({
     queryKey: ['orders', user?.customer_id],
     queryFn: () => api.orders.getByCustomer(user?.customer_id || user?.email || ''),
-    enabled: !!user?.customer_id || !!user?.email
+    enabled: !!(user?.customer_id || user?.email)
   });
 
   if (!user) {
@@ -28,8 +27,9 @@ export const CustomerDashboard: React.FC = () => {
     );
   }
 
-  const recentOrders = orders?.slice(0, 5) || [];
-  const inProgressCount = orders?.filter(o => ['Pending', 'Paid', 'Shipped'].includes(o.order_status)).length || 0;
+  const defaultAddress = user.addresses?.find(a => a.isDefault) || user.addresses?.[0];
+  const recentOrders = orders.slice(0, 5);
+  const inProgressCount = orders.filter(o => ['Pending', 'Paid', 'Shipped'].includes(o.order_status)).length;
 
   return (
     <div className="space-y-12">

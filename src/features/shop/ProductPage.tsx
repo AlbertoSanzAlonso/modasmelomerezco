@@ -61,7 +61,29 @@ const ProductPage = () => {
     enabled: !!id
   });
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center animate-pulse text-primary font-black uppercase tracking-widest">Cargando Pieza...</div>;
+  if (isLoading) return (
+    <div className="h-screen bg-accent flex flex-col items-center justify-center gap-8">
+      <motion.div
+        animate={{ 
+          scale: [1, 1.1, 1],
+          opacity: [0.5, 1, 0.5]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="relative"
+      >
+        <img src="/logo-corona.png" alt="Cargando..." className="w-16 h-16 object-contain" />
+        <motion.div 
+          animate={{ scale: [1, 1.5, 1], opacity: [0, 0.2, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute inset-0 bg-primary rounded-full blur-2xl"
+        />
+      </motion.div>
+    </div>
+  );
   if (!product || product.is_published === false) return <div className="h-screen flex items-center justify-center">Producto no encontrado</div>;
 
   const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];

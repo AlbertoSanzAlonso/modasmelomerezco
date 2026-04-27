@@ -1,6 +1,7 @@
 import { Suspense, lazy, useState, type FC, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CartSidebar } from "@/components/shop/CartSidebar";
 import { AddToCartModal } from "@/components/shop/AddToCartModal";
 import { useCartStore } from "@/store/useCartStore";
@@ -65,7 +66,25 @@ const queryClient = new QueryClient({
 
 const Skeleton: FC = () => (
   <div className="min-h-screen bg-accent flex items-center justify-center">
-    <div className="w-8 h-8 border border-primary/30 border-t-primary rounded-full animate-spin" />
+    <motion.div
+      animate={{ 
+        scale: [1, 1.1, 1],
+        opacity: [0.5, 1, 0.5]
+      }}
+      transition={{ 
+        duration: 2, 
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+      className="relative"
+    >
+      <img src="/logo-corona.png" alt="Cargando..." className="w-16 h-16 object-contain" />
+      <motion.div 
+        animate={{ scale: [1, 1.5, 1], opacity: [0, 0.2, 0] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute inset-0 bg-primary rounded-full blur-2xl"
+      />
+    </motion.div>
   </div>
 );
 

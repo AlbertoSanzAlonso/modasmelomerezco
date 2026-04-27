@@ -165,9 +165,23 @@ const CategoryPage: React.FC = () => {
         </header>
 
         {isLoading && page === 1 ? (
-           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse rounded-3xl" />)}
-           </div>
+          <div className="space-y-12">
+            <div className="flex flex-col items-center justify-center py-20">
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="relative"
+              >
+                <img src="/logo-corona.png" alt="Cargando..." className="w-12 h-12 object-contain" />
+              </motion.div>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
+              {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse rounded-3xl" />)}
+            </div>
+          </div>
         ) : allProducts.length === 0 ? (
           <div className="py-40 text-center">
             <p className="text-gray-500 uppercase tracking-[0.3em] font-bold">No hay artículos disponibles en esta categoría actualmente.</p>

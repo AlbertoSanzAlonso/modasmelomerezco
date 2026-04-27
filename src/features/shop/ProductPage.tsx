@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Share2, Heart, ShoppingBag, X } from 'lucide-react';
@@ -17,10 +17,10 @@ const ProductPage = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-center the image when zooming in
-  React.useEffect(() => {
+  useEffect(() => {
     if (showFullscreen && scrollRef.current) {
       const container = scrollRef.current;
       // Small timeout to wait for image resize/render

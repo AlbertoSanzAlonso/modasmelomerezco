@@ -74,19 +74,6 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     ctx.restore();
-
-    if (watermarkRef.current) {
-      const margin = 40;
-      const maxWidth = CROP_W * 0.25;
-      const scale = maxWidth / watermarkRef.current.width;
-      const w = watermarkRef.current.width * scale;
-      const h = watermarkRef.current.height * scale;
-      
-      ctx.save();
-      ctx.globalAlpha = 0.8;
-      ctx.drawImage(watermarkRef.current, CROP_W - w - margin, CROP_H - h - margin, w, h);
-      ctx.restore();
-    }
   }, [offset, zoom, rotation, imgLoaded]);
 
   useEffect(() => {

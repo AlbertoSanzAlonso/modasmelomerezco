@@ -266,7 +266,7 @@ const ProductPage = () => {
       {/* Fullscreen Image Modal */}
       {showFullscreen && (
         <div 
-          className={`fixed inset-0 z-[100] bg-black/95 flex cursor-pointer overflow-auto p-4 md:p-12 items-start justify-start`}
+          className={`fixed inset-0 z-[100] bg-black/95 flex cursor-pointer overflow-auto p-4 md:p-12`}
           onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
         >
           <div 

@@ -48,13 +48,15 @@ const CategoryPage: React.FC = () => {
     enabled: !!categoryId
   });
 
-  const { data: products, isLoading, isFetching } = useQuery<Product[]>({
+  const { data: productsData, isLoading, isFetching } = useQuery<{ products: Product[], total: number }>({
     queryKey: ['products', categoryId, selectedSub, page],
     queryFn: () => {
       return api.products.getAll(categoryId?.toString(), selectedSub?.toString(), page, pageSize, true);
     },
     enabled: !!categoryId
   });
+
+  const products = productsData?.products;
 
   const prevCategory = React.useRef(category);
   const prevSub = React.useRef(selectedSub);
@@ -82,7 +84,7 @@ const CategoryPage: React.FC = () => {
     }
   }, [products, page]);
 
-  const hasMore = products?.length === pageSize;
+  const hasMore = productsData ? allProducts.length < productsData.total : false;
 
   return (
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">

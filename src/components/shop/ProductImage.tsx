@@ -46,6 +46,15 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         />
       </AnimatePresence>
 
+      {loaded && !isPlaceholder && (
+        <div className="absolute bottom-4 right-4 w-1/5 max-w-[100px] pointer-events-none opacity-60 select-none z-10">
+          <img 
+            src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" 
+            alt="" 
+            className="w-full h-auto drop-shadow-lg" 
+          />
+        </div>
+      )}
     </div>
   );
 };

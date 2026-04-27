@@ -1,0 +1,26 @@
+
+export const INSFORGE_URL = 'https://vyus42nj.eu-central.insforge.app';
+export const INSFORGE_API_KEY = 'ik_6442e7c45fe5a0bde337d8ce5d67ca2e';
+
+
+
+export const headers = {
+  'Content-Type': 'application/json',
+  'apikey': INSFORGE_API_KEY,
+  'Authorization': `Bearer ${INSFORGE_API_KEY}`
+};
+
+export const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+    throw new Error(error.message || `Error: ${response.status}`);
+  }
+  
+  // Handle empty bodies (e.g., 204 No Content)
+  const contentType = response.headers.get('content-type');
+  if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+    return null;
+  }
+  
+  return response.json();
+};

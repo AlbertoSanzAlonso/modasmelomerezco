@@ -1,0 +1,15 @@
+
+node_modules
+.git
+_BACKUP_
+ready_to_deploy
+site_files
+public_folder
+deploy_me
+*.map
+dist/assets/*.map
+.env
+.vercel
+.insforge
+node_modules
+dist

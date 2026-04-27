@@ -1,0 +1,11 @@
+node_modules
+.git
+.agents
+scratch
+ready_to_deploy
+deploy_fix
+deploy_final
+deploy_cache_breaker
+upload_this
+code_only
+dist

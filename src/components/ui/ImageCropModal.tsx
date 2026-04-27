@@ -101,20 +101,20 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     setZoom((z) => Math.min(10, Math.max(0.01, z - e.deltaY * 0.001)));
   };
 
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      lastOffset.current = offset;
-    }
+    setIsDragging(true);
+    const touch = e.touches[0];
+    dragStart.current = { x: touch.clientX, y: touch.clientY };
+    lastOffset.current = offset;
   };
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 1 && touchStart.current) {
-      const dx = e.touches[0].clientX - touchStart.current.x;
-      const dy = e.touches[0].clientY - touchStart.current.y;
-      setOffset({ x: lastOffset.current.x + dx, y: lastOffset.current.y + dy });
-    }
-  }, []);
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !dragStart.current) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - dragStart.current.x;
+    const dy = touch.clientY - dragStart.current.y;
+    setOffset({ x: lastOffset.current.x + dx, y: lastOffset.current.y + dy });
+  };
 
   const fitToFrame = () => {
     if (!imgRef.current) return;
@@ -155,7 +155,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
         <div className="flex justify-center py-8 px-6 bg-black/40">
           <div
-            className="relative overflow-hidden rounded-xl shadow-2xl border-2 border-primary/40"
+            className="relative overflow-hidden rounded-xl shadow-2xl border-2 border-primary/40 touch-none"
             style={{ width: CROP_W / 4, height: CROP_H / 4, cursor: isDragging ? 'grabbing' : 'grab' }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
@@ -164,7 +164,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             onWheel={onWheel}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
-            onTouchEnd={() => { touchStart.current = null; }}
+            onTouchEnd={onMouseUp}
           >
             <canvas ref={canvasRef} width={CROP_W} height={CROP_H} className="block w-full h-full" />
             <div className="pointer-events-none absolute inset-0" style={{

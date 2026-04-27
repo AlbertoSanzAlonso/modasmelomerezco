@@ -1,5 +1,5 @@
 import { type FC } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, Search, Menu, X, User as UserIcon, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from "@/store/useAuthStore";
@@ -16,6 +16,14 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
   const cartItems = useCartStore((state) => state.items);
   const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const favoriteCount = user?.favorites?.length || 0;
+  const location = useLocation();
+
+  const handleInicioClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <>
@@ -28,7 +36,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               </button>
             </div>
             <div className="hidden lg:flex items-center gap-10 flex-1">
-              <Link to="/" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Inicio</Link>
+              <Link to="/" onClick={handleInicioClick} className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Inicio</Link>
               <Link to="/categoria/ropa" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Ropa</Link>
               <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
@@ -105,7 +113,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                 </button>
               </div>
               <nav className="flex-1 p-10 flex flex-col gap-8">
-                <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-xl font-light tracking-[0.2em] uppercase text-secondary hover:text-primary transition-colors">Inicio</Link>
+                <Link to="/" onClick={(e) => { handleInicioClick(e); setIsMenuOpen(false); }} className="text-xl font-light tracking-[0.2em] uppercase text-secondary hover:text-primary transition-colors">Inicio</Link>
                 <Link to="/categoria/ropa" onClick={() => setIsMenuOpen(false)} className="text-xl font-light tracking-[0.2em] uppercase text-secondary hover:text-primary transition-colors">Ropa</Link>
                 <Link to="/categoria/complementos" onClick={() => setIsMenuOpen(false)} className="text-xl font-light tracking-[0.2em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
                 <Link to="/#novedades" onClick={() => setIsMenuOpen(false)} className="text-xl font-light tracking-[0.2em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>

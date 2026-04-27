@@ -1,9 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { NewsletterSection } from './components/NewsletterSection';
+import { api } from "@/lib/api";
 
 const ConocenosPage: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      await api.subscriptions.create({
+        email,
+        status: 'pending',
+        confirmation_token: token
+      });
+      await api.mail.sendConfirmationEmail(email, token);
+      setIsSubscribed(true);
+      setEmail('');
+    } catch (error) {
+      console.error('Subscription error:', error);
+      alert('Error al suscribirse. Por favor, inténtalo de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-accent/20">
       {/* Hero Section */}
@@ -129,33 +155,14 @@ const ConocenosPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Newsletter - Sophisticated */}
-      <section className="py-24 md:py-40 bg-white text-black">
-        <div className="max-w-[1800px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic mb-6">ÚNETE A NOSOTRAS</h2>
-            <p className="text-gray-500 text-lg max-w-md font-medium">Suscríbete para enterarte de las últimas novedades, consejos de estilo y cositas especiales que preparamos para ti.</p>
-          </div>
-          <div className="flex flex-col gap-4">
-            <form onSubmit={(e) => { e.preventDefault(); }} className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <input
-                  type="email"
-                  placeholder="TU DIRECCIÓN DE EMAIL"
-                  className="flex-1 border-b-2 border-black bg-transparent px-2 py-4 text-sm font-bold focus:outline-none focus:border-primary placeholder:text-gray-300 min-w-0"
-                />
-                <button 
-                  type="submit" 
-                  className="px-8 md:px-12 font-black whitespace-nowrap bg-primary text-white hover:bg-primary/90 transition-colors py-4"
-                >
-                  UNIRSE
-                </button>
-              </div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-4">Al suscribirte aceptas nuestra política de privacidad.</p>
-            </form>
-          </div>
-        </div>
-      </section>
+      {/* Newsletter Section */}
+      <NewsletterSection 
+        email={email}
+        setEmail={setEmail}
+        isSubmitting={isSubmitting}
+        isSubscribed={isSubscribed}
+        onSubscribe={handleSubscribe}
+      />
     </div>
   );
 };

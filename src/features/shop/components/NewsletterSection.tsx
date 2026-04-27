@@ -20,7 +20,7 @@ export const NewsletterSection: React.FC<NewsletterSectionProps> = ({
   return (
     <section className="py-24 md:py-40 bg-white text-black relative overflow-hidden">
       {/* Decorative Brush Heart Background */}
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-auto opacity-[0.07] pointer-events-none select-none -rotate-12 z-0">
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-[350px] md:w-[700px] h-auto opacity-[0.18] pointer-events-none select-none -rotate-12 z-0 mix-blend-multiply">
         <img 
           src="/corazon-brocha.png" 
           alt="" 

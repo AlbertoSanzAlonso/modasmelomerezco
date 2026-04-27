@@ -283,9 +283,50 @@ const ProductPage = () => {
       {showFullscreen && (
         <div 
           ref={scrollRef}
-          className="fixed inset-0 z-[100] bg-black/95 overflow-auto cursor-pointer p-4 md:p-12"
+          className="fixed inset-0 z-[100] bg-black/95 overflow-auto cursor-default"
           onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
         >
+          {/* Close Button */}
+          <button 
+            onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
+            className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[120]"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Navigation Arrows (Desktop) */}
+          {!isZoomed && product.images.length > 1 && (
+            <>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setActiveImage(prev => prev === 0 ? product.images.length - 1 : prev - 1); }}
+                className="fixed left-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-[110]"
+              >
+                <ChevronRight className="w-8 h-8 rotate-180" />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setActiveImage(prev => prev === product.images.length - 1 ? 0 : prev + 1); }}
+                className="fixed right-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-[110]"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            </>
+          )}
+
+          {/* Flying Arrow Indicator (Hint) */}
+          <AnimatePresence>
+            {!isZoomed && product.images.length > 1 && (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: [0, 1, 0], x: [0, 40, 60] }}
+                transition={{ duration: 2, repeat: 2, repeatDelay: 1 }}
+                className="fixed right-12 top-1/2 -translate-y-1/2 pointer-events-none z-[115] flex items-center gap-2 text-white/40"
+              >
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Desliza</span>
+                <ChevronRight className="w-6 h-6" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div 
             className={`min-h-full min-w-full flex items-center justify-center ${isZoomed ? 'w-[300vw] h-[300vh]' : ''}`}
           >
@@ -293,23 +334,38 @@ const ProductPage = () => {
               className={`relative ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
               onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
             >
-              <img 
-                src={displayImages[activeImage]} 
-                alt={product.name}
-                className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[180vw] md:w-[120vw]' : 'max-w-[90vw] max-h-[90vh] object-contain'}`}
-              />
+              <AnimatePresence mode="wait">
+                <motion.img 
+                  key={activeImage}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  src={displayImages[activeImage]} 
+                  alt={product.name}
+                  className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[180vw] md:w-[120vw]' : 'max-w-[90vw] max-h-[85vh] object-contain'}`}
+                />
+              </AnimatePresence>
               {/* Watermark */}
               <div className={`absolute pointer-events-none opacity-40 select-none transition-none ${isZoomed ? 'bottom-32 right-16 w-32 md:w-48' : 'bottom-6 right-6 w-20 md:w-32'}`}>
                 <img src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" alt="" className="w-full h-auto" />
               </div>
             </div>
           </div>
-          <button 
-            onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
-            className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
-          >
-            <X className="w-6 h-6" />
-          </button>
+
+          {/* Thumbnails row */}
+          {!isZoomed && product.images.length > 1 && (
+            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex gap-3 px-6 py-4 bg-black/40 backdrop-blur-md rounded-2xl z-[120]">
+              {product.images.map((img: string, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={(e) => { e.stopPropagation(); setActiveImage(idx); }}
+                  className={`w-12 h-16 rounded-lg overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary scale-110 shadow-lg' : 'border-transparent opacity-40 hover:opacity-100'}`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

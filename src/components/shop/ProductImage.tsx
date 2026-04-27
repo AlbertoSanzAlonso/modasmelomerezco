@@ -43,7 +43,9 @@ export const ProductImage: React.FC<ProductImageProps> = ({
           duration: 0.8, 
           ease: [0.21, 0, 0.07, 1] 
         }}
-        className={`w-full h-full ${
+        className={`w-full h-full transition-opacity duration-300 ${
+          loaded || isPlaceholder ? 'opacity-100' : 'opacity-0'
+        } ${
           isPlaceholder 
             ? 'object-contain p-12 md:p-20 opacity-80' 
             : 'object-cover group-hover:scale-105'

@@ -17,6 +17,20 @@ const ProductPage = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-center the image when zooming in
+  React.useEffect(() => {
+    if (showFullscreen && scrollRef.current) {
+      const container = scrollRef.current;
+      // Small timeout to wait for image resize/render
+      setTimeout(() => {
+        container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+        container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+      }, 50);
+    }
+  }, [showFullscreen, isZoomed]);
+
   const { user, isAuthenticated, setPendingFavorite } = useAuthStore();
   const { addItem, openModal } = useCartStore();
 
@@ -268,25 +282,26 @@ const ProductPage = () => {
       {/* Fullscreen Image Modal */}
       {showFullscreen && (
         <div 
-          className={`fixed inset-0 z-[100] bg-black/95 flex cursor-pointer overflow-auto p-4 md:p-12`}
+          ref={scrollRef}
+          className="fixed inset-0 z-[100] bg-black/95 overflow-auto cursor-pointer p-4 md:p-12"
           onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
         >
           <div 
-            className={`relative m-auto ${isZoomed ? 'cursor-zoom-out my-12' : 'cursor-zoom-in'}`}
-            onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
+            className={`min-h-full min-w-full flex items-center justify-center ${isZoomed ? 'w-[300vw] h-[300vh]' : ''}`}
           >
-            <img 
-              src={displayImages[activeImage]} 
-              alt={product.name}
-              className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[180vw] md:w-[120vw]' : 'max-w-[90vw] max-h-[90vh] object-contain'}`}
-            />
-            {/* Watermark IN the corner of the image container */}
-            <div className={`absolute pointer-events-none opacity-40 select-none transition-none ${isZoomed ? 'bottom-32 right-16 w-32 md:w-48' : 'bottom-6 right-6 w-20 md:w-32'}`}>
+            <div 
+              className={`relative ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+              onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
+            >
               <img 
-                src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" 
-                alt="" 
-                className="w-full h-auto" 
+                src={displayImages[activeImage]} 
+                alt={product.name}
+                className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[180vw] md:w-[120vw]' : 'max-w-[90vw] max-h-[90vh] object-contain'}`}
               />
+              {/* Watermark */}
+              <div className={`absolute pointer-events-none opacity-40 select-none transition-none ${isZoomed ? 'bottom-32 right-16 w-32 md:w-48' : 'bottom-6 right-6 w-20 md:w-32'}`}>
+                <img src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" alt="" className="w-full h-auto" />
+              </div>
             </div>
           </div>
           <button 

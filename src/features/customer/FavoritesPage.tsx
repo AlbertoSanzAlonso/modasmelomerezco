@@ -17,16 +17,25 @@ export const FavoritesPage: React.FC = () => {
     enabled: !!customerId,
   });
   
-  // Sync store favorites with DB when page loads
+  // Sync store favorites with DB when page loads to ensure consistency
   useEffect(() => {
-    if (customerId && favoriteProducts.length > 0) {
-      const dbFavorites = favoriteProducts.map(p => String(p.product_id));
+    if (customerId && !isLoading) {
+      // Only keep products that are published and actually exist in the database
+      const dbFavorites = favoriteProducts
+        .filter(p => p.is_published)
+        .map(p => String(p.product_id));
+        
       const storeFavorites = user?.favorites || [];
-      if (JSON.stringify(storeFavorites) !== JSON.stringify(dbFavorites)) {
+      
+      // Sort to compare arrays regardless of order
+      const sortedStore = [...storeFavorites].sort();
+      const sortedDb = [...dbFavorites].sort();
+      
+      if (JSON.stringify(sortedStore) !== JSON.stringify(sortedDb)) {
         updateUser({ favorites: dbFavorites });
       }
     }
-  }, [customerId, favoriteProducts, updateUser, user?.favorites]);
+  }, [customerId, favoriteProducts, isLoading, updateUser, user?.favorites]);
 
   return (
     <div className="space-y-10">

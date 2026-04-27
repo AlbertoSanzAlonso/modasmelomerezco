@@ -312,20 +312,6 @@ const ProductPage = () => {
             </>
           )}
 
-          {/* Flying Arrow Indicator (Hint) */}
-          <AnimatePresence>
-            {!isZoomed && product.images.length > 1 && (
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: [0, 1, 0], x: [0, 40, 60] }}
-                transition={{ duration: 2, repeat: 2, repeatDelay: 1 }}
-                className="fixed right-12 top-1/2 -translate-y-1/2 pointer-events-none z-[115] flex items-center gap-2 text-white/40"
-              >
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Desliza</span>
-                <ChevronRight className="w-6 h-6" />
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           <div 
             className={`min-h-full min-w-full flex items-center justify-center ${isZoomed ? 'w-[300vw] h-[300vh]' : ''}`}

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from "@/lib/api";
 import { ProductCard } from "@/components/shop/ProductCard";
 import type { Product, Subcategory } from '@/types';
+import { useScrollRestoration } from "@/lib/useScrollRestoration";
 
 const CategoryPage: React.FC = () => {
   const { category } = useParams<{ category: string }>();
@@ -57,6 +58,9 @@ const CategoryPage: React.FC = () => {
   });
 
   const products = productsData?.products;
+
+  // Restore scroll position
+  useScrollRestoration(`category-${category}-${selectedSub}`, products);
 
   const prevCategory = React.useRef(category);
   const prevSub = React.useRef(selectedSub);

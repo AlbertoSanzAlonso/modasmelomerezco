@@ -9,6 +9,7 @@ import { HeroSection } from './components/HeroSection';
 import { NewArrivalsSection } from './components/NewArrivalsSection';
 import { FeaturedSection } from './components/FeaturedSection';
 import { NewsletterSection } from './components/NewsletterSection';
+import { useScrollRestoration } from "@/lib/useScrollRestoration";
 
 const HomePage = () => {
   const [email, setEmail] = useState('');
@@ -23,6 +24,9 @@ const HomePage = () => {
       return arrivals.slice(0, 8);
     }
   });
+
+  // Restore scroll position
+  useScrollRestoration('homepage', products);
 
   React.useEffect(() => {
     if (hash === '#novedades') {

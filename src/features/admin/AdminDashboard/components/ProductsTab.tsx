@@ -98,17 +98,19 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             <option value="false">No Novedades</option>
           </select>
 
-          <div className="relative flex-1 md:flex-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="relative flex-1 md:flex-none min-w-[200px]">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
             <input
               type="text"
               placeholder="Buscar por título..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full md:w-48 pl-10 pr-4 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white"
+              className="block w-full pl-10 pr-4 py-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white shadow-sm transition-all"
             />
           </div>
-          <Button size="sm" className="font-black tracking-widest text-[10px] px-8 py-6" onClick={onCreate}>
+          <Button size="sm" className="font-black tracking-widest text-[10px] px-8 py-3 h-auto" onClick={onCreate}>
             <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
           </Button>
         </div>

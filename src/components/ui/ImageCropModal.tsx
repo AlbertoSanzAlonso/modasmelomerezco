@@ -109,6 +109,11 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
+    // Crucial for mobile: prevent page scrolling while panning the image
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    
     if (!isDragging || !dragStart.current) return;
     const touch = e.touches[0];
     const dx = touch.clientX - dragStart.current.x;

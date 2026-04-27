@@ -28,23 +28,27 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         <div className="absolute inset-0 animate-pulse bg-secondary/10" />
       )}
       
-      <AnimatePresence mode="wait">
-        <motion.img
-          key={imageSrc}
-          src={imageSrc}
-          alt={alt}
-          onLoad={() => setLoaded(true)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className={`w-full h-full transition-all duration-500 ${
-            isPlaceholder 
-              ? 'object-contain p-12 md:p-20 opacity-80' 
-              : 'object-cover group-hover:scale-105'
-          } ${className} ${loaded || isPlaceholder ? 'opacity-100' : 'opacity-0'}`}
-        />
-      </AnimatePresence>
+      <motion.img
+        key={imageSrc}
+        src={imageSrc}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        initial={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+        animate={loaded || isPlaceholder ? { 
+          opacity: 1, 
+          scale: 1, 
+          filter: 'blur(0px)' 
+        } : {}}
+        transition={{ 
+          duration: 0.8, 
+          ease: [0.21, 0, 0.07, 1] 
+        }}
+        className={`w-full h-full ${
+          isPlaceholder 
+            ? 'object-contain p-12 md:p-20 opacity-80' 
+            : 'object-cover group-hover:scale-105'
+        } ${className}`}
+      />
 
       {loaded && !isPlaceholder && (
         <div className="absolute bottom-4 right-4 w-1/5 max-w-[100px] pointer-events-none opacity-60 select-none z-10">

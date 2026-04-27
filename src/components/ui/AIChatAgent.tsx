@@ -108,8 +108,8 @@ export const AIChatAgent = () => {
 
         const { data, error: rpcError } = await supabase.rpc('match_products', {
           query_embedding: embedding,
-          match_threshold: 0.3,
-          match_count: 8
+          match_threshold: 0.1, // Umbral más bajo para ser más permisivo
+          match_count: 10
         });
 
         if (rpcError) throw rpcError;
@@ -117,12 +117,13 @@ export const AIChatAgent = () => {
       } catch (vectorError) {
         console.warn('Vector search failed, falling back to keywords:', vectorError);
         searchMethod = 'keyword';
-        // 2. Fallback: Búsqueda por palabras clave (como antes)
+        // 2. Fallback: Búsqueda por palabras clave más amplia
+        const firstWord = userMsg.split(' ')[0];
         const { data: keywordProducts } = await supabase
           .from('products')
           .select('*, categories(name)')
-          .ilike('name', `%${userMsg}%`)
-          .limit(8);
+          .or(`name.ilike.%${userMsg}%,description.ilike.%${userMsg}%,name.ilike.%${firstWord}%`)
+          .limit(10);
         
         matchedProducts = keywordProducts || [];
       }

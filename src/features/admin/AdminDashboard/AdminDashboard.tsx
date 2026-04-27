@@ -28,6 +28,8 @@ export const AdminDashboard: React.FC = () => {
   const [customerPage, setCustomerPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
+  const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
   const pageSize = 10;
 
   // Newsletter state
@@ -42,7 +44,7 @@ export const AdminDashboard: React.FC = () => {
     orders,
     subscriptions,
     queryClient
-  } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch);
+  } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch, statusFilter, isNewFilter);
 
   const openModal = useCartStore((state) => state.openModal);
 
@@ -211,6 +213,10 @@ export const AdminDashboard: React.FC = () => {
             searchTerm={productSearch}
             onSearchChange={setProductSearch}
             onPageChange={setProductPage}
+            statusFilter={statusFilter}
+            isNewFilter={isNewFilter}
+            onStatusFilterChange={setStatusFilter}
+            onIsNewFilterChange={setIsNewFilter}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === products?.length ? [] : products?.map(p => p.product_id) || [])}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onBulkStatusChange={handleBulkStatusChange}

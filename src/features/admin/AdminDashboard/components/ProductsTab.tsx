@@ -8,12 +8,17 @@ import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
 interface ProductsTabProps {
   products?: Product[];
+  totalProducts: number;
   selectedIds: string[];
   productPage: number;
   pageSize: number;
   searchTerm: string;
+  statusFilter?: boolean;
+  isNewFilter?: boolean;
   onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
+  onStatusFilterChange: (status: boolean | undefined) => void;
+  onIsNewFilterChange: (isNew: boolean | undefined) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
@@ -31,12 +36,17 @@ const calculateStock = (product: Product) => {
 
 export const ProductsTab: React.FC<ProductsTabProps> = ({
   products,
+  totalProducts,
   selectedIds,
   productPage,
   pageSize,
   searchTerm,
+  statusFilter,
+  isNewFilter,
   onSearchChange,
   onPageChange,
+  onStatusFilterChange,
+  onIsNewFilterChange,
   onToggleSelectAll,
   onToggleSelect,
   onBulkStatusChange,
@@ -46,14 +56,48 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   onDelete,
   onCreate
 }) => {
+  const totalPages = Math.ceil(totalProducts / pageSize);
+
+  const getPageRange = () => {
+    const range: number[] = [];
+    const start = Math.max(1, productPage - 1);
+    const end = Math.min(totalPages, start + 2);
+    const finalStart = Math.max(1, end - 2);
+    for (let i = finalStart; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  };
+
   return (
     <div className="space-y-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
         <div>
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Productos</h2>
-          <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda.</p>
+          <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda. ({totalProducts} productos)</p>
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex flex-wrap gap-3 w-full xl:w-auto">
+          {/* Filters */}
+          <select 
+            value={statusFilter === undefined ? '' : statusFilter.toString()}
+            onChange={(e) => onStatusFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
+            className="px-4 py-2.5 text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+          >
+            <option value="">Todos los Estados</option>
+            <option value="true">Publicados</option>
+            <option value="false">Borradores</option>
+          </select>
+
+          <select 
+            value={isNewFilter === undefined ? '' : isNewFilter.toString()}
+            onChange={(e) => onIsNewFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
+            className="px-4 py-2.5 text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+          >
+            <option value="">Todas las Fechas</option>
+            <option value="true">Solo Novedades</option>
+            <option value="false">No Novedades</option>
+          </select>
+
           <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -61,10 +105,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               placeholder="Buscar por título..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full md:w-64 pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 bg-white"
+              className="w-full md:w-48 pl-10 pr-4 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white"
             />
           </div>
-          <Button size="sm" className="font-black tracking-widest text-[10px] px-8" onClick={onCreate}>
+          <Button size="sm" className="font-black tracking-widest text-[10px] px-8 py-6" onClick={onCreate}>
             <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
           </Button>
         </div>
@@ -154,20 +198,25 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                     </span>
                   </td>
                   <td className="px-8 py-6">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onTogglePublish(product);
-                      }}
-                      className="transition-transform active:scale-95"
-                    >
-                      {product.is_published ? (
-                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full cursor-pointer hover:bg-green-500/20">Publicado</span>
-                      ) : (
-                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200">Borrador</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTogglePublish(product);
+                        }}
+                        className="transition-transform active:scale-95"
+                      >
+                        {product.is_published ? (
+                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full cursor-pointer hover:bg-green-500/20">Publicado</span>
+                        ) : (
+                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200">Borrador</span>
+                        )}
+                      </button>
+                      {product.is_new && (
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full">Novedad</span>
                       )}
-                    </button>
+                    </div>
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-2">
@@ -208,10 +257,58 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             </tbody>
           </table>
         </div>
-        <div className="flex justify-center items-center gap-4 mt-10 pb-10">
-          <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, productPage - 1))} disabled={productPage === 1} className="text-[10px] font-black uppercase tracking-widest px-6">Anterior</Button>
-          <span className="text-[10px] font-black text-primary bg-primary/10 px-4 py-2 rounded-lg">PÁGINA {productPage}</span>
-          <Button variant="outline" size="sm" onClick={() => onPageChange(productPage + 1)} disabled={!products || products.length < pageSize} className="text-[10px] font-black uppercase tracking-widest px-6">Siguiente</Button>
+        
+        {/* Advanced Pagination Desktop */}
+        <div className="flex justify-center items-center gap-2 mt-10 pb-10">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onPageChange(1)} 
+            disabled={productPage === 1}
+            className="w-10 h-10 p-0 rounded-xl"
+          >
+            «
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onPageChange(Math.max(1, productPage - 1))} 
+            disabled={productPage === 1}
+            className="px-4 h-10 rounded-xl text-[9px] font-black uppercase"
+          >
+            Ant.
+          </Button>
+          
+          <div className="flex gap-2 mx-4">
+            {getPageRange().map(p => (
+              <button
+                key={p}
+                onClick={() => onPageChange(p)}
+                className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all ${productPage === p ? 'bg-primary text-white shadow-lg scale-110' : 'bg-white border border-gray-200 text-gray-400 hover:border-primary/30'}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onPageChange(Math.min(totalPages, productPage + 1))} 
+            disabled={productPage >= totalPages}
+            className="px-4 h-10 rounded-xl text-[9px] font-black uppercase"
+          >
+            Sig.
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onPageChange(totalPages)} 
+            disabled={productPage >= totalPages}
+            className="w-10 h-10 p-0 rounded-xl"
+          >
+            »
+          </Button>
         </div>
       </div>
       
@@ -230,7 +327,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                <div>
                  <div className="flex justify-between items-start gap-2">
                    <h4 className="text-xs font-black uppercase italic truncate leading-tight text-(--text-main)">{product.name}</h4>
-                   <div className="flex-shrink-0">
+                   <div className="flex-shrink-0 flex gap-2">
+                      {product.is_new && (
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                      )}
                       {product.is_published ? (
                         <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
                       ) : (
@@ -268,9 +368,9 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         ))}
         {/* Pagination Mobile */}
         <div className="flex justify-center items-center gap-3 py-6">
-           <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, productPage - 1))} disabled={productPage === 1} className="text-[9px] font-black uppercase tracking-widest px-5">Anterior</Button>
-           <span className="text-[9px] font-black text-primary px-3">PAG. {productPage}</span>
-           <Button variant="outline" size="sm" onClick={() => onPageChange(productPage + 1)} disabled={!products || products.length < pageSize} className="text-[9px] font-black uppercase tracking-widest px-5">Siguiente</Button>
+           <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, productPage - 1))} disabled={productPage === 1} className="text-[9px] font-black uppercase tracking-widest px-5">Ant.</Button>
+           <span className="text-[9px] font-black text-primary px-3">{productPage} / {totalPages}</span>
+           <Button variant="outline" size="sm" onClick={() => onPageChange(Math.min(totalPages, productPage + 1))} disabled={productPage >= totalPages} className="text-[9px] font-black uppercase tracking-widest px-5">Sig.</Button>
         </div>
       </div>
     </div>

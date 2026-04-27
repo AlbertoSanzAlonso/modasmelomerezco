@@ -68,27 +68,31 @@ const replaceImages = async (product_id: string, imageUrls: string[]): Promise<v
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export const products = {
-  getAll: async (category?: string, subcategory?: string, page = 1, pageSize = 20, publishedOnly = false, search?: string): Promise<Product[]> => {
+  getAll: async (category?: string, subcategory?: string, page = 1, pageSize = 20, publishedOnly?: boolean, search?: string, isNewOnly?: boolean): Promise<{ products: Product[], total: number }> => {
     const offset = (page - 1) * pageSize;
     let url = `${INSFORGE_URL}/api/database/records/products?select=${SELECT}&order=product_id.asc&limit=${pageSize}&offset=${offset}`;
     if (category) url += `&category_id=eq.${category}`;
     if (subcategory) url += `&subcategory_id=eq.${subcategory}`;
     if (search) url += `&name=ilike.*${encodeURIComponent(search)}*`;
+    if (publishedOnly !== undefined) {
+      url += `&is_published=eq.${publishedOnly}`;
+    }
+    if (isNewOnly !== undefined) {
+      url += `&is_new=eq.${isNewOnly}`;
+    }
     
-    const fetchWithFilter = async (withFilter: boolean) => {
-      let finalUrl = url;
-      if (withFilter && publishedOnly) finalUrl += `&is_published=not.eq.false`;
-      const response = await fetch(finalUrl, { headers });
-      if (!response.ok && response.status === 400 && withFilter && publishedOnly) {
-        // Fallback if column doesn't exist
-        console.warn('The "is_published" column might be missing in the database. Returning all products.');
-        return fetchWithFilter(false);
-      }
-      return await handleResponse(response);
+    const response = await fetch(url, { 
+      headers: { ...headers, 'Prefer': 'count=exact' } 
+    });
+    
+    const contentRange = response.headers.get('content-range');
+    const total = contentRange ? parseInt(contentRange.split('/')[1]) : 0;
+    
+    const data = await handleResponse(response);
+    return {
+      products: (data || []).map(normalise),
+      total
     };
-
-    const data = await fetchWithFilter(true);
-    return (data || []).map(normalise);
   },
 
   getById: async (product_id: string): Promise<Product> => {

@@ -162,9 +162,9 @@ const CategoryPage: React.FC = () => {
           )}
         </header>
 
-        {isLoading ? (
+        {isLoading && page === 1 ? (
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
-             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse" />)}
+             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse rounded-3xl" />)}
            </div>
         ) : allProducts.length === 0 ? (
           <div className="py-40 text-center">
@@ -172,13 +172,22 @@ const CategoryPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-20">
-            <div className="columns-1 sm:columns-2 lg:columns-4 gap-x-10 gap-y-20">
-              {allProducts.map((product: Product) => (
-                <div key={`${product.product_id}-${product.name}`} className="break-inside-avoid mb-20">
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={`${categoryId}-${selectedSub}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4, ease: "circOut" }}
+                className="columns-1 sm:columns-2 lg:columns-4 gap-x-10 gap-y-20"
+              >
+                {allProducts.map((product: Product) => (
+                  <div key={`${product.product_id}-${product.name}`} className="break-inside-avoid mb-20">
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
 
             {hasMore && (
               <div className="flex justify-center pt-12">

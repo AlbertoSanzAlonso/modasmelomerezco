@@ -53,7 +53,9 @@ export const AdminDashboard: React.FC = () => {
       return api.products.create(data as Omit<Product, 'product_id'>);
     },
     onSuccess: (product: Product) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
       setIsModalOpen(false);
       const isNew = !editingProduct;
       setEditingProduct(null);

@@ -172,9 +172,11 @@ const CategoryPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-20">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-20">
+            <div className="columns-1 sm:columns-2 lg:columns-4 gap-x-10 gap-y-20">
               {allProducts.map((product: Product) => (
-                <ProductCard key={`${product.product_id}-${product.name}`} product={product} />
+                <div key={`${product.product_id}-${product.name}`} className="break-inside-avoid mb-20">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
 

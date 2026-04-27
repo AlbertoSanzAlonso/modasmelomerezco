@@ -16,14 +16,14 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   alt, 
   className = "", 
   containerClassName = "",
-  aspectRatio = "aspect-3/4"
+  aspectRatio = "aspect-auto"
 }) => {
   const [loaded, setLoaded] = useState(false);
   const isPlaceholder = !src || src === PRODUCT_PLACEHOLDER;
   const imageSrc = src || PRODUCT_PLACEHOLDER;
 
   return (
-    <div className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-accent-dark'} ${containerClassName}`}>
+    <div className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-white'} ${containerClassName}`}>
       {!loaded && !isPlaceholder && (
         <div className="absolute inset-0 animate-pulse bg-secondary/10" />
       )}

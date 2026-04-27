@@ -113,6 +113,25 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validaciones básicas
+    if (!formData.name?.trim()) {
+      alert('Por favor, indica un nombre para el producto.');
+      return;
+    }
+    if (!formData.category_id) {
+      alert('Debes seleccionar una categoría.');
+      return;
+    }
+    if (formData.price === undefined || formData.price < 0) {
+      alert('Por favor, indica un precio válido.');
+      return;
+    }
+    if (!formData.images || formData.images.length === 0) {
+      alert('Añade al menos una imagen al producto.');
+      return;
+    }
+
     onSave(formData);
   };
 

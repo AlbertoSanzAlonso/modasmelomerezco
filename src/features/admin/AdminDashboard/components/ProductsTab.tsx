@@ -215,7 +215,64 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         </div>
       </div>
       
-      {/* Mobile view can be added here similarly or in a separate component */}
+      {/* Mobile View */}
+      <div className="md:hidden space-y-6">
+        {products?.map((product) => (
+          <div 
+            key={product.product_id}
+            className="bg-(--bg-card) border border-(--border-main) rounded-[2rem] p-5 shadow-sm flex gap-4 relative overflow-hidden"
+            onClick={() => onEdit(product)}
+          >
+             <div className="w-20 h-28 bg-black overflow-hidden border border-(--border-main) rounded-xl flex-shrink-0">
+               <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
+             </div>
+             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+               <div>
+                 <div className="flex justify-between items-start gap-2">
+                   <h4 className="text-xs font-black uppercase italic truncate leading-tight text-(--text-main)">{product.name}</h4>
+                   <div className="flex-shrink-0">
+                      {product.is_published ? (
+                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                      )}
+                   </div>
+                 </div>
+                 <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mt-1">
+                   {product.category}
+                 </p>
+               </div>
+               
+               <div className="flex justify-between items-end">
+                 <div>
+                   <p className="text-sm font-black italic text-(--text-main)">{product.price.toFixed(2)}€</p>
+                   <p className="text-[8px] font-bold text-gray-400 uppercase mt-0.5">{calculateStock(product)} UNI</p>
+                 </div>
+                 <div className="flex gap-1">
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); window.open(`/producto/${product.product_id}`, '_blank'); }}
+                     className="p-2 text-gray-400 hover:text-primary"
+                   >
+                     <Eye className="w-4 h-4" />
+                   </button>
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); onDelete(product); }}
+                     className="p-2 text-gray-400 hover:text-red-500"
+                   >
+                     <Trash2 className="w-4 h-4" />
+                   </button>
+                 </div>
+               </div>
+             </div>
+          </div>
+        ))}
+        {/* Pagination Mobile */}
+        <div className="flex justify-center items-center gap-3 py-6">
+           <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, productPage - 1))} disabled={productPage === 1} className="text-[9px] font-black uppercase tracking-widest px-5">Anterior</Button>
+           <span className="text-[9px] font-black text-primary px-3">PAG. {productPage}</span>
+           <Button variant="outline" size="sm" onClick={() => onPageChange(productPage + 1)} disabled={!products || products.length < pageSize} className="text-[9px] font-black uppercase tracking-widest px-5">Siguiente</Button>
+        </div>
+      </div>
     </div>
   );
 };

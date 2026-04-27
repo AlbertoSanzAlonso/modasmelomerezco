@@ -73,7 +73,7 @@ const ProductPage = () => {
         <nav className="flex items-center flex-wrap gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-secondary/40 mb-12">
           <Link to="/" className="hover:text-secondary transition-colors">Inicio</Link>
           <ChevronRight className="w-3 h-3" />
-          <Link to={`/categoria/${product.category.toLowerCase()}`} className="hover:text-secondary transition-colors">{product.category}</Link>
+          <Link to={`/categoria/${product.category?.toLowerCase() || 'todas'}`} className="hover:text-secondary transition-colors">{product.category || 'Sin Categoría'}</Link>
           <ChevronRight className="w-3 h-3" />
           {product.subcategory && (
             <>

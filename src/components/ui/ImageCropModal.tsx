@@ -7,24 +7,21 @@ interface ImageCropModalProps {
   onClose: () => void;
 }
 
-/**
- * Modal that lets the user pan/zoom an image within a fixed 3:4 crop frame.
- * On confirm, the visible area is rendered to a canvas and returned as WebP.
- */
 export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   imageSrc,
   onConfirm,
   onClose,
 }) => {
-  const CROP_W = 1200;
-  const CROP_H = 1600; // 3:4 at high resolution
+  const [aspect, setAspect] = useState<'portrait' | 'landscape'>('portrait');
+  
+  const CROP_W = aspect === 'portrait' ? 1200 : 1600;
+  const CROP_H = aspect === 'portrait' ? 1600 : 1200;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const watermarkRef = useRef<HTMLImageElement | null>(null);
   const rafRef = useRef<number>(0);
 
-  // State: position of image center within the viewport (px)
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -34,7 +31,6 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const lastOffset = useRef({ x: 0, y: 0 });
 
-  // Load watermark
   useEffect(() => {
     const wImg = new Image();
     wImg.src = '/LOGO%20MELOMEREZCO%20corona%20blanco.png';
@@ -43,24 +39,19 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     };
   }, []);
 
-  // Load original image
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = imageSrc;
     img.onload = () => {
       imgRef.current = img;
-      
-      // Calculate zoom to FIT THE WIDTH by default
       const scaleX = CROP_W / img.width;
-      
       setZoom(scaleX);
       setOffset({ x: 0, y: 0 });
       setImgLoaded(true);
     };
   }, [imageSrc]);
 
-  // Draw preview on canvas
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -69,14 +60,14 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, CROP_W, CROP_H);
+    // Fill background with white (better for product photos with empty space)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CROP_W, CROP_H);
+
     ctx.save();
 
-    // The offset in state is relative to the DISPLAY size (1/4 of CROP_W/H)
-    // We need to scale it up for the canvas coordinate system
     const displayToCanvasScale = 4;
 
-    // Translate to center
     ctx.translate(CROP_W / 2 + offset.x * displayToCanvasScale, CROP_H / 2 + offset.y * displayToCanvasScale);
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(zoom, zoom);
@@ -84,23 +75,16 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     ctx.restore();
 
-    // Draw watermark in bottom right corner
     if (watermarkRef.current) {
       const margin = 40;
-      const maxWidth = CROP_W * 0.25; // Watermark takes up to 25% of width
+      const maxWidth = CROP_W * 0.25;
       const scale = maxWidth / watermarkRef.current.width;
       const w = watermarkRef.current.width * scale;
       const h = watermarkRef.current.height * scale;
       
       ctx.save();
-      ctx.globalAlpha = 0.8; // Subtle transparency
-      ctx.drawImage(
-        watermarkRef.current, 
-        CROP_W - w - margin, 
-        CROP_H - h - margin, 
-        w, 
-        h
-      );
+      ctx.globalAlpha = 0.8;
+      ctx.drawImage(watermarkRef.current, CROP_W - w - margin, CROP_H - h - margin, w, h);
       ctx.restore();
     }
   }, [offset, zoom, rotation, imgLoaded]);
@@ -110,32 +94,26 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     return () => cancelAnimationFrame(rafRef.current);
   }, [draw]);
 
-  // Mouse drag
   const onMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
     lastOffset.current = offset;
   };
 
-  const onMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isDragging || !dragStart.current) return;
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      setOffset({ x: lastOffset.current.x + dx, y: lastOffset.current.y + dy });
-    },
-    [isDragging]
-  );
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setOffset({ x: lastOffset.current.x + dx, y: lastOffset.current.y + dy });
+  }, [isDragging]);
 
   const onMouseUp = () => setIsDragging(false);
 
-  // Scroll to zoom
   const onWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    setZoom((z) => Math.min(10, Math.max(0.1, z - e.deltaY * 0.001)));
+    setZoom((z) => Math.min(10, Math.max(0.01, z - e.deltaY * 0.001)));
   };
 
-  // Touch drag (mobile)
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
@@ -143,52 +121,51 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       lastOffset.current = offset;
     }
   };
-  const onTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (e.touches.length === 1 && touchStart.current) {
-        const dx = e.touches[0].clientX - touchStart.current.x;
-        const dy = e.touches[0].clientY - touchStart.current.y;
-        setOffset({ x: lastOffset.current.x + dx, y: lastOffset.current.y + dy });
-      }
-    },
-    []
-  );
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1 && touchStart.current) {
+      const dx = e.touches[0].clientX - touchStart.current.x;
+      const dy = e.touches[0].clientY - touchStart.current.y;
+      setOffset({ x: lastOffset.current.x + dx, y: lastOffset.current.y + dy });
+    }
+  }, []);
 
-  // Confirm: export canvas as WebP
+  const fitToFrame = () => {
+    if (!imgRef.current) return;
+    const scaleX = CROP_W / imgRef.current.width;
+    const scaleY = CROP_H / imgRef.current.height;
+    setZoom(Math.min(scaleX, scaleY));
+    setOffset({ x: 0, y: 0 });
+  };
+
+  const coverFrame = () => {
+    if (!imgRef.current) return;
+    const scaleX = CROP_W / imgRef.current.width;
+    const scaleY = CROP_H / imgRef.current.height;
+    setZoom(Math.max(scaleX, scaleY));
+    setOffset({ x: 0, y: 0 });
+  };
+
   const handleConfirm = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.toBlob(
-      (blob) => {
-        if (blob) onConfirm(blob);
-      },
-      'image/webp',
-      0.95
-    );
+    canvas.toBlob((blob) => {
+      if (blob) onConfirm(blob);
+    }, 'image/webp', 0.95);
   };
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="bg-(--bg-main) border border-(--border-main) rounded-4xl shadow-2xl w-full max-w-md overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-(--border-main)">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-(--text-main)">
-              Ajustar Imagen
-            </h3>
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">
-              Arrastra y usa la rueda para encuadrar
-            </p>
+            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-(--text-main)">Ajustar Imagen</h3>
+            <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">Arrastra y usa la rueda para encuadrar</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-primary/10 text-(--text-main) transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-primary/10 text-(--text-main) transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Crop frame */}
         <div className="flex justify-center py-8 px-6 bg-black/40">
           <div
             className="relative overflow-hidden rounded-xl shadow-2xl border-2 border-primary/40"
@@ -202,13 +179,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             onTouchMove={onTouchMove}
             onTouchEnd={() => { touchStart.current = null; }}
           >
-            <canvas
-              ref={canvasRef}
-              width={CROP_W}
-              height={CROP_H}
-              className="block w-full h-full"
-            />
-            {/* Grid overlay */}
+            <canvas ref={canvasRef} width={CROP_W} height={CROP_H} className="block w-full h-full" />
             <div className="pointer-events-none absolute inset-0" style={{
               backgroundImage: 'linear-gradient(rgba(255,79,112,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,79,112,0.15) 1px, transparent 1px)',
               backgroundSize: `${CROP_W/12}px ${CROP_H/12}px`
@@ -216,52 +187,49 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="px-8 pb-4 flex items-center gap-4 justify-center">
+        <div className="px-8 py-4 flex flex-wrap justify-center gap-2 border-b border-(--border-main)/5">
           <button
-            onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}
-            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
+            onClick={() => { setAspect('portrait'); setZoom(1); setOffset({x:0, y:0}); }}
+            className={`py-2 px-3 flex-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border ${aspect === 'portrait' ? 'bg-primary text-white border-primary' : 'bg-white/5 text-(--text-main) border-transparent hover:border-primary/20'}`}
           >
+            Vertical (3:4)
+          </button>
+          <button
+            onClick={() => { setAspect('landscape'); setZoom(1); setOffset({x:0, y:0}); }}
+            className={`py-2 px-3 flex-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border ${aspect === 'landscape' ? 'bg-primary text-white border-primary' : 'bg-white/5 text-(--text-main) border-transparent hover:border-primary/20'}`}
+          >
+            Horizontal (4:3)
+          </button>
+          <div className="w-full flex gap-2">
+            <button onClick={fitToFrame} className="flex-1 py-2 px-3 bg-white/5 hover:bg-primary/10 text-(--text-main) text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border border-transparent hover:border-primary/20">
+              Ver Todo
+            </button>
+            <button onClick={coverFrame} className="flex-1 py-2 px-3 bg-white/5 hover:bg-primary/10 text-(--text-main) text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border border-transparent hover:border-primary/20">
+              Llenar Marco
+            </button>
+            <button onClick={() => setRotation((r) => r + 90)} className="py-2 px-4 bg-white/5 hover:bg-primary/10 text-(--text-main) rounded-lg transition-all border border-transparent hover:border-primary/20">
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="px-8 pt-6 pb-4 flex items-center gap-4 justify-center">
+          <button onClick={() => setZoom((z) => Math.max(0.01, z - 0.15))} className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors">
             <ZoomOut className="w-4 h-4" />
           </button>
           <div className="flex-1 relative">
-            <input
-              type="range"
-              min={0.1}
-              max={10}
-              step={0.01}
-              value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="w-full accent-primary"
-            />
+            <input type="range" min={0.01} max={5} step={0.01} value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full accent-primary" />
           </div>
-          <button
-            onClick={() => setZoom((z) => Math.min(5, z + 0.15))}
-            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
-          >
+          <button onClick={() => setZoom((z) => Math.min(5, z + 0.15))} className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors">
             <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setRotation((r) => r + 90)}
-            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
-            title="Rotar 90°"
-          >
-            <RotateCw className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Action buttons */}
         <div className="px-8 pb-8 flex gap-4">
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 border border-(--border-main) text-(--text-main) text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary/30 transition-all"
-          >
+          <button onClick={onClose} className="flex-1 py-4 border border-(--border-main) text-(--text-main) text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary/30 transition-all">
             Cancelar
           </button>
-          <button
-            onClick={handleConfirm}
-            className="flex-1 py-4 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-secondary transition-all flex items-center justify-center gap-2"
-          >
+          <button onClick={handleConfirm} className="flex-1 py-4 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-secondary transition-all flex items-center justify-center gap-2">
             <Check className="w-4 h-4" />
             Confirmar
           </button>

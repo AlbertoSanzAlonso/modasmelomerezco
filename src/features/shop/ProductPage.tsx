@@ -172,7 +172,7 @@ const ProductPage = () => {
                         {v.size}
                         {isOutOfStock && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-[120%] h-[1px] bg-secondary/30 rotate-[-45deg]" />
+                            <div className="w-[120%] h-px bg-secondary/30 -rotate-45" />
                           </div>
                         )}
                       </button>

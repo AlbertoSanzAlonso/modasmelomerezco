@@ -58,6 +58,7 @@ export const AdminDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
+      queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
       setIsModalOpen(false);
       
       const isNew = !editingProduct;
@@ -77,6 +78,7 @@ export const AdminDashboard: React.FC = () => {
             await api.products.update(product.product_id, { is_published: true });
             queryClient.invalidateQueries({ queryKey: ['products'] });
             queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+            queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
             window.open(`/producto/${product.product_id}`, '_blank');
           },
           secondaryActionLabel: 'Dejar en Borrador',
@@ -110,13 +112,17 @@ export const AdminDashboard: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
       openModal({ title: 'Éxito', message: 'Producto eliminado correctamente.', type: 'info' });
     }
   });
 
   const togglePublishMutation = useMutation({
     mutationFn: (product: Product) => api.products.update(product.product_id, { is_published: !product.is_published }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+    }
   });
 
   // Handlers
@@ -125,6 +131,7 @@ export const AdminDashboard: React.FC = () => {
     try {
       await Promise.all(selectedIds.map(id => api.products.update(id, { is_published })));
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
       setSelectedIds([]);
       openModal({ title: 'Éxito', message: 'Estado actualizado correctamente.', type: 'info' });
     } catch (err) {
@@ -145,6 +152,7 @@ export const AdminDashboard: React.FC = () => {
           return api.products.delete(p.product_id);
         }));
         queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+        queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
         setSelectedIds([]);
         openModal({ title: 'Éxito', message: 'Productos eliminados.', type: 'info' });
       }

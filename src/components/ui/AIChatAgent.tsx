@@ -1,8 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { api } from "@/lib/api";
 import { useLocation } from 'react-router-dom';
+import { supabase } from "@/lib/supabase";
+import { pipeline } from '@xenova/transformers';
+
+// Singleton para el modelo de IA de vectores
+let embedderPromise: Promise<any> | null = null;
+const getEmbedder = () => {
+  if (!embedderPromise) {
+    embedderPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+  }
+  return embedderPromise;
+};
 
 const formatMessage = (text: string) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -55,13 +64,6 @@ export const AIChatAgent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: allProducts } = useQuery({
-    queryKey: ['products-all-chat'],
-    queryFn: () => api.products.getAll('', undefined, 1, 1000),
-    enabled: isOpen,
-    staleTime: 1000 * 60 * 5,
-  });
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -72,7 +74,7 @@ export const AIChatAgent = () => {
     }
   }, [messages, isOpen]);
 
-  // No mostrar el agente en el panel de admin ni en la cuenta del cliente
+  // No mostrar en admin ni cuenta
   if (pathname.startsWith('/admin') || pathname.startsWith('/cuenta')) {
     return null;
   }
@@ -87,38 +89,24 @@ export const AIChatAgent = () => {
     setIsLoading(true);
 
     try {
-      const stopWords = ['el','la','los','las','un','una','unos','unas','de','del','para','y','o','en','que','qué','cual','cuál','talla','precio','quiero','busco','tenéis','tienes','hay','con','sin','por','a','al','hola','buenas','tardes','dias','noches'];
-      const keywords = userMsg.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !stopWords.includes(w));
+      // 1. Generar Vector de la pregunta del usuario
+      const extractor = await getEmbedder();
+      const output = await extractor(userMsg, { pooling: 'mean', normalize: true });
+      const embedding = Array.from(output.data);
 
-      let relevantProducts = [];
-      if (allProducts && keywords.length > 0) {
-        relevantProducts = allProducts.map(p => {
-          let score = 0;
-          const searchString = `${p.name} ${p.category} ${p.subcategory || ''} ${p.description}`.toLowerCase();
-          keywords.forEach(kw => {
-            if (searchString.includes(kw)) score += 1;
-            // Bonus points for exact word matches in name or category
-            if (p.name.toLowerCase().includes(kw)) score += 2;
-            if (p.category.toLowerCase().includes(kw) || p.subcategory?.toLowerCase().includes(kw)) score += 2;
-          });
-          return { product: p, score };
-        })
-        .filter(p => p.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .map(p => p.product);
-      }
-      
-      // Fallback si no hay coincidencias o el saludo es genérico
-      if (relevantProducts.length === 0 && allProducts) {
-        relevantProducts = allProducts.slice(0, 10); 
-      }
+      // 2. Búsqueda Semántica en Supabase
+      const { data: matchedProducts, error: rpcError } = await supabase.rpc('match_products', {
+        query_embedding: embedding,
+        match_threshold: 0.3, // Umbral de similitud
+        match_count: 8       // Top 8 resultados
+      });
 
-      // Cogemos solo el Top 10 para inyectar al prompt
-      const topProducts = relevantProducts.slice(0, 10);
+      if (rpcError) throw rpcError;
 
-      const productsInfo = topProducts.length > 0 
-        ? topProducts.map(p => `Artículo: ${p.name} (${p.category}). Precio: ${p.price}€. Tallas: ${p.variants?.filter(v => v.stock > 0).map(v => v.size).join(',') || 'Agotado'}. Detalles: ${p.description}`).join('\n---\n')
-        : 'Inventario vacío o sin coincidencias.';
+      // 3. Preparar info para el prompt
+      const productsInfo = matchedProducts && matchedProducts.length > 0 
+        ? matchedProducts.map((p: any) => `Artículo: ${p.name} (${p.category || 'Moda'}). Precio: ${p.price}€. Detalles: ${p.description}`).join('\n---\n')
+        : 'No hay artículos específicos en el catálogo que coincidan semánticamente.';
 
       const conversationHistory = messages.slice(1).map(m => ({
         role: m.isBot ? 'assistant' : 'user',
@@ -129,11 +117,12 @@ export const AIChatAgent = () => {
 Eres MeloMe, la asistente de la tienda "Modas Me lo Merezco". Responde de forma amable, breve y femenina.
 INFO: Envíos 5,50€ (48h), recogida gratis. Pagos: Tarjeta y Bizum (Redsys).
 
-INVENTARIO RELEVANTE PARA ESTA CONSULTA:
+INVENTARIO RELEVANTE ENCONTRADO MEDIANTE BÚSQUEDA SEMÁNTICA:
 ${productsInfo}
 
-Reglas: Basa tus respuestas en este inventario. Sé persuasiva pero concisa. No inventes tallas ni precios.`;
+Reglas: Basa tus respuestas en este inventario. Si no encuentras nada exacto, sugiere lo más parecido o invita a contactar por WhatsApp.`;
 
+      // 4. Llamada a Groq
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -152,19 +141,15 @@ Reglas: Basa tus respuestas en este inventario. Sé persuasiva pero concisa. No 
         })
       });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error('Groq API Error Details:', errText);
-        throw new Error('API request failed');
-      }
+      if (!response.ok) throw new Error('Groq API Error');
       
       const data = await response.json();
       const botResponse = data.choices[0].message.content;
 
       setMessages(prev => [...prev, { id: Date.now().toString(), text: botResponse, isBot: true }]);
     } catch (error) {
-      console.error('Groq API Error:', error);
-      setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Vaya, he tenido un problema de conexión. Por favor, inténtalo de nuevo.', isBot: true }]);
+      console.error('AIChat Error:', error);
+      setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Lo siento, estoy teniendo un problema técnico. ¿Podrías repetirme la pregunta?', isBot: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -172,98 +157,60 @@ Reglas: Basa tus respuestas en este inventario. Sé persuasiva pero concisa. No 
 
   return (
     <>
-      {/* Botón flotante */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 p-4 bg-primary text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 hover:scale-110 hover:shadow-[0_8px_30px_rgba(255,79,112,0.3)] ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
-        aria-label="Abrir asistente virtual"
+        className={`fixed bottom-6 right-6 z-50 p-4 bg-primary text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
       >
         <MessageCircle className="w-7 h-7" />
       </button>
 
-      {/* Ventana de chat */}
       <div
-        className={`fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] bg-white rounded-4xl shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
+        className={`fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
         style={{ height: '550px', maxHeight: '85vh' }}
       >
-        {/* Cabecera */}
-        <div className="bg-primary p-5 flex justify-between items-center text-white relative overflow-hidden">
-          {/* Patrón de fondo sutil */}
-          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
-          
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="bg-white/20 p-2.5 rounded-full backdrop-blur-sm shadow-inner">
+        <div className="bg-primary p-5 flex justify-between items-center text-white relative">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-full">
               <Bot className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-black text-sm uppercase tracking-widest italic">MeloMe</h3>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                <p className="text-[9px] opacity-90 uppercase tracking-widest font-medium">Asistente en línea</p>
-              </div>
+              <h3 className="font-bold text-sm tracking-wide">MeloMe AI</h3>
+              <p className="text-[10px] opacity-80 uppercase tracking-widest">Asistente Virtual</p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsOpen(false)} 
-            className="p-2 hover:bg-white/20 rounded-full transition-colors relative z-10"
-            aria-label="Cerrar chat"
-          >
+          <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Mensajes */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#fafafa]">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
-              <div className={`flex gap-3 max-w-[85%] ${msg.isBot ? 'flex-row' : 'flex-row-reverse'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-auto ${msg.isBot ? 'bg-primary/10 text-primary' : 'bg-secondary text-white'}`}>
-                  {msg.isBot ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                </div>
-                 <div className={`p-4 text-sm shadow-sm leading-relaxed ${
-                   msg.isBot 
-                     ? 'bg-white border border-gray-100 text-secondary rounded-[1.5rem] rounded-bl-sm' 
-                     : 'bg-secondary text-white rounded-[1.5rem] rounded-br-sm'
-                 }`}>
-                   {msg.isBot ? formatMessage(msg.text) : msg.text}
-                 </div>
+              <div className={`p-3 text-sm rounded-2xl max-w-[85%] ${msg.isBot ? 'bg-white border border-gray-100' : 'bg-secondary text-white'}`}>
+                {msg.isBot ? formatMessage(msg.text) : msg.text}
               </div>
             </div>
           ))}
-          
-          {/* Indicador de escribiendo... */}
           {isLoading && (
-            <div className="flex justify-start animate-in fade-in">
-              <div className="flex gap-3 max-w-[80%] flex-row">
-                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-auto">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div className="p-4 bg-white border border-gray-100 text-secondary rounded-[1.5rem] rounded-bl-sm flex items-center gap-1.5 shadow-sm">
-                  <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce"></span>
-                  <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></span>
-                  <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></span>
-                </div>
+            <div className="flex justify-start">
+              <div className="p-3 bg-white border border-gray-100 rounded-2xl animate-pulse text-xs text-gray-400">
+                MeloMe está pensando...
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
         <div className="p-4 bg-white border-t border-gray-100">
           <form onSubmit={handleSend} className="relative flex items-center">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Pregúntame algo..."
-              className="w-full bg-gray-50 border border-gray-200 rounded-full pl-5 pr-12 py-3.5 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-secondary"
+              placeholder="¿En qué puedo ayudarte?"
+              className="w-full bg-gray-50 border border-gray-200 rounded-full pl-5 pr-12 py-3 text-sm focus:outline-none focus:border-primary"
             />
-            <button
-              type="submit"
-              disabled={!inputValue.trim() || isLoading}
-              className="absolute right-1.5 p-2.5 bg-primary text-white rounded-full hover:bg-[#e63e5d] transition-colors disabled:opacity-40 disabled:hover:bg-primary"
-            >
+            <button type="submit" className="absolute right-1 p-2 bg-primary text-white rounded-full">
               <Send className="w-4 h-4" />
             </button>
           </form>

@@ -1,265 +1,124 @@
 
-import { INSFORGE_URL, headers, handleResponse } from './client';
-import type { Product } from '@/types';
+import { supabase } from '../supabase';
+import type { Product, ProductVariant } from '@/types';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/** Normalise a raw DB row into a Product, joining product_images → images[] */
-export const normalise = (p: any): Product => ({
+// Helper para normalizar los datos de Supabase al tipo Product de nuestra app
+const normalise = (p: any): Product => ({
   ...p,
-  is_published: p.is_published === false ? false : true, // Default to true if null or undefined
-  // Map joined names if they exist
-  category: p.categories?.name || p.category,
-  subcategory: p.subcategories?.name || p.subcategory,
-  // Use the join data from product_images table exclusively
-  images: Array.isArray(p.product_images) && p.product_images.length > 0
-      ? [...p.product_images]
-          .sort((a: any, b: any) => {
-            // is_main first, then sort by orden
-            if (a.is_main && !b.is_main) return -1;
-            if (!a.is_main && b.is_main) return 1;
-            return (a.orden ?? 0) - (b.orden ?? 0);
-          })
-          .map((img: any) => img.image_url)
-      : [],
-  variants: (p.variants || []).map((v: any) => ({
+  is_published: p.is_published ?? true,
+  // En Supabase ya guardamos el array de URLs directamente en el campo 'images'
+  images: p.images || [],
+  variants: (p.product_variants || p.variants || []).map((v: any) => ({
     ...v,
     id: v.variant_id.toString(),
   })),
+  // Mapear categorías si vienen de un join
+  category: p.categories?.name || p.category,
+  subcategory: p.subcategories?.name || p.subcategory,
 });
-
-/** The select string that brings product_images along */
-export const SELECT = '*,variants:product_variants(*),product_images(id,image_url,orden,alt_text,is_main),categories:category_id(name),subcategories:subcategory_id(name)';
-
-// ─── Image rows CRUD ─────────────────────────────────────────────────────────
-
-/**
- * Replace all product_images rows for a product with a new ordered list of URLs.
- */
-const replaceImages = async (product_id: string, imageUrls: string[]): Promise<void> => {
-  const cleanId = String(product_id).split(':')[0];
-  // Delete existing
-  await handleResponse(
-    await fetch(
-      `${INSFORGE_URL}/api/database/records/product_images?product_id=eq.${cleanId}`,
-      { method: 'DELETE', headers }
-    )
-  );
-
-  if (imageUrls.length === 0) return;
-
-  // Insert new rows
-  const payload = imageUrls.map((url, idx) => ({
-    product_id: cleanId,
-    image_url: url,
-    orden: idx,
-    is_main: idx === 0, // The first one is the main one
-  }));
-
-  await handleResponse(
-    await fetch(`${INSFORGE_URL}/api/database/records/product_images`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    })
-  );
-};
-
-// ─── Public API ──────────────────────────────────────────────────────────────
 
 export const products = {
   getAll: async (category?: string, subcategory?: string, page = 1, pageSize = 20, publishedOnly?: boolean, search?: string, isNewOnly?: boolean): Promise<{ products: Product[], total: number }> => {
-    const offset = (page - 1) * pageSize;
-    let url = `${INSFORGE_URL}/api/database/records/products?select=${SELECT}&order=product_id.asc&limit=${pageSize}&offset=${offset}`;
-    if (category) url += `&category_id=eq.${category}`;
-    if (subcategory) url += `&subcategory_id=eq.${subcategory}`;
-    if (search) url += `&name=ilike.*${encodeURIComponent(search)}*`;
-    if (publishedOnly !== undefined) {
-      url += `&is_published=eq.${publishedOnly}`;
-    }
-    if (isNewOnly !== undefined) {
-      url += `&is_new=eq.${isNewOnly}`;
-    }
-    
-    const response = await fetch(url, { 
-      headers: { ...headers, 'Prefer': 'count=exact' } 
-    });
-    
-    const contentRange = response.headers.get('content-range');
-    const total = contentRange ? parseInt(contentRange.split('/')[1]) : 0;
-    
-    const data = await handleResponse(response);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('products')
+      .select('*, product_variants(*), categories(name), subcategories(name)', { count: 'exact' });
+
+    if (category) query = query.eq('category_id', category);
+    if (subcategory) query = query.eq('subcategory_id', subcategory);
+    if (search) query = query.ilike('name', `%${search}%`);
+    if (publishedOnly) query = query.eq('is_published', true);
+    if (isNewOnly) query = query.eq('is_new', true);
+
+    const { data, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
     return {
       products: (data || []).map(normalise),
-      total
+      total: count || 0
     };
   },
 
   getById: async (product_id: string): Promise<Product> => {
-    const cleanId = String(product_id).split(':')[0];
-    const data = await handleResponse(
-      await fetch(
-        `${INSFORGE_URL}/api/database/records/products?product_id=eq.${cleanId}&select=${SELECT}`,
-        { headers }
-      )
-    );
-    return normalise(data[0]);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, product_variants(*), categories(name), subcategories(name)')
+      .eq('product_id', product_id)
+      .single();
+
+    if (error) throw error;
+    return normalise(data);
   },
 
   getNewArrivals: async (publishedOnly = true): Promise<Product[]> => {
-    // is_new is now the official column name
-    const url = `${INSFORGE_URL}/api/database/records/products?is_new=eq.true&select=${SELECT}`;
-    
-    const fetchWithFilter = async (withFilter: boolean) => {
-      let finalUrl = url;
-      if (withFilter && publishedOnly) finalUrl += `&is_published=not.eq.false`;
-      const response = await fetch(finalUrl, { headers });
-      if (!response.ok && response.status === 400 && withFilter && publishedOnly) {
-        // Fallback if column doesn't exist
-        return fetchWithFilter(false);
-      }
-      return await handleResponse(response);
-    };
+    let query = supabase
+      .from('products')
+      .select('*, product_variants(*), categories(name), subcategories(name)')
+      .eq('is_new', true);
 
-    const data = await fetchWithFilter(true);
+    if (publishedOnly) query = query.eq('is_published', true);
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
     return (data || []).map(normalise);
   },
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
-    const { variants, images } = productData;
+    // Nota: El ID se generará automáticamente o lo manejaremos en el admin
+    // Implementaremos la lógica de vectores en el panel de admin para no saturar el cliente
+    const { data, error } = await supabase
+      .from('products')
+      .insert([productData])
+      .select()
+      .single();
 
-    // We need to manually provide a product_id because the column is not auto-incrementing
-    const allIdsResponse = await fetch(`${INSFORGE_URL}/api/database/records/products?select=product_id`, { headers });
-    const allIds = await handleResponse(allIdsResponse);
-    const numericIds = allIds.map((p: any) => parseInt(p.product_id)).filter((id: number) => !isNaN(id));
-    const nextId = (numericIds.length > 0 ? Math.max(...numericIds) : 0) + 1;
-
-    // Whitelist valid products table columns
-    const allowedFields = ['name', 'price', 'category_id', 'subcategory_id', 'is_new', 'is_published'];
-    const rest: any = { product_id: nextId.toString() };
-    allowedFields.forEach((field) => {
-      if (field in productData) rest[field] = (productData as any)[field];
-    });
-
-    if (!('is_published' in rest)) rest.is_published = true;
-    
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/products`, {
-      method: 'POST',
-      headers: { ...headers, Prefer: 'return=representation' },
-      body: JSON.stringify(rest),
-    });
-
-    const data = await handleResponse(response);
-    const newProduct = data[0];
-
-    // Insert variants
-    if (variants && variants.length > 0) {
-      await handleResponse(
-        await fetch(`${INSFORGE_URL}/api/database/records/product_variants`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(
-            variants.map((v) => ({
-              product_id: newProduct.product_id,
-              size: v.size,
-              color: v.color || 'Único',
-              stock: v.stock || 0,
-            }))
-          ),
-        })
-      );
-    }
-
-    // Insert images into product_images
-    if (images && images.length > 0) {
-      await replaceImages(newProduct.product_id, images);
-    }
-
-    return products.getById(newProduct.product_id);
+    if (error) throw error;
+    return normalise(data);
   },
 
   update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
-    const cleanId = String(product_id).split(':')[0];
-    const { variants, images } = updates;
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('product_id', product_id)
+      .select()
+      .single();
 
-    const allowedFields = ['name', 'price', 'category_id', 'subcategory_id', 'is_new', 'is_published'];
-    const rest: any = {};
-    allowedFields.forEach((field) => {
-      if (field in updates) rest[field] = (updates as any)[field];
-    });
-
-    if (Object.keys(rest).length > 0) {
-      const response = await fetch(
-        `${INSFORGE_URL}/api/database/records/products?product_id=eq.${cleanId}`,
-        {
-          method: 'PATCH',
-          headers: { ...headers, Prefer: 'return=representation' },
-          body: JSON.stringify(rest),
-        }
-      );
-      await handleResponse(response);
-    }
-
-    if (variants !== undefined) {
-      await handleResponse(
-        await fetch(
-          `${INSFORGE_URL}/api/database/records/product_variants?product_id=eq.${cleanId}`,
-          { method: 'DELETE', headers }
-        )
-      );
-      if (variants.length > 0) {
-        await handleResponse(
-          await fetch(`${INSFORGE_URL}/api/database/records/product_variants`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(
-              variants.map((v) => ({
-                product_id: cleanId,
-                size: v.size,
-                color: v.color || 'Único',
-                stock: v.stock || 0,
-              }))
-            ),
-          })
-        );
-      }
-    }
-
-    if (images !== undefined) {
-      await replaceImages(cleanId, images);
-    }
-
-    return products.getById(cleanId);
+    if (error) throw error;
+    return normalise(data);
   },
 
   delete: async (product_id: string): Promise<void> => {
-    const cleanId = String(product_id).split(':')[0];
-    await handleResponse(
-      await fetch(
-        `${INSFORGE_URL}/api/database/records/products?product_id=eq.${cleanId}`,
-        { method: 'DELETE', headers }
-      )
-    );
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('product_id', product_id);
+
+    if (error) throw error;
   },
 
   decrementStock: async (variant_id: string, quantity: number): Promise<void> => {
-    const data = await handleResponse(
-      await fetch(
-        `${INSFORGE_URL}/api/database/records/product_variants?variant_id=eq.${variant_id}&select=stock`,
-        { headers }
-      )
-    );
-    if (data.length === 0) return;
-    const newStock = Math.max(0, data[0].stock - quantity);
-    await handleResponse(
-      await fetch(
-        `${INSFORGE_URL}/api/database/records/product_variants?variant_id=eq.${variant_id}`,
-        {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({ stock: newStock }),
-        }
-      )
-    );
+    // Implementación atómica en Supabase
+    const { data: variant, error: fetchError } = await supabase
+      .from('product_variants')
+      .select('stock')
+      .eq('variant_id', variant_id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newStock = Math.max(0, (variant?.stock || 0) - quantity);
+    
+    const { error: updateError } = await supabase
+      .from('product_variants')
+      .update({ stock: newStock })
+      .eq('variant_id', variant_id);
+
+    if (updateError) throw updateError;
   },
 };

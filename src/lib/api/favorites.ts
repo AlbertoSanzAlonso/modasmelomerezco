@@ -1,44 +1,49 @@
-import { INSFORGE_URL, headers, handleResponse } from './client';
+
+import { supabase } from '../supabase';
 import type { Product } from '@/types';
-import { SELECT, normalise } from './products';
+
+// Importamos la función de normalización de productos
+const normaliseProduct = (p: any): Product => ({
+  ...p,
+  is_published: p.is_published ?? true,
+  images: p.images || [],
+  variants: (p.product_variants || []).map((v: any) => ({
+    ...v,
+    id: v.variant_id.toString(),
+  })),
+  category: p.categories?.name,
+  subcategory: p.subcategories?.name,
+});
 
 export const favorites = {
   getByCustomer: async (customer_id: string): Promise<Product[]> => {
-    // Primero obtenemos los product_ids de la tabla intermedia
-    const favResponse = await fetch(
-      `${INSFORGE_URL}/api/database/records/customer_favorites?customer_id=eq.${customer_id}&select=product_id`, 
-      { headers }
-    );
-    const favData = await handleResponse(favResponse);
+    const { data, error } = await supabase
+      .from('customer_favorites')
+      .select('product:products(*, product_variants(*), categories(name), subcategories(name))')
+      .eq('customer_id', customer_id);
+
+    if (error) throw error;
     
-    if (!favData || favData.length === 0) return [];
-    
-    const productIds = favData.map((f: any) => f.product_id).join(',');
-    
-    // Luego obtenemos los productos (usando product_id en lugar de id)
-    const productsResponse = await fetch(
-      `${INSFORGE_URL}/api/database/records/products?product_id=in.(${productIds})&select=${encodeURIComponent(SELECT)}`, 
-      { headers }
-    );
-    const productsData = await handleResponse(productsResponse);
-    return (productsData || []).map((p: any) => normalise(p));
+    return (data || [])
+      .filter(f => f.product)
+      .map(f => normaliseProduct(f.product));
   },
 
   add: async (customer_id: string, product_id: string): Promise<void> => {
-    await fetch(`${INSFORGE_URL}/api/database/records/customer_favorites`, {
-      method: 'POST',
-      headers: { ...headers, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ customer_id, product_id })
-    });
+    const { error } = await supabase
+      .from('customer_favorites')
+      .upsert({ customer_id, product_id });
+
+    if (error) throw error;
   },
 
   remove: async (customer_id: string, product_id: string): Promise<void> => {
-    await fetch(
-      `${INSFORGE_URL}/api/database/records/customer_favorites?customer_id=eq.${customer_id}&product_id=eq.${product_id}`, 
-      { 
-        method: 'DELETE',
-        headers 
-      }
-    );
+    const { error } = await supabase
+      .from('customer_favorites')
+      .delete()
+      .eq('customer_id', customer_id)
+      .eq('product_id', product_id);
+
+    if (error) throw error;
   }
 };

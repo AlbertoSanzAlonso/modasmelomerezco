@@ -1,73 +1,65 @@
-import { INSFORGE_URL, headers } from './client';
+
+import { supabase } from '../supabase';
 import { PROVINCE_BY_PREFIX } from "@/constants/locations";
 
 export const locations = {
   getByZip: async (zip: string) => {
-    console.log('Fetching location for zip:', zip);
-    
-    // 1. Identify province by zip prefix (Most reliable in Spain)
+    // 1. Identificar provincia por prefijo (El más fiable en España)
     const prefix = zip.substring(0, 2);
     const identifiedProvince = PROVINCE_BY_PREFIX[prefix];
     
-    // 2. Try local database for city
+    // 2. Intentar base de datos local de Supabase
     try {
-      const response = await fetch(`${INSFORGE_URL}/api/database/records/spanish_locations?zip_code=eq.${zip}&select=*`, { headers });
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.length > 0) {
-          console.log('Found in local DB:', data[0]);
-          return {
-            id: data[0].id,
-            city: data[0].municipality,
-            province: identifiedProvince || data[0].province
-          };
-        }
+      const { data, error } = await supabase
+        .from('spanish_locations')
+        .select('*')
+        .eq('zip_code', zip)
+        .maybeSingle();
+
+      if (data) {
+        return {
+          id: data.id,
+          city: data.municipality,
+          province: identifiedProvince || data.province
+        };
       }
     } catch (dbError) {
-      console.warn('Local DB location fetch failed:', dbError);
+      console.warn('Supabase location fetch failed:', dbError);
     }
 
-    // 3. Fallback to external API for city name
+    // 3. Fallback a API externa si no existe en nuestra DB
     try {
       const externalRes = await fetch(`https://api.zippopotam.us/es/${zip}`);
       if (externalRes.ok) {
         const externalData = await externalRes.json();
         if (externalData.places && externalData.places.length > 0) {
           const place = externalData.places[0];
-          const rawCity = place['place name'];
-
           const result = {
-            city: rawCity,
+            city: place['place name'],
             province: identifiedProvince || place['state']
           };
 
-          // Cache it and get the new ID
-          const saveRes = await fetch(`${INSFORGE_URL}/api/database/records/spanish_locations`, {
-            method: 'POST',
-            headers: { ...headers, 'Prefer': 'return=representation' },
-            body: JSON.stringify({
+          // Guardar en caché de Supabase para la próxima vez
+          const { data: savedData } = await supabase
+            .from('spanish_locations')
+            .insert([{
               zip_code: zip,
               municipality: result.city,
               province: result.province
-            })
-          });
+            }])
+            .select()
+            .single();
           
-          if (saveRes.ok) {
-            const savedData = await saveRes.json();
-            return {
-              id: savedData[0].id,
-              ...result
-            };
-          }
-
-          return result;
+          return {
+            id: savedData?.id,
+            ...result
+          };
         }
       }
     } catch (error) {
       console.error('Total failure fetching zip code:', error);
     }
     
-    // Last resort: if we have the province by prefix but no city name
     if (identifiedProvince) {
       return { city: '', province: identifiedProvince };
     }

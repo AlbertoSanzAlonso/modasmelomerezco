@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from "@/lib/supabase";
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
+
+// Configuración para evitar errores de carga de modelos en producción
+env.allowLocalModels = false;
+env.useBrowserCache = true;
 
 // Singleton para el modelo de IA de vectores
 let embedderPromise: Promise<any> | null = null;

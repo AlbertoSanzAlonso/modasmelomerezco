@@ -98,7 +98,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             <option value="false">No Novedades</option>
           </select>
 
-          <div className="relative col-span-2 md:flex-1 md:flex-none md:min-w-[200px]">
+          <div className="relative col-span-2 md:flex-1 md:min-w-[200px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
@@ -319,10 +319,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         {products?.map((product) => (
           <div 
             key={product.product_id}
-            className="bg-(--bg-card) border border-(--border-main) rounded-[2rem] p-5 shadow-sm flex gap-4 relative overflow-hidden"
+            className="bg-(--bg-card) border border-(--border-main) rounded-4xl p-5 shadow-sm flex gap-4 relative overflow-hidden"
             onClick={() => onEdit(product)}
           >
-             <div className="w-20 h-28 bg-black overflow-hidden border border-(--border-main) rounded-xl flex-shrink-0">
+             <div className="w-20 h-28 bg-black overflow-hidden border border-(--border-main) rounded-xl shrink-0">
                <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
              </div>
              <div className="flex-1 min-w-0 flex flex-col justify-between py-1">

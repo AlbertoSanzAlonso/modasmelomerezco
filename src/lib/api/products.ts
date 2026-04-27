@@ -12,7 +12,7 @@ export const normalise = (p: any): Product => ({
   category: p.categories?.name || p.category,
   subcategory: p.subcategories?.name || p.subcategory,
   // Use the join data from product_images table exclusively
-  images: Array.isArray(p.product_images)
+  images: Array.isArray(p.product_images) && p.product_images.length > 0
       ? [...p.product_images]
           .sort((a: any, b: any) => {
             // is_main first, then sort by orden

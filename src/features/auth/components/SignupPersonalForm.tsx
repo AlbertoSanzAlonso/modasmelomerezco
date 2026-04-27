@@ -33,7 +33,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
             required
             value={formData.name}
             onChange={(e) => setFormData('name', e.target.value)}
-            className="block w-full pl-12 pr-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+            className="block w-full pl-12 pr-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
             placeholder="Nombre"
           />
         </div>
@@ -44,7 +44,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
             required
             value={formData.surname}
             onChange={(e) => setFormData('surname', e.target.value)}
-            className="block w-full px-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+            className="block w-full px-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
             placeholder="Apellidos"
           />
         </div>
@@ -59,7 +59,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
           required
           value={formData.email}
           onChange={(e) => setFormData('email', e.target.value)}
-          className="block w-full pl-12 pr-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+          className="block w-full pl-12 pr-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
           placeholder="tu@email.com"
         />
       </div>
@@ -73,7 +73,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
           required
           value={formData.password}
           onChange={(e) => setFormData('password', e.target.value)}
-          className="block w-full pl-12 pr-12 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+          className="block w-full pl-12 pr-12 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
           placeholder="Contraseña (mín. 8 caracteres)"
         />
         <button
@@ -94,7 +94,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
           required
           value={formData.repeatPassword}
           onChange={(e) => setFormData('repeatPassword', e.target.value)}
-          className="block w-full pl-12 pr-12 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+          className="block w-full pl-12 pr-12 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
           placeholder="Repetir contraseña"
         />
         <button
@@ -115,7 +115,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
           required
           value={formData.phone}
           onChange={(e) => setFormData('phone', e.target.value)}
-          className="block w-full pl-12 pr-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+          className="block w-full pl-12 pr-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
           placeholder="Teléfono móvil"
         />
       </div>

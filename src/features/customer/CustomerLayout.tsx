@@ -43,9 +43,9 @@ export const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
   const theme = useThemeStore((state) => state.theme);
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'dark' : ''} bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col md:flex-row transition-colors duration-300`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'dark' : ''} bg-(--bg-main) text-(--text-main) flex flex-col md:flex-row transition-colors duration-300`}>
       {/* Sidebar */}
-      <aside className="w-full md:w-80 border-b md:border-r border-[var(--border-main)] bg-[var(--bg-main)] p-6 md:p-8 flex flex-col transition-colors duration-300">
+      <aside className="w-full md:w-80 border-b md:border-r border-(--border-main) bg-(--bg-main) p-6 md:p-8 flex flex-col transition-colors duration-300">
         <div className="flex justify-between items-center md:mb-12">
           <div>
             <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-1">Panel de Usuario</p>
@@ -90,7 +90,7 @@ export const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
                     className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group ${
                       location.pathname === item.path 
                         ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                        : 'text-gray-500 hover:text-[var(--text-main)] hover:bg-[var(--bg-card)]'
+                        : 'text-gray-500 hover:text-(--text-main) hover:bg-(--bg-card)'
                     }`}
                   >
                     <div className="flex items-center gap-4">

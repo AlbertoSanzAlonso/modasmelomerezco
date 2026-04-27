@@ -147,7 +147,7 @@ export const PaymentMethods: React.FC = () => {
             />
           ))
         ) : (
-          <div className="lg:col-span-2 py-20 text-center bg-white/5 border border-dashed border-white/10 rounded-[2rem]">
+          <div className="lg:col-span-2 py-20 text-center bg-white/5 border border-dashed border-white/10 rounded-4xl">
             <CreditCard className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">No tienes tarjetas guardadas</p>
             <button 

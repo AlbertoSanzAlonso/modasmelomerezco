@@ -4,6 +4,8 @@ import { Plus, Eye, EyeOff, Edit, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Product } from "@/types";
 
+import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
+
 interface ProductsTabProps {
   products?: Product[];
   selectedIds: string[];
@@ -72,11 +74,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       )}
 
       {/* Desktop View */}
-      <div className="hidden md:block bg-[var(--bg-card)] border border-[var(--border-main)] overflow-hidden rounded-[2.5rem] shadow-sm">
+      <div className="hidden md:block bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-[2.5rem] shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px]">
             <thead>
-              <tr className="border-b border-[var(--border-main)] bg-[var(--bg-main)]/50">
+              <tr className="border-b border-(--border-main) bg-(--bg-main)/50">
                 <th className="px-8 py-6 w-10">
                   <input 
                     type="checkbox" 
@@ -93,7 +95,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-main)]">
+            <tbody className="divide-y divide-(--border-main)">
               {products?.map((product) => (
                 <tr 
                   key={product.product_id} 
@@ -114,16 +116,16 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-16 bg-black overflow-hidden border border-[var(--border-main)] rounded-xl shadow-sm">
-                        <img src={product.images?.[0] || undefined} alt="" className="w-full h-full object-cover transition-all" />
+                      <div className="w-12 h-16 bg-black overflow-hidden border border-(--border-main) rounded-xl shadow-sm">
+                        <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover transition-all" />
                       </div>
-                      <p className="text-sm font-bold uppercase italic text-[var(--text-main)]">{product.name}</p>
+                      <p className="text-sm font-bold uppercase italic text-(--text-main)">{product.name}</p>
                     </div>
                   </td>
                   <td className="px-8 py-6 text-xs text-gray-500 uppercase tracking-widest font-bold">
                     {product.category} {product.subcategory && `• ${product.subcategory}`}
                   </td>
-                  <td className="px-8 py-6 text-sm font-black italic text-[var(--text-main)]">{product.price.toFixed(2)}€</td>
+                  <td className="px-8 py-6 text-sm font-black italic text-(--text-main)">{product.price.toFixed(2)}€</td>
                   <td className="px-8 py-6">
                     <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${calculateStock(product) < 10 ? 'border-red-500 bg-red-500/5 text-red-500' : 'border-green-500/30 bg-green-500/5 text-green-500'}`}>
                       {calculateStock(product)} UNI

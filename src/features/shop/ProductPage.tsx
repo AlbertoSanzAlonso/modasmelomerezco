@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Share2, Heart, ShoppingBag } from 'lucide-react';
+import { ChevronRight, Share2, Heart, ShoppingBag, X } from 'lucide-react';
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { motion, AnimatePresence } from 'framer-motion';
+import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 import type { ProductVariant } from '@/types';
 
 const ProductPage = () => {
@@ -14,6 +15,7 @@ const ProductPage = () => {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [activeImage, setActiveImage] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showFullscreen, setShowFullscreen] = useState(false);
   const { user, isAuthenticated, setPendingFavorite } = useAuthStore();
   const { addItem, openModal } = useCartStore();
 
@@ -61,6 +63,8 @@ const ProductPage = () => {
   if (isLoading) return <div className="h-screen flex items-center justify-center animate-pulse text-primary font-black uppercase tracking-widest">Cargando Pieza...</div>;
   if (!product || product.is_published === false) return <div className="h-screen flex items-center justify-center">Producto no encontrado</div>;
 
+  const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
+
   return (
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
       <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
@@ -83,45 +87,48 @@ const ProductPage = () => {
           )}
           <span className="text-primary">{product.name}</span>
         </nav>
-
+        
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
           {/* Left: Gallery */}
-          <div className="lg:col-span-7 grid grid-cols-12 gap-6">
-            <div className="col-span-2 space-y-4">
-              {product.images.map((img: string, idx: number) => (
-                <div 
-                  key={idx}
-                  onClick={() => setActiveImage(idx)}
-                  className={`aspect-3/4 cursor-pointer overflow-hidden border ${activeImage === idx ? 'border-primary' : 'border-transparent opacity-50'}`}
-                >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-             <div className="col-span-10 relative aspect-3/4 overflow-hidden bg-black/20">
-               {!imageLoaded && (
-                 <div className="absolute inset-0 animate-pulse bg-secondary/10" />
-               )}
-               <AnimatePresence mode="wait">
+          <div className="lg:col-span-6 flex flex-col gap-6">
+            <div 
+              className="relative aspect-3/4 overflow-hidden bg-black/20 cursor-pointer"
+              onClick={() => setShowFullscreen(true)}
+            >
+              {!imageLoaded && (
+                <div className="absolute inset-0 animate-pulse bg-secondary/10" />
+              )}
+              <AnimatePresence mode="wait">
                 <motion.img 
                   key={activeImage}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.5 }}
-                  src={product.images[activeImage]} 
+                  src={displayImages[activeImage]} 
                   alt={product.name} 
                   onLoad={() => setImageLoaded(true)}
                   className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                   loading="eager"
                   fetchPriority="high"
                 />
-               </AnimatePresence>
+              </AnimatePresence>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {displayImages.map((img: string, idx: number) => (
+                <div 
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`shrink-0 w-20 h-24 cursor-pointer overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-75'}`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Right: Info */}
-          <div className="lg:col-span-5 flex flex-col justify-center">
+          <div className="lg:col-span-6 flex flex-col justify-center">
             <div className="mb-12 border-b border-secondary/5 pb-12">
               <span className="text-primary font-black tracking-[0.4em] uppercase text-xs mb-4 block">{product.category}</span>
               <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase italic mb-6 leading-none">{product.name}</h1>
@@ -222,6 +229,27 @@ const ProductPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {showFullscreen && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center cursor-pointer"
+          onClick={() => setShowFullscreen(false)}
+        >
+          <img 
+            src={displayImages[activeImage]} 
+            alt={product.name}
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button 
+            onClick={() => setShowFullscreen(false)}
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

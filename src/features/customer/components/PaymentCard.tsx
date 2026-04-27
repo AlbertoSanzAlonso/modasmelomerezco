@@ -16,7 +16,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({
   onSetDefault
 }) => {
   return (
-    <div className={`p-8 rounded-[2rem] border transition-all relative overflow-hidden group ${
+    <div className={`p-8 rounded-4xl border transition-all relative overflow-hidden group ${
       card.is_default ? 'bg-white/10 border-primary/50' : 'bg-white/5 border-white/10 hover:border-white/20'
     }`}>
       {/* Background Decoration */}

@@ -28,22 +28,22 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-main)] overflow-hidden rounded-3xl shadow-sm">
-          <div className="p-8 border-b border-[var(--border-main)] flex justify-between items-center">
-            <h3 className="font-black uppercase tracking-widest text-xs text-[var(--text-main)]">Últimos Pedidos</h3>
+        <div className="bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-3xl shadow-sm">
+          <div className="p-8 border-b border-(--border-main) flex justify-between items-center">
+            <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">Últimos Pedidos</h3>
             <button onClick={onViewAllOrders} className="text-primary text-[10px] font-black tracking-widest uppercase hover:underline">Ver todos</button>
           </div>
-          <div className="divide-y divide-[var(--border-main)]">
+          <div className="divide-y divide-(--border-main)">
             {orders?.slice(0, 5).map(order => (
               <div key={order.order_id} 
                    onClick={() => onOrderClick(order)}
                    className="p-6 hover:bg-primary/5 transition-colors flex justify-between items-center group cursor-pointer">
                 <div className="flex gap-4 items-center">
-                  <div className="px-4 h-10 bg-[var(--bg-main)] border border-[var(--border-main)] flex items-center justify-center font-mono text-[9px] text-primary font-black group-hover:border-primary/30 transition-all rounded-xl min-w-[90px]">
+                  <div className="px-4 h-10 bg-(--bg-main) border border-(--border-main) flex items-center justify-center font-mono text-[9px] text-primary font-black group-hover:border-primary/30 transition-all rounded-xl min-w-[90px]">
                     #{order.order_id.split('-')[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-bold uppercase italic text-[var(--text-main)]">{order.customer?.name} {order.customer?.surname}</p>
+                    <p className="text-sm font-bold uppercase italic text-(--text-main)">{order.customer?.name} {order.customer?.surname}</p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">
                       {new Date(order.order_date).toLocaleDateString()} • {order.items?.length || 0} artículos
                     </p>
@@ -61,8 +61,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
         </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-main)] overflow-hidden rounded-3xl shadow-sm border-primary/20">
-          <div className="p-8 border-b border-[var(--border-main)] bg-primary/5">
+        <div className="bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-3xl shadow-sm border-primary/20">
+          <div className="p-8 border-b border-(--border-main) bg-primary/5">
             <h3 className="font-black uppercase tracking-widest text-xs text-primary">Alertas de Stock</h3>
           </div>
           <div className="p-8 space-y-6">
@@ -83,7 +83,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               return displayedAlerts.map((alert, idx) => (
                 <div key={`${alert.p.product_id}-${alert.size}-${idx}`} className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-bold uppercase italic text-[var(--text-main)]">{alert.p.name} - TALLA {alert.size}</p>
+                    <p className="text-sm font-bold uppercase italic text-(--text-main)">{alert.p.name} - TALLA {alert.size}</p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">{alert.p.category}</p>
                   </div>
                   <div className="flex items-center gap-4">

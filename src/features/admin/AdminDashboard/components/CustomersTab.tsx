@@ -31,21 +31,21 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
         </Button>
       </div>
 
-      <div className="bg-[var(--bg-card)] border border-[var(--border-main)] overflow-hidden rounded-[2.5rem] shadow-sm">
+      <div className="bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-[2.5rem] shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px]">
             <thead>
-              <tr className="border-b border-[var(--border-main)] bg-[var(--bg-main)]/50">
+              <tr className="border-b border-(--border-main) bg-(--bg-main)/50">
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Cliente</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Email</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Teléfono</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-main)]">
+            <tbody className="divide-y divide-(--border-main)">
               {customers?.map((customer) => (
                 <tr key={customer.customer_id} className="hover:bg-primary/5 transition-colors group">
                   <td className="px-8 py-6">
-                    <p className="text-sm font-bold uppercase italic text-[var(--text-main)]">{customer.name} {customer.surname}</p>
+                    <p className="text-sm font-bold uppercase italic text-(--text-main)">{customer.name} {customer.surname}</p>
                   </td>
                   <td className="px-8 py-6 text-xs text-gray-500 font-bold">{customer.email}</td>
                   <td className="px-8 py-6 text-xs text-gray-500 font-bold">{customer.phone || '-'}</td>

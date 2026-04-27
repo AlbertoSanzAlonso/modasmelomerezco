@@ -41,7 +41,7 @@ export const AdminLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-6 font-mono transition-colors duration-300">
+    <div className="min-h-screen bg-(--bg-main) flex items-center justify-center p-6 font-mono transition-colors duration-300">
       <div className="absolute top-8 right-8 z-50">
         <ThemeToggle />
       </div>
@@ -53,7 +53,7 @@ export const AdminLoginPage: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md bg-[var(--bg-card)] backdrop-blur-xl border border-[var(--border-main)] p-10 relative z-10 shadow-2xl transition-colors duration-300"
+        className="w-full max-w-md bg-(--bg-card) backdrop-blur-xl border border-(--border-main) p-10 relative z-10 shadow-2xl transition-colors duration-300"
       >
         <div className="flex items-center gap-3 mb-12 text-primary">
           <Terminal className="w-6 h-6" />
@@ -82,7 +82,7 @@ export const AdminLoginPage: React.FC = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-[var(--bg-main)] border border-[var(--border-main)] py-4 pl-12 pr-4 text-xs font-bold focus:outline-none focus:border-primary/50 transition-all text-[var(--text-main)]"
+                  className="w-full bg-(--bg-main) border border-(--border-main) py-4 pl-12 pr-4 text-xs font-bold focus:outline-none focus:border-primary/50 transition-all text-(--text-main)"
                   placeholder="ROOT_USER"
                 />
               </div>
@@ -97,7 +97,7 @@ export const AdminLoginPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[var(--bg-main)] border border-[var(--border-main)] py-4 pl-12 pr-12 text-xs font-bold focus:outline-none focus:border-primary/50 transition-all text-[var(--text-main)]"
+                  className="w-full bg-(--bg-main) border border-(--border-main) py-4 pl-12 pr-12 text-xs font-bold focus:outline-none focus:border-primary/50 transition-all text-(--text-main)"
                   placeholder="••••••••"
                 />
                 <button

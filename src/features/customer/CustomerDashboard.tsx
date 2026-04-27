@@ -44,7 +44,7 @@ export const CustomerDashboard: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {/* Quick Stats */}
-        <Link to="/cuenta/pedidos" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/[0.08]">
+        <Link to="/cuenta/pedidos" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/8">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 md:mb-6 group-hover:scale-110 transition-transform">
             <Package className="w-5 h-5 md:w-6 md:h-6" />
           </div>
@@ -52,7 +52,7 @@ export const CustomerDashboard: React.FC = () => {
           <p className="text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-widest">Pedidos Totales</p>
         </Link>
 
-        <Link to="/cuenta/pedidos" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/[0.08]">
+        <Link to="/cuenta/pedidos" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/8">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 md:mb-6 group-hover:scale-110 transition-transform">
             <Clock className="w-5 h-5 md:w-6 md:h-6" />
           </div>
@@ -60,7 +60,7 @@ export const CustomerDashboard: React.FC = () => {
           <p className="text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-widest">En proceso</p>
         </Link>
 
-        <Link to="/cuenta/favoritos" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/[0.08]">
+        <Link to="/cuenta/favoritos" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/8">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 md:mb-6 group-hover:scale-110 transition-transform">
             <Heart className="w-5 h-5 md:w-6 md:h-6" />
           </div>
@@ -68,7 +68,7 @@ export const CustomerDashboard: React.FC = () => {
           <p className="text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-widest">Favoritos</p>
         </Link>
 
-        <Link to="/cuenta/perfil" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/[0.08]">
+        <Link to="/cuenta/perfil" className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-3xl group hover:border-primary/30 transition-all hover:bg-white/8">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 md:mb-6 group-hover:scale-110 transition-transform">
             <MapPin className="w-5 h-5 md:w-6 md:h-6" />
           </div>
@@ -104,7 +104,7 @@ export const CustomerDashboard: React.FC = () => {
                     setSelectedOrder(order);
                     setShowDetails(true);
                   }}
-                  className="p-6 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between hover:bg-white/[0.08] transition-colors cursor-pointer group"
+                  className="p-6 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between hover:bg-white/8 transition-colors cursor-pointer group"
                 >
                   <div>
                     <p className="font-black text-sm mb-1">#{order.order_id.split('-')[0].toUpperCase()}</p>

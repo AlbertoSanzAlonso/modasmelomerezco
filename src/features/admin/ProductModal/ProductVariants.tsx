@@ -16,7 +16,7 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({
   onVariantChange
 }) => {
   return (
-    <div className="space-y-8 border-t border-[var(--border-main)] pt-12">
+    <div className="space-y-8 border-t border-(--border-main) pt-12">
       <div className="flex justify-end items-center">
         <Button 
           type="button" 
@@ -31,11 +31,11 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({
       
       <div className="space-y-4">
         {variants?.map((variant, index) => (
-          <div key={variant.id} className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end bg-[var(--bg-card)] p-6 border border-[var(--border-main)] rounded-2xl relative group/variant transition-all hover:border-primary/20">
+          <div key={variant.id} className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl relative group/variant transition-all hover:border-primary/20">
             <div className="space-y-3">
               <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">Talla</label>
               <input 
-                className="w-full bg-[var(--bg-main)] border border-[var(--border-main)] px-4 py-3 text-xs font-bold focus:border-primary outline-none text-[var(--text-main)] rounded-xl"
+                className="w-full bg-(--bg-main) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none text-(--text-main) rounded-xl"
                 value={variant.size}
                 onChange={(e) => onVariantChange(index, 'size', e.target.value)}
                 placeholder="Ej: S, M, L o Única"
@@ -45,7 +45,7 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({
               <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">Stock</label>
               <input 
                 type="number"
-                className="w-full bg-[var(--bg-main)] border border-[var(--border-main)] px-4 py-3 text-xs font-bold focus:border-primary outline-none text-[var(--text-main)] rounded-xl"
+                className="w-full bg-(--bg-main) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none text-(--text-main) rounded-xl"
                 value={variant.stock}
                 onChange={(e) => onVariantChange(index, 'stock', parseInt(e.target.value))}
               />

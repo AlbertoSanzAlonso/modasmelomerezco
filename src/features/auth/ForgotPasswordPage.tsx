@@ -65,7 +65,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-(--bg-main) flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
       <div className="absolute top-8 right-8 z-50">
         <ThemeToggle />
       </div>
@@ -76,14 +76,14 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-[var(--bg-card)] p-10 rounded-[2.5rem] border border-[var(--border-main)] shadow-2xl relative z-10"
+        className="w-full max-w-md bg-(--bg-card) p-10 rounded-[2.5rem] border border-(--border-main) shadow-2xl relative z-10"
       >
         {isSuccess ? (
           <div className="text-center space-y-6 py-10 animate-fade-in">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-display font-black text-[var(--text-main)] uppercase tracking-tighter">Email <span className="text-primary italic font-serif lowercase">enviado</span></h2>
+            <h2 className="text-3xl font-display font-black text-(--text-main) uppercase tracking-tighter">Email <span className="text-primary italic font-serif lowercase">enviado</span></h2>
             <p className="text-gray-500 text-sm">Hemos enviado un enlace de recuperación a <strong>{sentTo}</strong>. Revisa tu bandeja de entrada y spam.</p>
             <Button 
               className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] italic mt-4"
@@ -102,7 +102,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
                   className="w-20 h-20 object-contain mx-auto"
                 />
               </Link>
-              <h1 className="text-3xl font-display font-black text-[var(--text-main)] uppercase tracking-tighter mb-2 italic">¿Has olvidado la <span className="text-primary lowercase font-serif">clave</span>?</h1>
+              <h1 className="text-3xl font-display font-black text-(--text-main) uppercase tracking-tighter mb-2 italic">¿Has olvidado la <span className="text-primary lowercase font-serif">clave</span>?</h1>
               <p className="text-gray-500 text-sm font-medium tracking-wide">Introduce tu {isAdmin ? 'usuario o ' : ''}email para recibir un enlace de recuperación.</p>
             </div>
 
@@ -116,7 +116,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
                   required
                   value={emailOrUser}
                   onChange={(e) => setEmailOrUser(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 bg-[var(--bg-main)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+                  className="block w-full pl-12 pr-4 py-4 bg-(--bg-main) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
                   placeholder={isAdmin ? "Usuario o email de admin" : "tu@email.com"}
                 />
               </div>
@@ -124,7 +124,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-5 bg-[var(--text-main)] text-[var(--bg-main)] font-black uppercase italic tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-5 bg-(--text-main) text-(--bg-main) font-black uppercase italic tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enviar enlace'}
               </button>

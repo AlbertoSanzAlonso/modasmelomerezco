@@ -168,7 +168,7 @@ export const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-(--bg-main) flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
       <div className="absolute top-8 right-8 z-50">
         <ThemeToggle />
       </div>
@@ -191,7 +191,7 @@ export const SignupPage: React.FC = () => {
             <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="Logo" className="w-24 h-24 object-contain" />
           </motion.div>
           
-          <h1 className="text-4xl font-display font-black text-[var(--text-main)] uppercase tracking-tighter mb-2 transition-colors duration-300">
+          <h1 className="text-4xl font-display font-black text-(--text-main) uppercase tracking-tighter mb-2 transition-colors duration-300">
             Crea tu <span className="italic font-serif lowercase text-primary">cuenta</span>
           </h1>
           <p className="text-gray-500 text-sm font-medium tracking-wide">
@@ -218,7 +218,7 @@ export const SignupPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-5 bg-[var(--text-main)] text-[var(--bg-main)] font-black uppercase italic tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+            className="w-full py-5 bg-(--text-main) text-(--bg-main) font-black uppercase italic tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
@@ -234,7 +234,7 @@ export const SignupPage: React.FC = () => {
             ¿Ya tienes cuenta?
           </Link>
         </div>
-        <div className="pt-6 border-t border-[var(--border-main)]/5">
+        <div className="pt-6 border-t border-(--border-main)/5">
           <Link to="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-primary transition-colors flex items-center justify-center gap-2">
             <span className="text-lg">←</span> Volver a la tienda
           </Link>

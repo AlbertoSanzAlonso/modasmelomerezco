@@ -15,7 +15,7 @@ export const ProductPublishOptions: React.FC<ProductPublishOptionsProps> = ({
   onPublishedChange
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-8 py-6 border-y border-[var(--border-main)]">
+    <div className="flex flex-col sm:flex-row gap-8 py-6 border-y border-(--border-main)">
       <div className="flex items-center gap-4">
         <input 
           type="checkbox" 
@@ -24,7 +24,7 @@ export const ProductPublishOptions: React.FC<ProductPublishOptionsProps> = ({
           checked={!!isNew}
           onChange={(e) => onNewChange(e.target.checked)}
         />
-        <label htmlFor="is_new" className="text-[10px] font-black uppercase tracking-[0.4em] cursor-pointer text-[var(--text-main)]">Marcar como Novedad</label>
+        <label htmlFor="is_new" className="text-[10px] font-black uppercase tracking-[0.4em] cursor-pointer text-(--text-main)">Marcar como Novedad</label>
       </div>
 
       <div className="flex items-center gap-4">
@@ -35,7 +35,7 @@ export const ProductPublishOptions: React.FC<ProductPublishOptionsProps> = ({
           checked={!!isPublished}
           onChange={(e) => onPublishedChange(e.target.checked)}
         />
-        <label htmlFor="is_published" className="text-[10px] font-black uppercase tracking-[0.4em] cursor-pointer text-[var(--text-main)]">Publicado en la Web</label>
+        <label htmlFor="is_published" className="text-[10px] font-black uppercase tracking-[0.4em] cursor-pointer text-(--text-main)">Publicado en la Web</label>
       </div>
     </div>
   );

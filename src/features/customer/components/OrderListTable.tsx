@@ -30,7 +30,7 @@ export const OrderListTable: React.FC<OrderListTableProps> = ({
         </thead>
         <tbody className="divide-y divide-white/5">
           {orders.map((order) => (
-            <tr key={order.order_id || Math.random()} className="group hover:bg-white/[0.02] transition-colors">
+            <tr key={order.order_id || Math.random()} className="group hover:bg-white/2 transition-colors">
               <td className="py-6 font-black text-[11px] truncate max-w-[120px]" title={order.order_id}>
                 #{order.order_id ? order.order_id.split('-')[0].toUpperCase() : 'N/A'}
               </td>

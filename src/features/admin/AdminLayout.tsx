@@ -26,9 +26,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
   const theme = useThemeStore((state) => state.theme);
 
   return (
-    <div className={`flex h-screen ${theme === 'dark' ? 'dark' : ''} bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden relative transition-colors duration-300`}>
+    <div className={`flex h-screen ${theme === 'dark' ? 'dark' : ''} bg-(--bg-main) text-(--text-main) overflow-hidden relative transition-colors duration-300`}>
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-[var(--border-main)] bg-[var(--bg-main)] fixed top-0 left-0 w-full z-50">
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-(--border-main) bg-(--bg-main) fixed top-0 left-0 w-full z-50">
         <Link to="/" className="flex items-center">
           <img 
             src={theme === 'dark' ? "/LOGO MELOMEREZCO completo blanco.png" : "/LOGO MELOMEREZCO completo transparente.png"} 
@@ -38,14 +38,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
         </Link>
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-[var(--text-main)] p-2">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-(--text-main) p-2">
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside className={`fixed md:static inset-y-0 left-0 w-72 border-r border-[var(--border-main)] flex flex-col bg-[var(--bg-main)] z-40 transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`fixed md:static inset-y-0 left-0 w-72 border-r border-(--border-main) flex flex-col bg-(--bg-main) z-40 transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-10 flex-grow overflow-y-auto">
           <div className="flex flex-col mb-16 items-center">
             <Link to="/" className="flex items-center">
@@ -83,7 +83,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
             ))}
           </nav>
 
-          <div className="mt-20 pt-10 border-t border-[var(--border-main)]">
+          <div className="mt-20 pt-10 border-t border-(--border-main)">
               <Link 
                 to="/" 
                 target="_blank" 
@@ -96,7 +96,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
           </div>
         </div>
 
-        <div className="p-10 border-t border-[var(--border-main)]">
+        <div className="p-10 border-t border-(--border-main)">
           <button 
             onClick={handleLogout}
             className="flex items-center gap-4 text-gray-500 hover:text-red-500 transition-colors w-full"
@@ -108,8 +108,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
       </aside>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto bg-[var(--bg-main)] pt-24 md:pt-0 w-full relative transition-colors duration-300">
-        <header className="h-auto md:h-24 py-6 md:py-0 border-b border-[var(--border-main)] flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-16 bg-[var(--bg-main)] gap-4 md:gap-0 transition-colors duration-300">
+      <main className="flex-1 overflow-y-auto bg-(--bg-main) pt-24 md:pt-0 w-full relative transition-colors duration-300">
+        <header className="h-auto md:h-24 py-6 md:py-0 border-b border-(--border-main) flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-16 bg-(--bg-main) gap-4 md:gap-0 transition-colors duration-300">
           <div className="hidden md:flex items-center gap-6 ml-auto">
             <ThemeToggle />
           </div>

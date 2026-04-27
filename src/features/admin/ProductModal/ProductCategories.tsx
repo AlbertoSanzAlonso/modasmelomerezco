@@ -26,7 +26,7 @@ export const ProductCategories: React.FC<ProductCategoriesProps> = ({
       <div className="space-y-6">
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Categoría Maestra</label>
         <select 
-          className="w-full bg-[var(--bg-card)] border border-[var(--border-main)] px-6 py-4 text-sm font-bold focus:border-primary outline-none appearance-none text-[var(--text-main)] rounded-xl"
+          className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-bold focus:border-primary outline-none appearance-none text-(--text-main) rounded-xl"
           value={categoryId || ''}
           onChange={(e) => onCategoryChange(e.target.value ? parseInt(e.target.value) : undefined)}
         >
@@ -39,7 +39,7 @@ export const ProductCategories: React.FC<ProductCategoriesProps> = ({
       <div className="space-y-6">
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Subcategoría</label>
         <select 
-          className="w-full bg-[var(--bg-card)] border border-[var(--border-main)] px-6 py-4 text-sm font-bold focus:border-primary outline-none appearance-none text-[var(--text-main)] rounded-xl"
+          className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-bold focus:border-primary outline-none appearance-none text-(--text-main) rounded-xl"
           value={subcategoryId || ''}
           onChange={(e) => onSubcategoryChange(e.target.value ? parseInt(e.target.value) : undefined)}
         >
@@ -51,7 +51,7 @@ export const ProductCategories: React.FC<ProductCategoriesProps> = ({
       </div>
       <div className="space-y-6">
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Stock Total</label>
-        <div className="w-full bg-[var(--bg-card)] border border-[var(--border-main)] px-6 py-4 text-sm font-black text-primary rounded-xl flex items-center">
+        <div className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-black text-primary rounded-xl flex items-center">
           {totalStock} UNI
         </div>
       </div>

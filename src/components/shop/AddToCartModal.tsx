@@ -174,9 +174,14 @@ export const AddToCartModal: React.FC = () => {
                 ) : (
                   <Button 
                     className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] italic"
-                    onClick={closeModal}
+                    onClick={() => {
+                      if (modalConfig.onAction) {
+                        modalConfig.onAction();
+                      }
+                      closeModal();
+                    }}
                   >
-                    Aceptar
+                    {modalConfig.actionLabel || 'Aceptar'}
                   </Button>
                 )}
               </div>

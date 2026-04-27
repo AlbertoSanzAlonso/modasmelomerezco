@@ -91,6 +91,11 @@ export const storage = {
    * Accepts either a full URL or just the object key.
    */
   delete: async (urlOrKey: string): Promise<void> => {
+    // Only delete if it's an Insforge URL
+    if (urlOrKey.startsWith('/') || !urlOrKey.includes(INSFORGE_URL)) {
+      return;
+    }
+
     // Extract the key — the part after /objects/
     let key = urlOrKey;
     const match = urlOrKey.match(/\/objects\/(.+)$/);

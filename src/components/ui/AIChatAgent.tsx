@@ -3,6 +3,45 @@ import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from "@/lib/api";
 
+const formatMessage = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (part.match(/^https?:\/\//)) {
+      if (part.includes('wa.me') || part.includes('whatsapp')) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[#20BD5A] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+              <path d="M12.049 21.648c-2.719 0-5.382-.715-7.683-2.065l-3.364 1.11 1.106-3.372A9.91 9.91 0 0 1 2.1 12.05C2.1 6.888 6.29 2.698 11.452 2.698c2.729 0 5.293 1.064 7.22 2.99a9.11 9.11 0 0 1 2.99 6.727c0 5.162-4.19 9.223-9.361 9.223h-.252zm7.57-14.755a8.146 8.146 0 0 0-5.77-2.403c-4.51 0-8.182 3.672-8.182 8.185a8.13 8.13 0 0 0 1.358 4.475l-1.152 3.517 3.536-1.164a8.29 8.29 0 0 0 4.217 1.15h.283c4.51 0 8.19-3.673 8.19-8.186 0-2.196-.855-4.264-2.4-5.804" />
+            </svg>
+            WhatsApp
+          </a>
+        );
+      }
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/80 break-all"
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
+
 interface Message {
   id: string;
   text: string;
@@ -12,7 +51,7 @@ interface Message {
 export const AIChatAgent = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: '¡Hola! Soy MeloMe, tu asistente virtual. ¿En qué puedo ayudarte?', isBot: true }
+    { id: '1', text: '¡Hola! Soy MeloMe, tu asistente virtual. ¿En qué puedo ayudarte? Si prefieres hablar por WhatsApp, pulsa aquí: https://wa.me/34685011494', isBot: true }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -141,7 +180,7 @@ Reglas: Basa tus respuestas en este inventario. Sé persuasiva pero concisa. No 
 
       {/* Ventana de chat */}
       <div
-        className={`fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] bg-white rounded-[2rem] shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
+        className={`fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] bg-white rounded-4xl shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
         style={{ height: '550px', maxHeight: '85vh' }}
       >
         {/* Cabecera */}
@@ -178,13 +217,13 @@ Reglas: Basa tus respuestas en este inventario. Sé persuasiva pero concisa. No 
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-auto ${msg.isBot ? 'bg-primary/10 text-primary' : 'bg-secondary text-white'}`}>
                   {msg.isBot ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                 </div>
-                <div className={`p-4 text-sm shadow-sm leading-relaxed ${
-                  msg.isBot 
-                    ? 'bg-white border border-gray-100 text-secondary rounded-[1.5rem] rounded-bl-sm' 
-                    : 'bg-secondary text-white rounded-[1.5rem] rounded-br-sm'
-                }`}>
-                  {msg.text}
-                </div>
+                 <div className={`p-4 text-sm shadow-sm leading-relaxed ${
+                   msg.isBot 
+                     ? 'bg-white border border-gray-100 text-secondary rounded-[1.5rem] rounded-bl-sm' 
+                     : 'bg-secondary text-white rounded-[1.5rem] rounded-br-sm'
+                 }`}>
+                   {msg.isBot ? formatMessage(msg.text) : msg.text}
+                 </div>
               </div>
             </div>
           ))}

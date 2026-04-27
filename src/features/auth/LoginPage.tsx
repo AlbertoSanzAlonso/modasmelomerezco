@@ -83,7 +83,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-(--bg-main) flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
       <div className="absolute top-8 right-8 z-50">
         <ThemeToggle />
       </div>
@@ -110,7 +110,7 @@ export const LoginPage: React.FC = () => {
             />
           </motion.div>
           
-          <h1 className="text-4xl font-display font-black text-[var(--text-main)] uppercase tracking-tighter mb-2 transition-colors duration-300">
+          <h1 className="text-4xl font-display font-black text-(--text-main) uppercase tracking-tighter mb-2 transition-colors duration-300">
             Bienvenida de <span className="italic font-serif lowercase text-primary">nuevo</span>
           </h1>
           <p className="text-gray-500 text-sm font-medium tracking-wide">
@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-12 pr-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+                className="block w-full pl-12 pr-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
                 placeholder="tu@email.com"
               />
             </div>
@@ -147,7 +147,7 @@ export const LoginPage: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-12 pr-12 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+                className="block w-full pl-12 pr-12 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
                 placeholder="••••••••"
               />
               <button
@@ -182,7 +182,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-5 bg-[var(--text-main)] text-[var(--bg-main)] font-black uppercase italic tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+            className="w-full py-5 bg-(--text-main) text-(--bg-main) font-black uppercase italic tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -203,7 +203,7 @@ export const LoginPage: React.FC = () => {
             ¿Aún no tienes cuenta?
           </Link>
         </div>
-          <div className="pt-6 border-t border-[var(--border-main)]/5">
+          <div className="pt-6 border-t border-(--border-main)/5">
             <Link to="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-primary transition-colors flex items-center justify-center gap-2">
               <span className="text-lg">←</span> Volver a la tienda
             </Link>

@@ -10,7 +10,7 @@ interface AddressCardProps {
 
 export const AddressCard: React.FC<AddressCardProps> = ({ address, onEdit, onDelete }) => {
   return (
-    <div className={`p-8 rounded-[2rem] border transition-all group relative overflow-hidden ${
+    <div className={`p-8 rounded-4xl border transition-all group relative overflow-hidden ${
       address.isDefault 
         ? 'bg-primary/10 border-primary/20 shadow-lg shadow-primary/5' 
         : 'bg-gray-50 border-gray-100 hover:border-primary/20 hover:bg-white'

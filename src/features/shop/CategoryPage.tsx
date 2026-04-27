@@ -144,7 +144,7 @@ const CategoryPage: React.FC = () => {
               <div className="hidden md:flex flex-wrap justify-center gap-4">
                 <button 
                   onClick={() => handleSubChange(null)}
-                  className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] border transition-all duration-300 ${!selectedSub ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'border-secondary/10 hover:border-secondary hover:translate-y-[-2px]'}`}
+                  className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] border transition-all duration-300 rounded-full ${!selectedSub ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'border-secondary/10 hover:border-secondary hover:translate-y-[-2px]'}`}
                 >
                   Todo
                 </button>
@@ -152,7 +152,7 @@ const CategoryPage: React.FC = () => {
                   <button 
                     key={sub.id}
                     onClick={() => handleSubChange(sub.id)}
-                    className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] border transition-all duration-300 ${selectedSub === sub.id ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'border-secondary/10 hover:border-secondary hover:translate-y-[-2px]'}`}
+                    className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] border transition-all duration-300 rounded-full ${selectedSub === sub.id ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'border-secondary/10 hover:border-secondary hover:translate-y-[-2px]'}`}
                   >
                     {sub.name}
                   </button>

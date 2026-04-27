@@ -20,7 +20,7 @@ export const ProductGeneralInfo: React.FC<ProductGeneralInfoProps> = ({
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Nombre del Producto</label>
         <input 
           required
-          className="w-full bg-[var(--bg-card)] border border-[var(--border-main)] px-6 py-4 text-sm font-bold focus:border-primary outline-none uppercase italic text-[var(--text-main)] rounded-xl"
+          className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-bold focus:border-primary outline-none uppercase italic text-(--text-main) rounded-xl"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
         />
@@ -31,7 +31,7 @@ export const ProductGeneralInfo: React.FC<ProductGeneralInfoProps> = ({
           type="number"
           step="0.01"
           required
-          className="w-full bg-[var(--bg-card)] border border-[var(--border-main)] px-6 py-4 text-sm font-bold focus:border-primary outline-none text-[var(--text-main)] rounded-xl"
+          className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-bold focus:border-primary outline-none text-(--text-main) rounded-xl"
           value={price}
           onChange={(e) => onPriceChange(parseFloat(e.target.value))}
         />

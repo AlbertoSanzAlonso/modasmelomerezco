@@ -93,7 +93,10 @@ export const AdminDashboard: React.FC = () => {
       }
       return api.products.delete(product.product_id);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      openModal({ title: 'Éxito', message: 'Producto eliminado correctamente.', type: 'info' });
+    }
   });
 
   const togglePublishMutation = useMutation({
@@ -108,7 +111,7 @@ export const AdminDashboard: React.FC = () => {
       await Promise.all(selectedIds.map(id => api.products.update(id, { is_published })));
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setSelectedIds([]);
-      openModal({ title: 'Éxito', message: 'Estado actualizado correctamente.', type: 'success' });
+      openModal({ title: 'Éxito', message: 'Estado actualizado correctamente.', type: 'info' });
     } catch (err) {
       openModal({ title: 'Error', message: 'Error al actualizar el estado.', type: 'warning' });
     }
@@ -128,7 +131,7 @@ export const AdminDashboard: React.FC = () => {
         }));
         queryClient.invalidateQueries({ queryKey: ['admin-products'] });
         setSelectedIds([]);
-        openModal({ title: 'Éxito', message: 'Productos eliminados.', type: 'success' });
+        openModal({ title: 'Éxito', message: 'Productos eliminados.', type: 'info' });
       }
     });
   };

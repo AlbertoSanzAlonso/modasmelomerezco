@@ -36,7 +36,7 @@ export const SignupAddressForm: React.FC<SignupAddressFormProps> = ({
             maxLength={5}
             value={address.zip}
             onChange={(e) => setAddress({...address, zip: e.target.value.replace(/\D/g, '')})}
-            className="block w-full px-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+            className="block w-full px-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
             placeholder="Código Postal (ej: 28001)"
           />
           {isLocating && (
@@ -51,7 +51,7 @@ export const SignupAddressForm: React.FC<SignupAddressFormProps> = ({
             required
             value={address.province}
             onChange={(e) => onProvinceChange(e.target.value)}
-            className="block w-full px-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium appearance-none"
+            className="block w-full px-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium appearance-none"
           >
             <option value="" disabled>Provincia</option>
             {PROVINCES.map(p => (
@@ -66,7 +66,7 @@ export const SignupAddressForm: React.FC<SignupAddressFormProps> = ({
               required
               value={address.city}
               onChange={(e) => onCityChange(e.target.value)}
-              className="block w-full px-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+              className="block w-full px-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
               placeholder="Localidad / Municipio"
             />
             <datalist id="signup-cities">
@@ -82,7 +82,7 @@ export const SignupAddressForm: React.FC<SignupAddressFormProps> = ({
           required
           value={address.street}
           onChange={(e) => setAddress({...address, street: e.target.value})}
-          className="block w-full px-4 py-4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+          className="block w-full px-4 py-4 bg-(--bg-card) border border-(--border-main) rounded-2xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
           placeholder="Calle, Vía, Plaza y Número"
         />
 
@@ -91,21 +91,21 @@ export const SignupAddressForm: React.FC<SignupAddressFormProps> = ({
             type="text"
             value={address.floor}
             onChange={(e) => setAddress({...address, floor: e.target.value})}
-            className="block w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:border-primary/50 transition-all text-xs font-bold"
+            className="block w-full px-4 py-3 bg-(--bg-card) border border-(--border-main) rounded-xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:border-primary/50 transition-all text-xs font-bold"
             placeholder="Piso"
           />
           <input
             type="text"
             value={address.door}
             onChange={(e) => setAddress({...address, door: e.target.value})}
-            className="block w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:border-primary/50 transition-all text-xs font-bold"
+            className="block w-full px-4 py-3 bg-(--bg-card) border border-(--border-main) rounded-xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:border-primary/50 transition-all text-xs font-bold"
             placeholder="Puerta"
           />
           <input
             type="text"
             value={address.stair}
             onChange={(e) => setAddress({...address, stair: e.target.value})}
-            className="block w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-xl text-[var(--text-main)] placeholder-gray-600 focus:outline-none focus:border-primary/50 transition-all text-xs font-bold"
+            className="block w-full px-4 py-3 bg-(--bg-card) border border-(--border-main) rounded-xl text-(--text-main) placeholder-gray-600 focus:outline-none focus:border-primary/50 transition-all text-xs font-bold"
             placeholder="Escalera"
           />
         </div>

@@ -135,11 +135,11 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-[var(--bg-main)] border border-[var(--border-main)] rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-(--bg-main) border border-(--border-main) rounded-4xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--border-main)]">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-(--border-main)">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-[var(--text-main)]">
+            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-(--text-main)">
               Ajustar Imagen
             </h3>
             <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">
@@ -148,7 +148,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-primary/10 text-[var(--text-main)] transition-colors"
+            className="p-2 rounded-full hover:bg-primary/10 text-(--text-main) transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -186,7 +186,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         <div className="px-8 pb-4 flex items-center gap-4 justify-center">
           <button
             onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}
-            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-[var(--text-main)] transition-colors"
+            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -203,13 +203,13 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </div>
           <button
             onClick={() => setZoom((z) => Math.min(5, z + 0.15))}
-            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-[var(--text-main)] transition-colors"
+            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
             onClick={() => setRotation((r) => r + 90)}
-            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-[var(--text-main)] transition-colors"
+            className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
             title="Rotar 90°"
           >
             <RotateCw className="w-4 h-4" />
@@ -220,7 +220,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         <div className="px-8 pb-8 flex gap-4">
           <button
             onClick={onClose}
-            className="flex-1 py-4 border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary/30 transition-all"
+            className="flex-1 py-4 border border-(--border-main) text-(--text-main) text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary/30 transition-all"
           >
             Cancelar
           </button>

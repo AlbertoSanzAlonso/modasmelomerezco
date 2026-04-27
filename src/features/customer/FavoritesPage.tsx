@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, ArrowRight, Loader2 } from 'lucide-react';
@@ -9,23 +9,24 @@ import { ProductCard } from "@/components/shop/ProductCard";
 
 export const FavoritesPage: React.FC = () => {
   const { user, updateUser } = useAuthStore();
+  const customerId = user?.customer_id || '';
   
-  const { data: favoriteProducts, isLoading } = useQuery<Product[]>({
-    queryKey: ['favorites', user?.customer_id],
-    queryFn: () => api.favorites.getByCustomer(user?.customer_id || ''),
-    enabled: !!user?.customer_id,
+  const { data: favoriteProducts = [], isLoading } = useQuery<Product[]>({
+    queryKey: ['favorites', customerId],
+    queryFn: () => api.favorites.getByCustomer(customerId),
+    enabled: !!customerId,
   });
   
   // Sync store favorites with DB when page loads
-  React.useEffect(() => {
-    if (user?.customer_id && favoriteProducts) {
+  useEffect(() => {
+    if (customerId && favoriteProducts.length > 0) {
       const dbFavorites = favoriteProducts.map(p => String(p.product_id));
-      const storeFavorites = user.favorites || [];
+      const storeFavorites = user?.favorites || [];
       if (JSON.stringify(storeFavorites) !== JSON.stringify(dbFavorites)) {
         updateUser({ favorites: dbFavorites });
       }
     }
-  }, [user?.customer_id, favoriteProducts, updateUser]);
+  }, [customerId, favoriteProducts, updateUser, user?.favorites]);
 
   return (
     <div className="space-y-10">

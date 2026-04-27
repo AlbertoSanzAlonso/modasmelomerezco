@@ -18,8 +18,17 @@ export const NewsletterSection: React.FC<NewsletterSectionProps> = ({
   onSubscribe
 }) => {
   return (
-    <section className="py-24 md:py-40 bg-white text-black">
-      <div className="max-w-[1800px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+    <section className="py-24 md:py-40 bg-white text-black relative overflow-hidden">
+      {/* Decorative Brush Heart Background */}
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-auto opacity-[0.07] pointer-events-none select-none -rotate-12 z-0">
+        <img 
+          src="/corazon-brocha.png" 
+          alt="" 
+          className="w-full h-auto"
+        />
+      </div>
+
+      <div className="max-w-[1800px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center relative z-10">
         <div>
           <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic mb-6">ÚNETE A NOSOTRAS</h2>
           <p className="text-gray-500 text-lg max-w-md font-medium">Suscríbete para enterarte de las últimas novedades, consejos de estilo y cositas especiales que preparamos para ti.</p>

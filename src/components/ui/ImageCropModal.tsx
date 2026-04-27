@@ -16,8 +16,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   onConfirm,
   onClose,
 }) => {
-  const CROP_W = 300;
-  const CROP_H = 400; // 3:4
+  const CROP_W = 900;
+  const CROP_H = 1200; // 3:4 at higher resolution
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -41,8 +41,10 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     img.onload = () => {
       imgRef.current = img;
       // Fit image to crop frame at start
-      const scaleX = CROP_W / img.width;
-      const scaleY = CROP_H / img.height;
+      const displayW = CROP_W / 3; // Same as display size
+      const displayH = CROP_H / 3;
+      const scaleX = displayW / img.width;
+      const scaleY = displayH / img.height;
       const fitScale = Math.max(scaleX, scaleY);
       setZoom(fitScale);
       setOffset({ x: 0, y: 0 });
@@ -129,7 +131,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         if (blob) onConfirm(blob);
       },
       'image/webp',
-      0.88
+      0.95
     );
   };
 
@@ -158,7 +160,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         <div className="flex justify-center py-8 px-6 bg-black/40">
           <div
             className="relative overflow-hidden rounded-xl shadow-2xl border-2 border-primary/40"
-            style={{ width: CROP_W, height: CROP_H, cursor: isDragging ? 'grabbing' : 'grab' }}
+            style={{ width: CROP_W / 3, height: CROP_H / 3, cursor: isDragging ? 'grabbing' : 'grab' }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}

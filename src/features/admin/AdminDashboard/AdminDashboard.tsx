@@ -27,6 +27,7 @@ export const AdminDashboard: React.FC = () => {
   const [orderPage, setOrderPage] = useState(1);
   const [customerPage, setCustomerPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [productSearch, setProductSearch] = useState('');
   const pageSize = 10;
 
   // Newsletter state
@@ -41,7 +42,7 @@ export const AdminDashboard: React.FC = () => {
     orders,
     subscriptions,
     queryClient
-  } = useAdminData(productPage, orderPage, customerPage, pageSize);
+  } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch);
 
   const openModal = useCartStore((state) => state.openModal);
 
@@ -195,6 +196,8 @@ export const AdminDashboard: React.FC = () => {
             selectedIds={selectedIds}
             productPage={productPage}
             pageSize={pageSize}
+            searchTerm={productSearch}
+            onSearchChange={setProductSearch}
             onPageChange={setProductPage}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === products?.length ? [] : products?.map(p => p.product_id) || [])}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}

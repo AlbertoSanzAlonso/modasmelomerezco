@@ -97,9 +97,9 @@ const CategoryPage: React.FC = () => {
               {/* Mobile View: Custom Premium Dropdown */}
               <div className="block md:hidden px-6 relative z-30">
                 <div className="max-w-[280px] mx-auto">
-                  <button 
+                  <button
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="w-full bg-accent-dark border border-secondary/10 px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-between group hover:border-primary/50 transition-all"
+                    className="w-full bg-accent-dark border border-secondary/10 px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-between group hover:border-primary/50 transition-all rounded-xl"
                   >
                     <span className="flex-1 text-center">
                       {selectedSub ? subcategories.find(s => s.id === selectedSub)?.name.toUpperCase() : 'TODAS LAS PIEZAS'}
@@ -115,10 +115,10 @@ const CategoryPage: React.FC = () => {
                         exit={{ opacity: 0, y: -10 }}
                         className="absolute left-6 right-6 mt-2 bg-white border border-gray-100 shadow-2xl z-40 overflow-hidden rounded-2xl"
                       >
-                        <div className="max-h-[60vh] overflow-y-auto py-2">
+                        <div className="max-h-[60vh] overflow-y-auto py-2 space-y-1 px-2">
                           <button 
                             onClick={() => handleSubChange(null)}
-                            className={`w-full flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-colors border-b border-gray-50 last:border-0 ${!selectedSub ? 'text-primary bg-primary/5' : 'text-secondary hover:bg-gray-50'}`}
+                            className={`w-full flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-colors rounded-xl ${!selectedSub ? 'text-primary bg-primary/5' : 'text-secondary hover:bg-gray-50'}`}
                           >
                             TODAS LAS PIEZAS
                             {!selectedSub && <Check className="w-3 h-3" />}
@@ -127,7 +127,7 @@ const CategoryPage: React.FC = () => {
                             <button 
                               key={sub.id}
                               onClick={() => handleSubChange(sub.id)}
-                              className={`w-full flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-colors border-b border-gray-50 last:border-0 ${selectedSub === sub.id ? 'text-primary bg-primary/5' : 'text-secondary hover:bg-gray-50'}`}
+                              className={`w-full flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-colors rounded-xl ${selectedSub === sub.id ? 'text-primary bg-primary/5' : 'text-secondary hover:bg-gray-50'}`}
                             >
                               {sub.name}
                               {selectedSub === sub.id && <Check className="w-3 h-3" />}

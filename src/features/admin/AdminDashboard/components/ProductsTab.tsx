@@ -1,6 +1,6 @@
-
+ 
 import React from 'react';
-import { Plus, Eye, EyeOff, Edit, Trash2 } from 'lucide-react';
+import { Plus, Eye, EyeOff, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Product } from "@/types";
 
@@ -11,6 +11,8 @@ interface ProductsTabProps {
   selectedIds: string[];
   productPage: number;
   pageSize: number;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
@@ -32,6 +34,8 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   selectedIds,
   productPage,
   pageSize,
+  searchTerm,
+  onSearchChange,
   onPageChange,
   onToggleSelectAll,
   onToggleSelect,
@@ -49,9 +53,21 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Productos</h2>
           <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda.</p>
         </div>
-        <Button size="sm" className="font-black tracking-widest text-[10px] px-8" onClick={onCreate}>
-          <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
-        </Button>
+        <div className="flex gap-4 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por título..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full md:w-64 pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 bg-white"
+            />
+          </div>
+          <Button size="sm" className="font-black tracking-widest text-[10px] px-8" onClick={onCreate}>
+            <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
+          </Button>
+        </div>
       </div>
 
       {selectedIds.length > 0 && (

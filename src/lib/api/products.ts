@@ -68,11 +68,12 @@ const replaceImages = async (product_id: string, imageUrls: string[]): Promise<v
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export const products = {
-  getAll: async (category?: string, subcategory?: string, page = 1, pageSize = 20, publishedOnly = false): Promise<Product[]> => {
+  getAll: async (category?: string, subcategory?: string, page = 1, pageSize = 20, publishedOnly = false, search?: string): Promise<Product[]> => {
     const offset = (page - 1) * pageSize;
     let url = `${INSFORGE_URL}/api/database/records/products?select=${SELECT}&order=product_id.asc&limit=${pageSize}&offset=${offset}`;
     if (category) url += `&category_id=eq.${category}`;
     if (subcategory) url += `&subcategory_id=eq.${subcategory}`;
+    if (search) url += `&name=ilike.*${encodeURIComponent(search)}*`;
     
     const fetchWithFilter = async (withFilter: boolean) => {
       let finalUrl = url;

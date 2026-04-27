@@ -6,7 +6,7 @@ export const Footer: FC = () => {
   return (
     <>
       {/* Trust Bar Section */}
-      <section className="bg-accent-dark py-20 border-t border-secondary/[0.03]">
+      <section className="bg-accent-dark py-20 border-t border-secondary/3">
         <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20">
             <div className="flex flex-col items-center text-center space-y-6">
@@ -42,7 +42,7 @@ export const Footer: FC = () => {
         </div>
       </section>
 
-      <footer className="py-32 border-t border-secondary/[0.03] bg-primary text-white">
+      <footer className="py-32 border-t border-secondary/3 bg-primary text-white">
         <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-20 mb-24">
             <div className="col-span-1 flex flex-col items-center lg:items-start text-center lg:text-left">

@@ -14,10 +14,10 @@ const ReturnsPage: FC = () => {
 
         <div className="space-y-12">
           {/* Plazo de devolución */}
-          <section className="bg-white p-12 shadow-sm border border-secondary/[0.03] space-y-8">
+          <section className="bg-white p-12 shadow-sm border border-secondary/3 space-y-8">
             <div className="flex items-center gap-4">
               <RefreshCcw className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">Plazo de devolución</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">Plazo de devolución</h2>
             </div>
             <div className="prose prose-secondary max-w-none space-y-6 text-secondary/80 leading-relaxed">
               <p className="text-lg">
@@ -39,7 +39,7 @@ const ReturnsPage: FC = () => {
           <section className="bg-secondary text-white p-12 shadow-sm space-y-8">
             <div className="flex items-center gap-4">
               <ClipboardList className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase">Cómo solicitar una devolución o cambio</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase">Cómo solicitar una devolución o cambio</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <div className="space-y-6">
@@ -63,20 +63,20 @@ const ReturnsPage: FC = () => {
 
           {/* Detalles del proceso */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <section className="bg-white p-10 shadow-sm border border-secondary/[0.03] space-y-6">
+            <section className="bg-white p-10 shadow-sm border border-secondary/3 space-y-6">
               <div className="flex items-center gap-4">
                 <Package className="w-6 h-6 text-primary" />
-                <h2 className="text-lg font-bold tracking-[0.1em] uppercase text-secondary">Envío y Gastos</h2>
+                <h2 className="text-lg font-bold tracking-widest uppercase text-secondary">Envío y Gastos</h2>
               </div>
               <p className="text-secondary/80 text-sm leading-relaxed">
                 Los artículos deberán enviarse debidamente protegidos. Los gastos de recogida o envío de la devolución correrán a cargo del cliente, salvo en caso de producto defectuoso.
               </p>
             </section>
 
-            <section className="bg-white p-10 shadow-sm border border-secondary/[0.03] space-y-6">
+            <section className="bg-white p-10 shadow-sm border border-secondary/3 space-y-6">
               <div className="flex items-center gap-4">
                 <CreditCard className="w-6 h-6 text-primary" />
-                <h2 className="text-lg font-bold tracking-[0.1em] uppercase text-secondary">Reembolsos</h2>
+                <h2 className="text-lg font-bold tracking-widest uppercase text-secondary">Reembolsos</h2>
               </div>
               <p className="text-secondary/80 text-sm leading-relaxed">
                 Realizaremos el reembolso utilizando el mismo método de pago empleado en la compra. Los gastos de envío originales no serán reembolsados.
@@ -85,10 +85,10 @@ const ReturnsPage: FC = () => {
           </div>
 
           {/* Aviso Importante */}
-          <section className="bg-white p-12 shadow-sm border border-secondary/[0.03] border-t-4 border-t-primary space-y-6">
+          <section className="bg-white p-12 shadow-sm border border-secondary/3 border-t-4 border-t-primary space-y-6">
             <div className="flex items-center gap-4">
               <AlertCircle className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">Condiciones de los artículos</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">Condiciones de los artículos</h2>
             </div>
             <p className="text-secondary/80 leading-relaxed text-sm">
               MODAS ME LO MEREZCO se reserva el derecho de rechazar devoluciones de prendas que presenten signos de uso, manchas, olores, daños o cualquier deterioro, así como aquellas que no conserven sus etiquetas originales.

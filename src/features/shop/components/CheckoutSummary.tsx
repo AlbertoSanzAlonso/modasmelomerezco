@@ -22,7 +22,7 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
         <div className="space-y-6 max-h-[400px] overflow-y-auto mb-8 pr-4">
           {items.map(item => (
             <div key={`${item.product_id}-${item.selectedVariant.id}`} className="flex gap-4">
-              <div className="w-16 aspect-[3/4] bg-secondary/10 rounded-lg overflow-hidden">
+              <div className="w-16 aspect-3/4 bg-secondary/10 rounded-lg overflow-hidden">
                 <img src={item.images && item.images.length > 0 ? item.images[0] : undefined} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 flex flex-col justify-center text-secondary">

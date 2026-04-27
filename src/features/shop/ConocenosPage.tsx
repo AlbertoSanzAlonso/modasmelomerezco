@@ -75,7 +75,7 @@ const ConocenosPage: React.FC = () => {
               transition={{ duration: 0.8 }}
               className="relative"
             >
-              <div className="aspect-[4/5] bg-white p-4 shadow-2xl rounded-sm transform rotate-2">
+              <div className="aspect-4/5 bg-white p-4 shadow-2xl rounded-sm transform rotate-2">
                 <img 
                   src="/assets/conocenos-hero.png" 
                   alt="Equipo Me Lo Merezco" 

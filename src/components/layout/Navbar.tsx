@@ -19,7 +19,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-accent/80 backdrop-blur-md border-b border-secondary/[0.03]">
+      <nav className="fixed top-0 w-full z-50 bg-accent/80 backdrop-blur-md border-b border-secondary/3">
         <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-20">
             <div className="flex lg:hidden flex-1">
@@ -98,7 +98,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 left-0 bottom-0 w-[80%] max-w-sm bg-accent z-[70] lg:hidden shadow-2xl flex flex-col overflow-y-auto"
             >
-              <div className="p-6 flex justify-between items-center border-b border-secondary/[0.03]">
+              <div className="p-6 flex justify-between items-center border-b border-secondary/3">
                 <img src="/assets/logo/logo-corona.png" alt="Logo" className="h-10 w-auto" />
                 <button onClick={() => setIsMenuOpen(false)} className="p-2 text-secondary hover:text-primary transition-colors">
                   <X className="w-6 h-6" />
@@ -128,7 +128,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                   </span>
                 </Link>
               </nav>
-              <div className="p-10 border-t border-secondary/[0.03] space-y-6">
+              <div className="p-10 border-t border-secondary/3 space-y-6">
                 <div className="flex gap-8">
                   <a href="https://www.instagram.com/modasmelomerezco" target="_blank" rel="noopener noreferrer" className="text-secondary/60 hover:text-primary transition-colors">
                     <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">

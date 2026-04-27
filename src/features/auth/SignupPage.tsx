@@ -156,7 +156,7 @@ export const SignupPage: React.FC = () => {
           });
         });
 
-        navigate(`/product/${pendingFavorite}`);
+        navigate(`/producto/${pendingFavorite}`);
       } else {
         navigate('/');
       }

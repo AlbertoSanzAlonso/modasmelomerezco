@@ -92,13 +92,13 @@ const ProductPage = () => {
                 <div 
                   key={idx}
                   onClick={() => setActiveImage(idx)}
-                  className={`aspect-[3/4] cursor-pointer overflow-hidden border ${activeImage === idx ? 'border-primary' : 'border-transparent opacity-50'}`}
+                  className={`aspect-3/4 cursor-pointer overflow-hidden border ${activeImage === idx ? 'border-primary' : 'border-transparent opacity-50'}`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
-             <div className="col-span-10 relative aspect-[3/4] overflow-hidden bg-black/20">
+             <div className="col-span-10 relative aspect-3/4 overflow-hidden bg-black/20">
                {!imageLoaded && (
                  <div className="absolute inset-0 animate-pulse bg-secondary/10" />
                )}

@@ -23,7 +23,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100"
           />
 
           {/* Sidebar */}
@@ -57,7 +57,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               ) : (
                 items.map((item) => (
                   <div key={`${item.product_id}-${item.selectedVariant.id}`} className="flex gap-6 group">
-                    <div className="w-24 aspect-[3/4] bg-secondary/5 overflow-hidden rounded-lg">
+                    <div className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg">
                       <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 flex flex-col justify-between">

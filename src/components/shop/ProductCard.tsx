@@ -69,11 +69,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <div className="group relative flex flex-col bg-transparent">
-      <div className="relative aspect-[3/4] overflow-hidden bg-accent-dark rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-500">
+      <div className="relative aspect-3/4 overflow-hidden bg-accent-dark rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-500">
         {!imageLoaded && (
           <div className="absolute inset-0 animate-pulse bg-secondary/10" />
         )}
-        <Link to={`/product/${product.product_id}`}>
+        <Link to={`/producto/${product.product_id}`}>
           <img 
             src={product.images && product.images.length > 0 ? product.images[0] : undefined} 
             alt={product.name} 

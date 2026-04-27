@@ -329,7 +329,7 @@ const CheckoutPage = () => {
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md p-10 rounded-[2.5rem] shadow-2xl text-center space-y-8 animate-in zoom-in-95 duration-500">
             <div className="mb-8 flex justify-center animate-bounce">
               <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="Logo" className="w-24 h-24 object-contain" />

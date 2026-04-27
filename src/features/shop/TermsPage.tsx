@@ -12,7 +12,7 @@ const TermsPage: FC = () => {
         </header>
 
         <div className="prose prose-secondary max-w-none">
-          <div className="bg-white p-12 md:p-20 shadow-sm border border-secondary/[0.03] space-y-12">
+          <div className="bg-white p-12 md:p-20 shadow-sm border border-secondary/3 space-y-12">
             <section className="space-y-6">
               <p className="text-secondary/80 leading-relaxed">
                 Las presentes Condiciones Generales regulan la compra de productos a través del sitio web: <a href="https://www.modasmelomerezco.es" className="text-primary hover:underline">www.modasmelomerezco.es</a>
@@ -37,14 +37,14 @@ const TermsPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">1. Objeto</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">1. Objeto</h2>
               <p className="text-secondary/80 leading-relaxed">
                 Las presentes condiciones regulan la venta de productos de moda ofrecidos en la tienda online.
               </p>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">2. Proceso de compra</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">2. Proceso de compra</h2>
               <p className="text-secondary/80 leading-relaxed">El proceso de compra se realiza mediante:</p>
               <ul className="list-decimal pl-6 text-secondary/80 space-y-2">
                 <li>Selección del producto.</li>
@@ -58,7 +58,7 @@ const TermsPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">3. Precios</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">3. Precios</h2>
               <ul className="list-disc pl-6 text-secondary/80 space-y-2">
                 <li>Todos los precios están indicados en euros (€).</li>
                 <li>Incluyen el IVA correspondiente.</li>
@@ -70,21 +70,21 @@ const TermsPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">4. Formas de pago</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">4. Formas de pago</h2>
               <p className="text-secondary/80 leading-relaxed">
                 El pago podrá realizarse mediante los métodos disponibles en la tienda online. El pedido no será enviado hasta la confirmación efectiva del pago.
               </p>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">5. Envíos</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">5. Envíos</h2>
               <p className="text-secondary/80 leading-relaxed">
                 Los pedidos serán enviados a la dirección facilitada por el cliente. El plazo estimado de entrega se indica en la página de Envíos. MODAS MELOMEREZCO, S.L. no será responsable de retrasos debidos a causas ajenas o imputables al transportista.
               </p>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">6. Derecho de desistimiento</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">6. Derecho de desistimiento</h2>
               <p className="text-secondary/80 leading-relaxed">
                 El cliente dispone de 14 días naturales desde la recepción del pedido para desistir del contrato sin necesidad de justificación. Para ejercer este derecho deberá comunicarlo por escrito a: <a href="mailto:info@modasmelomerezco.es" className="text-primary hover:underline">info@modasmelomerezco.es</a>.
               </p>
@@ -101,7 +101,7 @@ const TermsPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">7. Excepciones al desistimiento</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">7. Excepciones al desistimiento</h2>
               <p className="text-secondary/80 leading-relaxed">No procederá el derecho de desistimiento en productos que:</p>
               <ul className="list-disc pl-6 text-secondary/80 space-y-2">
                 <li>Hayan sido usados.</li>
@@ -111,14 +111,14 @@ const TermsPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">8. Productos defectuosos o error en el envío</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">8. Productos defectuosos o error en el envío</h2>
               <p className="text-secondary/80 leading-relaxed">
                 Si el producto presenta defectos o no corresponde con el pedido, el cliente deberá comunicarlo en un plazo máximo de 48 horas desde su recepción. En estos casos, los gastos de devolución y nuevo envío correrán a cargo de MODAS MELOMEREZCO, S.L.
               </p>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">9. Garantía legal</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">9. Garantía legal</h2>
               <p className="text-secondary/80 leading-relaxed">
                 Todos los productos están cubiertos por la garantía legal de conformidad de tres años, conforme a la normativa vigente en España.
               </p>
@@ -128,14 +128,14 @@ const TermsPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">10. Disponibilidad</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">10. Disponibilidad</h2>
               <p className="text-secondary/80 leading-relaxed">
                 Todos los pedidos están sujetos a disponibilidad. En caso de falta de stock tras la realización del pedido, se informará al cliente y se procederá al reembolso íntegro.
               </p>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">11. Resolución de litigios</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">11. Resolución de litigios</h2>
               <p className="text-secondary/80 leading-relaxed">
                 La Comisión Europea facilita una plataforma de resolución de litigios en línea disponible en: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://ec.europa.eu/consumers/odr/</a>
               </p>

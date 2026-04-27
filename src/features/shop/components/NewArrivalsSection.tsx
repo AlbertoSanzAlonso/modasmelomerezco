@@ -42,7 +42,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
         {isLoading ? (
           <div className="flex gap-6 md:gap-12 overflow-hidden">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="w-[160px] sm:w-[300px] md:w-[450px] aspect-[3/4] bg-white/5 animate-pulse rounded-2xl flex-shrink-0" />
+              <div key={i} className="w-[160px] sm:w-[300px] md:w-[450px] aspect-3/4 bg-white/5 animate-pulse rounded-2xl flex-shrink-0" />
             ))}
           </div>
         ) : (

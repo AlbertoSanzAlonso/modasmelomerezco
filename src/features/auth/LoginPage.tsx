@@ -63,7 +63,7 @@ export const LoginPage: React.FC = () => {
           });
         });
 
-        navigate(`/product/${pendingFavorite}`);
+        navigate(`/producto/${pendingFavorite}`);
       } else {
         navigate(from);
       }

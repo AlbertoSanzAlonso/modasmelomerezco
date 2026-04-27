@@ -12,7 +12,7 @@ const AvisoLegalPage: FC = () => {
         </header>
 
         <div className="prose prose-secondary max-w-none">
-          <div className="bg-white p-12 md:p-20 shadow-sm border border-secondary/[0.03] space-y-12">
+          <div className="bg-white p-12 md:p-20 shadow-sm border border-secondary/3 space-y-12">
             <section>
               <p className="text-secondary/80 leading-relaxed text-lg">
                 En cumplimiento con el deber de información recogido en la Ley 34/2002, de Servicios de la Sociedad de la Información y del Comercio Electrónico (LSSI-CE), se facilitan a continuación los siguientes datos:
@@ -38,7 +38,7 @@ const AvisoLegalPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">1. Objeto</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">1. Objeto</h2>
               <p className="text-secondary/80 leading-relaxed">
                 El presente Aviso Legal regula el acceso y uso del sitio web <a href="https://www.modasmelomerezco.es" className="text-primary hover:underline">https://www.modasmelomerezco.es</a>, cuyo titular es MODAS MELOMEREZCO, S.L.
               </p>
@@ -48,7 +48,7 @@ const AvisoLegalPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">2. Propiedad intelectual e industrial</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">2. Propiedad intelectual e industrial</h2>
               <p className="text-secondary/80 leading-relaxed">
                 Todos los contenidos del sitio web (textos, imágenes, diseños, logotipos, estructura, código fuente, etc.) son titularidad de MODAS MELOMEREZCO, S.L. o dispone de los derechos necesarios para su uso.
               </p>
@@ -58,14 +58,14 @@ const AvisoLegalPage: FC = () => {
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">3. Responsabilidad</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">3. Responsabilidad</h2>
               <p className="text-secondary/80 leading-relaxed">
                 MODAS MELOMEREZCO, S.L. no se hace responsable de los daños derivados del uso indebido del sitio web ni de posibles errores técnicos o interrupciones del servicio.
               </p>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">4. Legislación aplicable</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">4. Legislación aplicable</h2>
               <p className="text-secondary/80 leading-relaxed">
                 La relación entre el usuario y el titular se regirá por la normativa española vigente.
               </p>

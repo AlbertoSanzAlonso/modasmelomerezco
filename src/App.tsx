@@ -141,7 +141,7 @@ function App() {
               >
                 <Routes>
                   <Route index element={<HomePage />} />
-                  <Route path="/product/:id" element={<ProductPage />} />
+                  <Route path="/producto/:id" element={<ProductPage />} />
                   <Route path="/categoria/:category" element={<CategoryPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/aviso-legal" element={<AvisoLegalPage />} />

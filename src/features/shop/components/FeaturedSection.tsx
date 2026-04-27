@@ -24,7 +24,7 @@ export const FeaturedSection: React.FC = () => {
               </Link>
             </div>
             <div className="lg:col-span-7 relative">
-              <div className="aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl">
+              <div className="aspect-4/5 overflow-hidden rounded-2xl shadow-2xl">
                 <motion.img
                   src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"
                   className="w-full h-full object-cover scale-105"

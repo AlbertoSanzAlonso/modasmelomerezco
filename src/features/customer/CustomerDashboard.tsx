@@ -168,7 +168,7 @@ export const CustomerDashboard: React.FC = () => {
 
       {/* Order Details Modal */}
       {showDetails && selectedOrder && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
           <div className="bg-white w-full max-w-2xl p-10 rounded-[2.5rem] shadow-2xl space-y-8 overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-start">
               <div>

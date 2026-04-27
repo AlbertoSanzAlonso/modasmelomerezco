@@ -26,7 +26,7 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
       <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Galería de Imágenes</label>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {images.map((img, idx) => (
-          <div key={idx} className="relative aspect-[3/4] bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden group">
+          <div key={idx} className="relative aspect-3/4 bg-[var(--bg-card)] border border-[var(--border-main)] rounded-2xl overflow-hidden group">
             <img src={img} alt="" className="w-full h-full object-cover" />
             
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-3">
@@ -69,7 +69,7 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
           </div>
         ))}
         
-        <label className="cursor-pointer aspect-[3/4] bg-[var(--bg-card)] border-2 border-dashed border-[var(--border-main)] hover:border-primary/50 transition-all flex flex-col items-center justify-center rounded-2xl group">
+        <label className="cursor-pointer aspect-3/4 bg-[var(--bg-card)] border-2 border-dashed border-[var(--border-main)] hover:border-primary/50 transition-all flex flex-col items-center justify-center rounded-2xl group">
           {isUploading ? (
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           ) : (

@@ -164,7 +164,7 @@ const CategoryPage: React.FC = () => {
 
         {isLoading ? (
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
-             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-[3/4] bg-white/5 animate-pulse" />)}
+             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse" />)}
            </div>
         ) : allProducts.length === 0 ? (
           <div className="py-40 text-center">

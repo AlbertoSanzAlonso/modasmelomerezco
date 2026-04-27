@@ -15,10 +15,10 @@ const CookiesPage: FC = () => {
 
         <div className="space-y-12">
           {/* Introducción */}
-          <section className="bg-white p-12 shadow-sm border border-secondary/[0.03] space-y-6">
+          <section className="bg-white p-12 shadow-sm border border-secondary/3 space-y-6">
             <div className="flex items-center gap-4">
               <Cookie className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">Uso de cookies</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">Uso de cookies</h2>
             </div>
             <p className="text-secondary/80 leading-relaxed text-lg">
               En <span className="text-secondary font-medium">www.modasmelomerezco.es</span> utilizamos cookies para mejorar tu experiencia de navegación y garantizar el correcto funcionamiento de nuestra tienda online.
@@ -26,10 +26,10 @@ const CookiesPage: FC = () => {
           </section>
 
           {/* Qué son */}
-          <section className="bg-white p-12 shadow-sm border border-secondary/[0.03] space-y-8">
+          <section className="bg-white p-12 shadow-sm border border-secondary/3 space-y-8">
             <div className="flex items-center gap-4">
               <Info className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">¿Qué son las cookies?</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">¿Qué son las cookies?</h2>
             </div>
             <div className="space-y-6 text-secondary/80 leading-relaxed">
               <p>
@@ -47,7 +47,7 @@ const CookiesPage: FC = () => {
           <section className="bg-secondary text-white p-12 shadow-sm space-y-10">
             <div className="flex items-center gap-4">
               <ShieldCheck className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase">¿Qué tipos de cookies usamos?</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase">¿Qué tipos de cookies usamos?</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-4">
@@ -66,10 +66,10 @@ const CookiesPage: FC = () => {
           </section>
 
           {/* Cómo gestionar */}
-          <section className="bg-white p-12 shadow-sm border border-secondary/[0.03] space-y-8">
+          <section className="bg-white p-12 shadow-sm border border-secondary/3 space-y-8">
             <div className="flex items-center gap-4">
               <Settings className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold tracking-[0.1em] uppercase text-secondary">Gestión de cookies</h2>
+              <h2 className="text-xl font-bold tracking-widest uppercase text-secondary">Gestión de cookies</h2>
             </div>
             <div className="space-y-6 text-secondary/80 leading-relaxed">
               <p>

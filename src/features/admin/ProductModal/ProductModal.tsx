@@ -40,7 +40,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
           }}
         />
       )}
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
         <div className="bg-[var(--bg-main)] border border-[var(--border-main)] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden">
           <header className="p-8 border-b border-[var(--border-main)] flex justify-between items-center bg-[var(--bg-main)] z-10">
             <h2 className="text-2xl font-display font-black uppercase tracking-tighter italic text-[var(--text-main)]">

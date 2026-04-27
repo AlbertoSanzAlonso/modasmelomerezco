@@ -48,12 +48,6 @@ interface Message {
 export const AIChatAgent = () => {
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-
-  // No mostrar el agente en el panel de admin ni en la cuenta del cliente
-  if (pathname.startsWith('/admin') || pathname.startsWith('/cuenta')) {
-    return null;
-  }
-
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', text: '¡Hola! Soy MeloMe, tu asistente virtual. ¿En qué puedo ayudarte? Si prefieres hablar por WhatsApp, pulsa aquí: https://wa.me/34685011494', isBot: true }
   ]);
@@ -77,6 +71,11 @@ export const AIChatAgent = () => {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+  // No mostrar el agente en el panel de admin ni en la cuenta del cliente
+  if (pathname.startsWith('/admin') || pathname.startsWith('/cuenta')) {
+    return null;
+  }
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

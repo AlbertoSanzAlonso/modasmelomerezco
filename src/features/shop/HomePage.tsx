@@ -19,8 +19,8 @@ const HomePage = () => {
   const { data: products, isLoading } = useQuery({
     queryKey: ['products', 'new-arrivals'],
     queryFn: async () => {
-      const allProducts = await api.products.getAll();
-      return allProducts.slice(0, 8);
+      const arrivals = await api.products.getNewArrivals(true);
+      return arrivals.slice(0, 8);
     }
   });
 

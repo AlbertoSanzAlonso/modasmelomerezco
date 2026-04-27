@@ -63,7 +63,7 @@ export const FavoritesPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-          {favoriteProducts.map((product: any) => (
+          {favoriteProducts.filter(p => p.is_published).map((product: any) => (
             <ProductCard key={product.product_id} product={product} />
           ))}
         </div>

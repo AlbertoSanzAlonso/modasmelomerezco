@@ -16,6 +16,7 @@ const ProductPage = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const { user, isAuthenticated, setPendingFavorite } = useAuthStore();
   const { addItem, openModal } = useCartStore();
 
@@ -113,6 +114,16 @@ const ProductPage = () => {
                   fetchPriority="high"
                 />
               </AnimatePresence>
+              
+              {imageLoaded && (
+                <div className="absolute bottom-4 right-4 w-1/6 max-w-[120px] pointer-events-none opacity-60 select-none z-10">
+                  <img 
+                    src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" 
+                    alt="" 
+                    className="w-full h-auto drop-shadow-lg" 
+                  />
+                </div>
+              )}
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2">
               {displayImages.map((img: string, idx: number) => (
@@ -233,18 +244,30 @@ const ProductPage = () => {
       {/* Fullscreen Image Modal */}
       {showFullscreen && (
         <div 
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center cursor-pointer"
-          onClick={() => setShowFullscreen(false)}
+          className={`fixed inset-0 z-[100] bg-black/95 flex cursor-pointer overflow-auto p-4 md:p-12 ${isZoomed ? 'items-start justify-center' : 'items-center justify-center'}`}
+          onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
         >
-          <img 
-            src={displayImages[activeImage]} 
-            alt={product.name}
-            className="max-w-[90vw] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div 
+            className={`relative ${isZoomed ? 'cursor-zoom-out py-24 px-12' : 'cursor-zoom-in'}`}
+            onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
+          >
+            <img 
+              src={displayImages[activeImage]} 
+              alt={product.name}
+              className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[150vw] md:w-[110vw]' : 'max-w-[90vw] max-h-[90vh] object-contain'}`}
+            />
+            {/* Watermark IN the corner of the image container */}
+            <div className={`absolute pointer-events-none opacity-40 select-none transition-none ${isZoomed ? 'bottom-32 right-16 w-32 md:w-48' : 'bottom-6 right-6 w-20 md:w-32'}`}>
+              <img 
+                src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" 
+                alt="" 
+                className="w-full h-auto" 
+              />
+            </div>
+          </div>
           <button 
-            onClick={() => setShowFullscreen(false)}
-            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
+            className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
           >
             <X className="w-6 h-6" />
           </button>

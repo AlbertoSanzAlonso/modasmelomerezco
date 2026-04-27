@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from "@/lib/api";
+import { useLocation } from 'react-router-dom';
 
 const formatMessage = (text: string) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -45,7 +46,14 @@ interface Message {
 }
 
 export const AIChatAgent = () => {
+  const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+  // No mostrar el agente en el panel de admin ni en la cuenta del cliente
+  if (pathname.startsWith('/admin') || pathname.startsWith('/cuenta')) {
+    return null;
+  }
+
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', text: '¡Hola! Soy MeloMe, tu asistente virtual. ¿En qué puedo ayudarte? Si prefieres hablar por WhatsApp, pulsa aquí: https://wa.me/34685011494', isBot: true }
   ]);

@@ -16,11 +16,12 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   onConfirm,
   onClose,
 }) => {
-  const CROP_W = 900;
-  const CROP_H = 1200; // 3:4 at higher resolution
+  const CROP_W = 1200;
+  const CROP_H = 1600; // 3:4 at high resolution
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const watermarkRef = useRef<HTMLImageElement | null>(null);
   const rafRef = useRef<number>(0);
 
   // State: position of image center within the viewport (px)
@@ -33,6 +34,15 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const lastOffset = useRef({ x: 0, y: 0 });
 
+  // Load watermark
+  useEffect(() => {
+    const wImg = new Image();
+    wImg.src = '/LOGO%20MELOMEREZCO%20corona%20blanco.png';
+    wImg.onload = () => {
+      watermarkRef.current = wImg;
+    };
+  }, []);
+
   // Load original image
   useEffect(() => {
     const img = new Image();
@@ -40,13 +50,11 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     img.src = imageSrc;
     img.onload = () => {
       imgRef.current = img;
-      // Fit image to crop frame at start
-      const displayW = CROP_W / 3; // Same as display size
-      const displayH = CROP_H / 3;
-      const scaleX = displayW / img.width;
-      const scaleY = displayH / img.height;
-      const fitScale = Math.max(scaleX, scaleY);
-      setZoom(fitScale);
+      
+      // Calculate zoom to FIT THE WIDTH by default
+      const scaleX = CROP_W / img.width;
+      
+      setZoom(scaleX);
       setOffset({ x: 0, y: 0 });
       setImgLoaded(true);
     };
@@ -64,13 +72,37 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     ctx.clearRect(0, 0, CROP_W, CROP_H);
     ctx.save();
 
+    // The offset in state is relative to the DISPLAY size (1/4 of CROP_W/H)
+    // We need to scale it up for the canvas coordinate system
+    const displayToCanvasScale = 4;
+
     // Translate to center
-    ctx.translate(CROP_W / 2 + offset.x, CROP_H / 2 + offset.y);
+    ctx.translate(CROP_W / 2 + offset.x * displayToCanvasScale, CROP_H / 2 + offset.y * displayToCanvasScale);
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(zoom, zoom);
 
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     ctx.restore();
+
+    // Draw watermark in bottom right corner
+    if (watermarkRef.current) {
+      const margin = 40;
+      const maxWidth = CROP_W * 0.25; // Watermark takes up to 25% of width
+      const scale = maxWidth / watermarkRef.current.width;
+      const w = watermarkRef.current.width * scale;
+      const h = watermarkRef.current.height * scale;
+      
+      ctx.save();
+      ctx.globalAlpha = 0.8; // Subtle transparency
+      ctx.drawImage(
+        watermarkRef.current, 
+        CROP_W - w - margin, 
+        CROP_H - h - margin, 
+        w, 
+        h
+      );
+      ctx.restore();
+    }
   }, [offset, zoom, rotation, imgLoaded]);
 
   useEffect(() => {
@@ -100,7 +132,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   // Scroll to zoom
   const onWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    setZoom((z) => Math.min(5, Math.max(0.3, z - e.deltaY * 0.001)));
+    setZoom((z) => Math.min(10, Math.max(0.1, z - e.deltaY * 0.001)));
   };
 
   // Touch drag (mobile)
@@ -160,7 +192,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         <div className="flex justify-center py-8 px-6 bg-black/40">
           <div
             className="relative overflow-hidden rounded-xl shadow-2xl border-2 border-primary/40"
-            style={{ width: CROP_W / 3, height: CROP_H / 3, cursor: isDragging ? 'grabbing' : 'grab' }}
+            style={{ width: CROP_W / 4, height: CROP_H / 4, cursor: isDragging ? 'grabbing' : 'grab' }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
@@ -174,12 +206,12 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               ref={canvasRef}
               width={CROP_W}
               height={CROP_H}
-              className="block"
+              className="block w-full h-full"
             />
             {/* Grid overlay */}
             <div className="pointer-events-none absolute inset-0" style={{
               backgroundImage: 'linear-gradient(rgba(255,79,112,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,79,112,0.15) 1px, transparent 1px)',
-              backgroundSize: `${CROP_W/3}px ${CROP_H/3}px`
+              backgroundSize: `${CROP_W/12}px ${CROP_H/12}px`
             }} />
           </div>
         </div>
@@ -195,8 +227,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <div className="flex-1 relative">
             <input
               type="range"
-              min={0.3}
-              max={5}
+              min={0.1}
+              max={10}
               step={0.01}
               value={zoom}
               onChange={(e) => setZoom(parseFloat(e.target.value))}

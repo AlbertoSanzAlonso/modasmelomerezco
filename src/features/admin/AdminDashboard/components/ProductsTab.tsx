@@ -132,7 +132,13 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-16 bg-black overflow-hidden border border-(--border-main) rounded-xl shadow-sm">
+                      <div 
+                        className="w-12 h-16 bg-black overflow-hidden border border-(--border-main) rounded-xl shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(product);
+                        }}
+                      >
                         <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover transition-all" />
                       </div>
                       <p className="text-sm font-bold uppercase italic text-(--text-main)">{product.name}</p>
@@ -148,25 +154,36 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                     </span>
                   </td>
                   <td className="px-8 py-6">
-                    {product.is_published ? (
-                      <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full">Publicado</span>
-                    ) : (
-                      <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full">Borrador</span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePublish(product);
+                      }}
+                      className="transition-transform active:scale-95"
+                    >
+                      {product.is_published ? (
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full cursor-pointer hover:bg-green-500/20">Publicado</span>
+                      ) : (
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200">Borrador</span>
+                      )}
+                    </button>
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-2">
                       <button 
-                        className={`p-3 transition-colors bg-transparent rounded-full ${product.is_published ? 'text-green-500 hover:bg-green-500/10' : 'text-gray-300 hover:bg-gray-100'}`}
+                        className="p-3 text-gray-400 hover:text-primary transition-colors bg-transparent rounded-full hover:bg-primary/10"
+                        title="Ver en la web"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onTogglePublish(product);
+                          window.open(`/producto/${product.product_id}`, '_blank');
                         }}
                       >
-                        {product.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        <Eye className="w-4 h-4" />
                       </button>
                       <button 
                         className="p-3 text-gray-400 hover:text-primary transition-colors bg-transparent rounded-full hover:bg-primary/10"
+                        title="Editar"
                         onClick={(e) => {
                           e.stopPropagation();
                           onEdit(product);
@@ -176,6 +193,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                       </button>
                       <button 
                         className="p-3 text-gray-400 hover:text-red-500 transition-colors bg-transparent rounded-full hover:bg-red-500/10"
+                        title="Eliminar"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(product);

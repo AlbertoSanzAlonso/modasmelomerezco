@@ -1,6 +1,6 @@
 
-export const INSFORGE_URL = import.meta.env.VITE_INSFORGE_URL;
-export const INSFORGE_API_KEY = import.meta.env.VITE_INSFORGE_API_KEY;
+export const INSFORGE_URL = import.meta.env.VITE_INSFORGE_URL || 'https://vyus42nj.eu-central.insforge.app';
+export const INSFORGE_API_KEY = import.meta.env.VITE_INSFORGE_API_KEY || 'ik_6442e7c45fe5a0bde337d8ce5d67ca2e';
 
 
 

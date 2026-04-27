@@ -174,22 +174,20 @@ const CategoryPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-20">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={`${categoryId}-${selectedSub}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4, ease: "circOut" }}
-                className="columns-1 sm:columns-2 lg:columns-4 gap-x-10 gap-y-20"
-              >
-                {allProducts.map((product: Product) => (
-                  <div key={`${product.product_id}-${product.name}`} className="break-inside-avoid mb-20">
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </motion.div>
-            </AnimatePresence>
+            {/* Grid wrapper with key only for filter changes */}
+            <motion.div 
+              key={`${categoryId}-${selectedSub}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="columns-1 sm:columns-2 lg:columns-4 gap-x-10 gap-y-20"
+            >
+              {allProducts.map((product: Product) => (
+                <div key={product.product_id} className="break-inside-avoid mb-20">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </motion.div>
 
             {hasMore && (
               <div className="flex justify-center pt-12">

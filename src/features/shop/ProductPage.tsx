@@ -54,7 +54,12 @@ const ProductPage = () => {
       : [...currentFavorites, id || ''];
 
     try {
-      await api.customers.update(user!.customer_id, { favorites: newFavorites });
+      if (isFav) {
+        await api.favorites.remove(user!.customer_id, id!);
+      } else {
+        await api.favorites.add(user!.customer_id, id!);
+      }
+      
       useAuthStore.getState().updateUser({ favorites: newFavorites });
       
       if (!isFav) {

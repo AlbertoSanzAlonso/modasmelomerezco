@@ -48,7 +48,7 @@ export const LoginPage: React.FC = () => {
         const currentFavorites = user.favorites || [];
         if (!currentFavorites.includes(pendingFavorite)) {
           const newFavorites = [...currentFavorites, pendingFavorite];
-          await api.customers.update(user.customer_id, { favorites: newFavorites });
+          await api.favorites.add(user.customer_id, pendingFavorite);
           useAuthStore.getState().updateUser({ favorites: newFavorites });
         }
         

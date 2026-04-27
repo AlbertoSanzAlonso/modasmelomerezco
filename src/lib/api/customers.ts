@@ -112,10 +112,11 @@ export const customers = {
       // We don't await here to keep the customer update fast, 
       // but we do it before returning the final response
       await syncAddresses();
-      delete dataToUpdate.addresses;
     }
 
-    // Explicitly remove city and zip from updates if they exist
+    // Explicitly remove fields managed in other tables or that don't exist in customers table
+    delete dataToUpdate.addresses;
+    delete dataToUpdate.favorites;
     delete dataToUpdate.city;
     delete dataToUpdate.zip;
 

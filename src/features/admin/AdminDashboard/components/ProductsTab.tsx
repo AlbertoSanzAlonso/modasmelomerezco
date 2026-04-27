@@ -76,12 +76,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Productos</h2>
           <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda. ({totalProducts} productos)</p>
         </div>
-        <div className="flex flex-wrap gap-3 w-full xl:w-auto">
+        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 w-full xl:w-auto">
           {/* Filters */}
           <select 
             value={statusFilter === undefined ? '' : statusFilter.toString()}
             onChange={(e) => onStatusFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
-            className="px-4 py-2.5 text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
           >
             <option value="">Todos los Estados</option>
             <option value="true">Publicados</option>
@@ -91,14 +91,14 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
           <select 
             value={isNewFilter === undefined ? '' : isNewFilter.toString()}
             onChange={(e) => onIsNewFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
-            className="px-4 py-2.5 text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
           >
             <option value="">Todas las Fechas</option>
             <option value="true">Solo Novedades</option>
             <option value="false">No Novedades</option>
           </select>
 
-          <div className="relative flex-1 md:flex-none min-w-[200px]">
+          <div className="relative col-span-2 md:flex-1 md:flex-none md:min-w-[200px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
@@ -110,7 +110,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               className="block w-full pl-10 pr-4 py-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white shadow-sm transition-all"
             />
           </div>
-          <Button size="sm" className="font-black tracking-widest text-[10px] px-8 py-3 h-auto" onClick={onCreate}>
+          <Button size="sm" className="col-span-2 md:col-auto font-black tracking-widest text-[10px] px-8 py-3 h-auto" onClick={onCreate}>
             <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
           </Button>
         </div>

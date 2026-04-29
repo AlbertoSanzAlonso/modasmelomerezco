@@ -97,24 +97,44 @@ export const auth = {
     };
   },
 
-  adminLogin: async (username: string, password: string): Promise<{ admin: Admin, token: string }> => {
-    // Note: If admins table is not in Supabase yet, this will fail.
-    // However, we migration everything else to Supabase for consistency.
-    const { data, error } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('username', username)
-      .single();
+  adminLogin: async (email: string, password: string): Promise<{ admin: Admin, token: string }> => {
+    console.log('Login attempt for:', email);
+    console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL?.substring(0, 30));
+    // Usar Supabase Auth oficial (Sistema Profesional)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
     
-    if (error || !data) throw new Error('Credenciales incorrectas');
+    if (error) {
+      console.error('Admin login error:', error);
+      // Intentar fallback por si el usuario aún usa el "username" (opcional pero recomendado)
+      if (email.includes('@')) throw error;
+      
+      // Si no es un email, podría ser el antiguo username. 
+      // Pero hemos decidido ir a la profesional, así que forzamos email.
+      throw new Error('Por favor, usa tu email de administrador para entrar.');
+    }
     
-    const admin = data;
-    const isPasswordValid = bcrypt.compareSync(password, admin.password);
-    if (!isPasswordValid) throw new Error('Credenciales incorrectas');
+    const { user, session } = data;
+    if (!user || !session) throw new Error('No se pudo iniciar sesión');
+
+    // Mapear el usuario de Auth al tipo Admin de nuestra app
+    const admin: Admin = {
+      admin_id: user.id,
+      username: user.email?.split('@')[0] || 'admin',
+      email: user.email || '',
+      role: 'admin',
+      created_at: user.created_at
+    };
 
     return {
       admin,
-      token: 'supabase-admin-jwt-' + admin.admin_id
+      token: session.access_token
     };
+  },
+
+  logout: async () => {
+    await supabase.auth.signOut();
   }
 };

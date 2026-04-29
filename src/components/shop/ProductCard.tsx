@@ -37,11 +37,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       ? currentFavorites.filter(id => id !== product.product_id)
       : [...currentFavorites, product.product_id];
 
-    // Optimistic update
     updateUser({ favorites: newFavorites });
 
     if (!isFavorite) {
-      // Show success modal only when adding
       import("@/store/useCartStore").then(m => {
         m.useCartStore.getState().openModal({
           title: 'Añadido a favoritos',
@@ -76,25 +74,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         />
       </Link>
         
-      {/* UI Elements - Only visible when image is loaded */}
+      {/* Absolute Overlays (Heart and Badge) */}
+      <button
+        onClick={handleFavoriteClick}
+        className={`absolute top-2 right-2 md:top-4 md:right-4 p-2 md:p-3 rounded-full backdrop-blur-md transition-all duration-500 z-20 ${
+          isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
+        } ${
+          isFavorite 
+            ? 'bg-primary text-white scale-110 shadow-lg' 
+            : 'bg-white/10 text-white hover:bg-white/20 hover:scale-110'
+        }`}
+      >
+        <Heart className={`w-4 h-4 md:w-5 md:h-5 ${isFavorite ? 'fill-current' : ''}`} />
+      </button>
+
+      {((product as any).is_new || (product as any).featured) && (
+        <span className={`absolute top-2 left-2 md:top-4 md:left-4 bg-primary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic transition-all duration-500 z-20 ${
+          isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
+        }`}>
+          Novedad
+        </span>
+      )}
+
+      {/* Text Info */}
       <div className={`transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-        <button
-          onClick={handleFavoriteClick}
-          className={`absolute top-2 right-2 md:top-4 md:right-4 p-2 md:p-3 rounded-full backdrop-blur-md transition-all duration-300 ${
-            isFavorite 
-              ? 'bg-primary text-white scale-110 shadow-lg' 
-              : 'bg-white/10 text-white hover:bg-white/20 hover:scale-110'
-          }`}
-        >
-          <Heart className={`w-4 h-4 md:w-5 md:h-5 ${isFavorite ? 'fill-current' : ''}`} />
-        </button>
-
-        {((product as any).is_new || (product as any).featured) && (
-          <span className="absolute top-2 left-2 md:top-4 md:left-4 bg-primary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic">
-            Novedad
-          </span>
-        )}
-
         <div className="mt-3 md:mt-6 flex justify-between items-start">
           <div className="flex-1">
             <h3 className="text-xs md:text-sm font-bold tracking-tight text-secondary uppercase italic">

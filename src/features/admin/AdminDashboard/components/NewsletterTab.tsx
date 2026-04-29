@@ -77,7 +77,7 @@ export const NewsletterTab: React.FC<NewsletterTabProps> = ({
             <h3 className="text-xs font-black uppercase tracking-widest text-primary italic">Vista Previa</h3>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-inner overflow-hidden max-h-[500px] overflow-y-auto">
               <div className="text-center mb-6">
-                <img src="https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png" alt="Logo" className="w-32 mx-auto" />
+                <img src="https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png" alt="Logo" className="w-32 mx-auto" />
               </div>
               <div className="text-xs text-gray-800 space-y-4 leading-relaxed whitespace-pre-wrap">
                 {newsletterContent || 'El contenido de tu newsletter aparecerá aquí...'}

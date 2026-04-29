@@ -76,7 +76,8 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
         setFormData(prev => ({ ...prev, images: newImages }));
         
         if (oldUrl && oldUrl.includes('insforge.app')) {
-          api.storage.delete(oldUrl).catch(console.warn);
+          // Old InsForge URLs are no longer used
+          console.log('Skipping deletion of old InsForge URL:', oldUrl);
         }
         setEditingImageIndex(null);
       } else {

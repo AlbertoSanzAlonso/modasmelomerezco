@@ -3,9 +3,9 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Order, User } from '@/types';
+import type { Order } from '@/types';
 
-export const generateInvoicePDF = async (order: Order, user: User | null): Promise<jsPDF> => {
+export const generateInvoicePDF = async (order: Order, user: { name?: string; surname?: string } | null): Promise<jsPDF> => {
   const doc = new jsPDF({
     compress: true
   });
@@ -14,8 +14,8 @@ export const generateInvoicePDF = async (order: Order, user: User | null): Promi
   try {
     // Note: In a real environment, we should use absolute URLs for logo loading if possible
     // For browser generation, these relative paths work if called from the client
-    const coronaUrl = 'https://vyus42nj.insforge.site/assets/logo/logo-corona.png';
-    const lettersUrl = 'https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20solo%20letras.png';
+    const coronaUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/logo-corona.png';
+    const lettersUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20solo%20letras.png';
     
     const loadImg = (url: string): Promise<HTMLImageElement | null> => new Promise((resolve) => {
       const img = new Image();

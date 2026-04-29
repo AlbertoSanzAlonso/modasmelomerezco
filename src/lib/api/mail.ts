@@ -41,7 +41,7 @@ export const mailApi = {
 
   sendOrderConfirmation: async (order: any, customerEmail: string) => {
     const orderId = order.order_id.split('-')[0].toUpperCase();
-    const logoUrl = 'https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const { user } = useAuthStore.getState();
     
     // Generate PDF Invoice
@@ -119,7 +119,7 @@ export const mailApi = {
   },
 
   sendPasswordRecovery: async (email: string, resetLink: string) => {
-    const logoUrl = 'https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 10px;">
@@ -146,7 +146,7 @@ export const mailApi = {
 
   sendStatusUpdate: async (order: any, customerEmail: string, newStatus: string) => {
     const orderId = order.order_id.split('-')[0].toUpperCase();
-    const logoUrl = 'https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const statusMap: Record<string, string> = {
       'Paid': 'Pagado',
       'Shipped': 'Enviado',
@@ -202,7 +202,7 @@ export const mailApi = {
   },
 
   sendNewsletter: async (to: string, subject: string, content: string, origin: string = 'https://modasmelomerezco.com') => {
-    const logoUrl = 'https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const unsubscribeUrl = `${origin}/desuscribir?email=${encodeURIComponent(to)}`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px; background-color: #fff;">
@@ -239,7 +239,7 @@ export const mailApi = {
   },
 
   sendConfirmationEmail: async (to: string, token: string, origin: string = 'https://modasmelomerezco.com') => {
-    const logoUrl = 'https://vyus42nj.insforge.site/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const confirmUrl = `${origin}/confirmar-suscripcion?token=${token}`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px; background-color: #fff;">

@@ -13,3 +13,4 @@ dist/assets/*.map
 .insforge
 node_modules
 dist
+scratch/

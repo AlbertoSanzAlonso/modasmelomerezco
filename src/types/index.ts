@@ -140,7 +140,10 @@ export interface Customer {
 export interface Admin {
   admin_id: string;
   username: string;
-  name: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  created_at?: string;
 }
 
 export interface Subscription {

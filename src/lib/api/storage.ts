@@ -7,14 +7,13 @@ export const storage = {
   /**
    * Sube un archivo al bucket 'products' de Supabase Storage.
    */
-  upload: async (file: File): Promise<string> => {
+  upload: async (file: File, customPath?: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    const { data, error } = await supabase.storage
+    const filePath = customPath || `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    
+    const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(filePath, file);
+      .upload(filePath, file, { upsert: true });
 
     if (error) {
       throw error;

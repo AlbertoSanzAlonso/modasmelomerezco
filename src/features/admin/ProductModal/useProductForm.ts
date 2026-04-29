@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { api } from "@/lib/api";
 import type { Product, Category, Subcategory } from "@/types/index";
@@ -50,6 +49,11 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     }
   }, [formData.variants, formData.stock]);
 
+  const buildImagePath = (productId: string, index: number): string => {
+    if (index === 0) return `${productId}_main.webp`;
+    return `${productId}_${index}.webp`;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -65,23 +69,22 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
     try {
       setIsUploading(true);
-      const fileName = `product_${Date.now()}.webp`;
-      const webpFile = new File([croppedBlob], fileName, { type: 'image/webp' });
-      const publicUrl = await api.storage.upload(webpFile);
+      const productId = formData.product_id || 'new';
+      const currentImages = formData.images || [];
       
+      const targetIndex = editingImageIndex !== null ? editingImageIndex : currentImages.length;
+      const fileName = buildImagePath(productId, targetIndex);
+      const webpFile = new File([croppedBlob], fileName, { type: 'image/webp' });
+
+      const publicUrl = await api.storage.upload(webpFile, fileName);
+
       if (editingImageIndex !== null) {
-        const oldUrl = formData.images?.[editingImageIndex];
-        const newImages = [...(formData.images || [])];
+        const newImages = [...currentImages];
         newImages[editingImageIndex] = publicUrl;
         setFormData(prev => ({ ...prev, images: newImages }));
-        
-        if (oldUrl && oldUrl.includes('insforge.app')) {
-          // Old InsForge URLs are no longer used
-          console.log('Skipping deletion of old InsForge URL:', oldUrl);
-        }
         setEditingImageIndex(null);
       } else {
-        setFormData(prev => ({ ...prev, images: [...(prev.images || []), publicUrl] }));
+        setFormData(prev => ({ ...prev, images: [...(prev.images || []), publicUrl ] }));
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -95,7 +98,9 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     const newImages = [...(formData.images || [])];
     const [selected] = newImages.splice(index, 1);
     newImages.unshift(selected);
-    setFormData(prev => ({ ...prev, images: newImages }));
+    
+    // Reindex all images to follow naming convention
+    reindexImages(newImages);
   };
 
   const handleEditImage = (index: number) => {
@@ -105,10 +110,16 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     setCropSrc(url);
   };
 
+  const reindexImages = async (newImages: string[]) => {
+    // This would require re-uploading with new names (optional, can be done on save)
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
   const removeImage = async (index: number) => {
     const imageUrl = formData.images?.[index];
     if (!imageUrl) return;
-    setFormData(prev => ({ ...prev, images: prev.images?.filter((_, i) => i !== index) }));
+    const newImages = (formData.images || []).filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, images: newImages }));
     api.storage.delete(imageUrl).catch(console.warn);
   };
 

@@ -1,6 +1,6 @@
 
 import { supabase } from '../supabase';
-import type { Product, ProductVariant } from '@/types';
+import type { Product } from '@/types';
 
 // Helper para normalizar los datos de Supabase al tipo Product de nuestra app
 const normalise = (p: any): Product => ({
@@ -80,10 +80,20 @@ export const products = {
   },
 
   update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
-    console.log('PATCH updates:', updates);
+    // Solo enviar campos que existen en la tabla products
+    const validColumns = [
+      'name', 'description', 'price', 'category', 'subcategory',
+      'images', 'variants', 'is_published', 'is_new', 'stock',
+      'category_id', 'subcategory_id'
+    ];
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([key]) => validColumns.includes(key))
+    );
+    console.log('PATCH updates (filtered):', filteredUpdates);
+    
     const { data, error } = await supabase
       .from('products')
-      .update(updates)
+      .update(filteredUpdates)
       .eq('product_id', product_id)
       .select()
       .single();

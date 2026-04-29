@@ -49,9 +49,17 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     }
   }, [formData.variants, formData.stock]);
 
-  const buildImagePath = (productId: string, index: number): string => {
-    if (index === 0) return `${productId}_main.webp`;
-    return `${productId}_${index}.webp`;
+  const sanitizeName = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+  };
+
+  const buildImageFileName = (productName: string, index: number): string => {
+    const baseName = sanitizeName(productName);
+    if (!baseName) return `product_${Date.now()}.webp`;
+    return index === 0 ? `${baseName}.webp` : `${baseName}_${index}.webp`;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,11 +77,11 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
     try {
       setIsUploading(true);
-      const productId = formData.product_id || 'new';
+      const productName = formData.name || 'product';
       const currentImages = formData.images || [];
       
       const targetIndex = editingImageIndex !== null ? editingImageIndex : currentImages.length;
-      const fileName = buildImagePath(productId, targetIndex);
+      const fileName = buildImageFileName(productName, targetIndex);
       const webpFile = new File([croppedBlob], fileName, { type: 'image/webp' });
 
       const publicUrl = await api.storage.upload(webpFile, fileName);
@@ -84,7 +92,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
         setFormData(prev => ({ ...prev, images: newImages }));
         setEditingImageIndex(null);
       } else {
-        setFormData(prev => ({ ...prev, images: [...(prev.images || []), publicUrl ] }));
+        setFormData(prev => ({ ...prev, images: [...(prev.images || []), publicUrl] }));
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -98,9 +106,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     const newImages = [...(formData.images || [])];
     const [selected] = newImages.splice(index, 1);
     newImages.unshift(selected);
-    
-    // Reindex all images to follow naming convention
-    reindexImages(newImages);
+    setFormData(prev => ({ ...prev, images: newImages }));
   };
 
   const handleEditImage = (index: number) => {
@@ -108,11 +114,6 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     if (!url) return;
     setEditingImageIndex(index);
     setCropSrc(url);
-  };
-
-  const reindexImages = async (newImages: string[]) => {
-    // This would require re-uploading with new names (optional, can be done on save)
-    setFormData(prev => ({ ...prev, images: newImages }));
   };
 
   const removeImage = async (index: number) => {

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
@@ -20,9 +20,17 @@ export const ProductImage: React.FC<ProductImageProps> = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
   
   const isPlaceholder = !src || src === PRODUCT_PLACEHOLDER || error;
   const imageSrc = error ? PRODUCT_PLACEHOLDER : (src || PRODUCT_PLACEHOLDER);
+
+  // Handle cached images
+  useEffect(() => {
+    if (imgRef.current?.complete) {
+      setLoaded(true);
+    }
+  }, [imageSrc]);
 
   return (
     <div className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-white'} ${containerClassName}`}>
@@ -31,10 +39,14 @@ export const ProductImage: React.FC<ProductImageProps> = ({
       )}
       
       <motion.img
+        ref={imgRef}
         key={imageSrc}
         src={imageSrc}
         alt={alt}
-        onLoad={() => setLoaded(true)}
+        onLoad={() => {
+          console.log(`Image loaded: ${imageSrc}`);
+          setLoaded(true);
+        }}
         onError={() => {
           console.error(`Error loading image: ${imageSrc}`);
           setError(true);

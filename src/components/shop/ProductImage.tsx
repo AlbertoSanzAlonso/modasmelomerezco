@@ -9,6 +9,7 @@ interface ProductImageProps {
   className?: string;
   containerClassName?: string;
   aspectRatio?: string;
+  onLoad?: () => void;
 }
 
 export const ProductImage: React.FC<ProductImageProps> = ({ 
@@ -16,7 +17,8 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   alt, 
   className = "", 
   containerClassName = "",
-  aspectRatio = "aspect-auto"
+  aspectRatio = "aspect-auto",
+  onLoad
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -29,8 +31,14 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   useEffect(() => {
     if (imgRef.current?.complete) {
       setLoaded(true);
+      onLoad?.();
     }
-  }, [imageSrc]);
+  }, [imageSrc, onLoad]);
+
+  const handleLoad = () => {
+    setLoaded(true);
+    onLoad?.();
+  };
 
   return (
     <div className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-white'} ${containerClassName}`}>
@@ -43,14 +51,12 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         key={imageSrc}
         src={imageSrc}
         alt={alt}
-        onLoad={() => {
-          console.log(`Image loaded: ${imageSrc}`);
-          setLoaded(true);
-        }}
+        onLoad={handleLoad}
         onError={() => {
           console.error(`Error loading image: ${imageSrc}`);
           setError(true);
           setLoaded(true);
+          onLoad?.();
         }}
         initial={{ opacity: 0, scale: 1.05 }}
         animate={loaded || isPlaceholder ? { 

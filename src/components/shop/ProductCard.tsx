@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Heart } from 'lucide-react';
@@ -13,6 +14,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { user, isAuthenticated, updateUser, setPendingFavorite } = useAuthStore();
+  const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -49,20 +51,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       });
     }
 
-
     try {
       if (isFavorite) {
         await api.favorites.remove(user.customer_id, product.product_id);
-        // Invalidate favorites query to refresh the list
         queryClient.invalidateQueries({ queryKey: ['favorites', user.customer_id] });
       } else {
         await api.favorites.add(user.customer_id, product.product_id);
-        // Invalidate favorites query to refresh the list
         queryClient.invalidateQueries({ queryKey: ['favorites', user.customer_id] });
       }
     } catch (error) {
       console.error('Error updating favorites:', error);
-      // Revert on error
       updateUser({ favorites: currentFavorites });
     }
   };
@@ -73,11 +71,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <ProductImage 
           src={product.images?.[0]} 
           alt={product.name} 
+          onLoad={() => setIsLoaded(true)}
           containerClassName="rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-500"
         />
       </Link>
         
-      <button
+      {/* UI Elements - Only visible when image is loaded */}
+      <div className={`transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+        <button
           onClick={handleFavoriteClick}
           className={`absolute top-2 right-2 md:top-4 md:right-4 p-2 md:p-3 rounded-full backdrop-blur-md transition-all duration-300 ${
             isFavorite 
@@ -108,5 +109,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </p>
         </div>
       </div>
+    </div>
   );
 };

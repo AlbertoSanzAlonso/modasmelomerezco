@@ -3,18 +3,21 @@ import { supabase } from '../supabase';
 import type { Order } from '@/types';
 
 export const orders = {
-  getAll: async (page = 1, pageSize = 20): Promise<Order[]> => {
+  getAll: async (page = 1, pageSize = 20): Promise<{ orders: Order[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('orders')
-      .select('*, customer:customers(name, surname, email, phone)')
+      .select('*, customer:customers(name, surname, email, phone)', { count: 'exact' })
       .order('order_date', { ascending: false })
       .range(from, to);
 
     if (error) throw error;
-    return data || [];
+    return {
+      orders: data || [],
+      total: count || 0
+    };
   },
 
   getByCustomer: async (idOrEmail: string, page = 1, pageSize = 20): Promise<Order[]> => {

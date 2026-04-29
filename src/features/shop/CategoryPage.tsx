@@ -91,6 +91,9 @@ const CategoryPage: React.FC = () => {
 
   const hasMore = productsData ? allProducts.length < productsData.total : false;
 
+  // Helper to determine if we should show the empty state
+  const showEmptyState = !isLoading && !isFetching && productsData && allProducts.length === 0;
+
   return (
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
       <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
@@ -101,7 +104,6 @@ const CategoryPage: React.FC = () => {
           
           {subcategories && subcategories.length > 0 && (
             <div className="mt-12">
-              {/* Mobile View: Custom Premium Dropdown */}
               <div className="block md:hidden px-6 relative z-30">
                 <div className="max-w-[280px] mx-auto">
                   <button
@@ -147,7 +149,6 @@ const CategoryPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Desktop View: Button Group */}
               <div className="hidden md:flex flex-wrap justify-center gap-4">
                 <button 
                   onClick={() => handleSubChange(null)}
@@ -193,7 +194,7 @@ const CategoryPage: React.FC = () => {
               {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse rounded-3xl" />)}
             </div>
           </div>
-        ) : (allProducts.length === 0 && !isLoading && !isFetching) ? (
+        ) : showEmptyState ? (
           <div className="py-40 text-center">
             <p className="text-gray-500 uppercase tracking-[0.3em] font-bold">No hay artículos disponibles en esta categoría actualmente.</p>
           </div>

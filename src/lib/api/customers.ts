@@ -3,6 +3,23 @@ import { supabase } from '../supabase';
 import type { Customer } from '@/types';
 
 export const customers = {
+  getAll: async (page = 1, pageSize = 20): Promise<{ customers: Customer[], total: number }> => {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('customers')
+      .select('*, shipping_addresses(*)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+    return {
+      customers: data || [],
+      total: count || 0
+    };
+  },
+
   getById: async (id: string): Promise<Customer> => {
     const { data, error } = await supabase
       .from('customers')
@@ -37,7 +54,6 @@ export const customers = {
   },
 
   update: async (id: string, updates: Partial<Customer>): Promise<Customer> => {
-    // Evitar campos que no existen en la tabla o que se manejan aparte
     const { favorites, addresses, paymentMethods, orders, ...rest } = updates as any;
     
     const { data, error } = await supabase

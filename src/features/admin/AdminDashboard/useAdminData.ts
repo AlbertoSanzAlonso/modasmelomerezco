@@ -1,4 +1,4 @@
- 
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from "@/lib/api";
 import type { Product, Order, Customer } from "@/types";
@@ -14,15 +14,21 @@ export const useAdminData = (productPage: number, orderPage: number, customerPag
   const products = productsData?.products;
   const totalProducts = productsData?.total || 0;
   
-  const { data: customers, isLoading: loadingCustomers } = useQuery<Customer[]>({
+  const { data: customersData, isLoading: loadingCustomers } = useQuery<{ customers: Customer[], total: number }>({
     queryKey: ['admin-customers', customerPage],
     queryFn: () => api.customers.getAll(customerPage, pageSize)
   });
 
-  const { data: orders, isLoading: loadingOrders } = useQuery<Order[]>({
+  const customers = customersData?.customers;
+  const totalCustomers = customersData?.total || 0;
+
+  const { data: ordersData, isLoading: loadingOrders } = useQuery<{ orders: Order[], total: number }>({
     queryKey: ['admin-orders', orderPage],
     queryFn: () => api.orders.getAll(orderPage, pageSize)
   });
+
+  const orders = ordersData?.orders;
+  const totalOrders = ordersData?.total || 0;
 
   const { data: subscriptions } = useQuery({
     queryKey: ['admin-subscriptions'],
@@ -34,8 +40,10 @@ export const useAdminData = (productPage: number, orderPage: number, customerPag
     totalProducts,
     loadingProducts,
     customers,
+    totalCustomers,
     loadingCustomers,
     orders,
+    totalOrders,
     loadingOrders,
     subscriptions,
     queryClient

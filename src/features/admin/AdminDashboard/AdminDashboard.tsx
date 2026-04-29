@@ -40,8 +40,11 @@ export const AdminDashboard: React.FC = () => {
 
   const {
     products,
+    totalProducts,
     customers,
+    totalCustomers,
     orders,
+    totalOrders,
     subscriptions,
     queryClient
   } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch, statusFilter, isNewFilter);
@@ -215,6 +218,7 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'products' && (
           <ProductsTab 
             products={products}
+            totalProducts={totalProducts}
             selectedIds={selectedIds}
             productPage={productPage}
             pageSize={pageSize}
@@ -246,6 +250,7 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'orders' && (
           <OrdersTab 
             orders={orders}
+            totalOrders={totalOrders}
             orderPage={orderPage}
             pageSize={pageSize}
             onPageChange={setOrderPage}
@@ -270,6 +275,7 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'customers' && (
           <CustomersTab 
             customers={customers}
+            totalCustomers={totalCustomers}
             customerPage={customerPage}
             pageSize={pageSize}
             onPageChange={setCustomerPage}

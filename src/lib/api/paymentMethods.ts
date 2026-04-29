@@ -1,40 +1,56 @@
 
-import { INSFORGE_URL, headers, handleResponse } from './client';
-import type { PaymentMethod } from '@/types';
+import { supabase } from '../supabase';
 
 export const paymentMethods = {
-  getByCustomer: async (user_id: string): Promise<PaymentMethod[]> => {
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/payment_methods?user_id=eq.${user_id}&order=created_at.desc`, { headers });
-    return handleResponse(response);
+  getByUser: async (user_id: string) => {
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .select('*')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   },
-  create: async (data: Omit<PaymentMethod, 'id' | 'created_at'>): Promise<PaymentMethod> => {
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/payment_methods`, {
-      method: 'POST',
-      headers: { ...headers, 'Prefer': 'return=representation' },
-      body: JSON.stringify(data)
-    });
-    const result = await handleResponse(response);
-    return result[0];
+
+  create: async (method: any) => {
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .insert([method])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
-  delete: async (id: number): Promise<void> => {
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/payment_methods?id=eq.${id}`, {
-      method: 'DELETE',
-      headers
-    });
-    if (!response.ok) throw new Error('Error al eliminar el método de pago');
+
+  update: async (id: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
-  setDefault: async (user_id: string, id: number): Promise<void> => {
-    // 1. Unset current default
-    await fetch(`${INSFORGE_URL}/api/database/records/payment_methods?user_id=eq.${user_id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ is_default: false })
-    });
-    // 2. Set new default
-    await fetch(`${INSFORGE_URL}/api/database/records/payment_methods?id=eq.${id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ is_default: true })
-    });
+
+  setAllInactive: async (user_id: string) => {
+    const { error } = await supabase
+      .from('payment_methods')
+      .update({ is_active: false })
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from('payment_methods')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   }
 };

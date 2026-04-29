@@ -1,19 +1,31 @@
 
-import { INSFORGE_URL, headers, handleResponse } from './client';
+import { supabase } from '../supabase';
 import type { Admin } from '@/types';
 import bcrypt from 'bcryptjs';
 
 export const admins = {
   getByEmail: async (email: string): Promise<Admin | null> => {
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/admins?email=eq.${email}&select=*`, { headers });
-    const data = await handleResponse(response);
-    return data[0] || null;
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
   },
+
   getByUsername: async (username: string): Promise<Admin | null> => {
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/admins?username=eq.${username}&select=*`, { headers });
-    const data = await handleResponse(response);
-    return data[0] || null;
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('username', username)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
   },
+
   update: async (admin_id: string, updates: Partial<Admin> & { password?: string }): Promise<Admin> => {
     const dataToUpdate: Record<string, unknown> = { ...updates };
     
@@ -21,13 +33,14 @@ export const admins = {
       dataToUpdate.password = bcrypt.hashSync(updates.password, 10);
     }
 
-    const response = await fetch(`${INSFORGE_URL}/api/database/records/admins?admin_id=eq.${admin_id}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Prefer': 'return=representation' },
-      body: JSON.stringify(dataToUpdate)
-    });
+    const { data, error } = await supabase
+      .from('admins')
+      .update(dataToUpdate)
+      .eq('admin_id', admin_id)
+      .select()
+      .single();
     
-    const data = await handleResponse(response);
-    return data[0];
+    if (error) throw error;
+    return data;
   }
 };

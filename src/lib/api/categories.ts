@@ -1,46 +1,63 @@
 
-import { INSFORGE_URL, headers, handleResponse } from './client';
+import { supabase } from '../supabase';
 import type { Category, Subcategory } from '@/types';
 
 export const categories = {
   getAll: async (): Promise<Category[]> => {
-    const url = `${INSFORGE_URL}/api/database/records/categories?order=id.asc`;
-    return await handleResponse(await fetch(url, { headers }));
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   },
 
   getByName: async (name: string): Promise<Category | undefined> => {
-    const url = `${INSFORGE_URL}/api/database/records/categories?name=ilike.${name}`;
-    const data = await handleResponse(await fetch(url, { headers }));
-    return data[0];
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .ilike('name', name)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+    return data || undefined;
   },
 
   getSubcategories: async (categoryId?: number): Promise<Subcategory[]> => {
-    let url = `${INSFORGE_URL}/api/database/records/subcategories?order=id.asc`;
+    let query = supabase
+      .from('subcategories')
+      .select('*')
+      .order('id', { ascending: true });
+
     if (categoryId) {
-      url += `&category_id=eq.${categoryId}`;
+      query = query.eq('category_id', categoryId);
     }
-    return await handleResponse(await fetch(url, { headers }));
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   },
 
   createCategory: async (name: string): Promise<Category> => {
-    const url = `${INSFORGE_URL}/api/database/records/categories`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { ...headers, Prefer: 'return=representation' },
-      body: JSON.stringify({ name }),
-    });
-    const data = await handleResponse(response);
-    return data[0];
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([{ name }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
 
   createSubcategory: async (name: string, category_id: number): Promise<Subcategory> => {
-    const url = `${INSFORGE_URL}/api/database/records/subcategories`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { ...headers, Prefer: 'return=representation' },
-      body: JSON.stringify({ name, category_id }),
-    });
-    const data = await handleResponse(response);
-    return data[0];
+    const { data, error } = await supabase
+      .from('subcategories')
+      .insert([{ name, category_id }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };

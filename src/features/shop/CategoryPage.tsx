@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -192,7 +193,7 @@ const CategoryPage: React.FC = () => {
               {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-3/4 bg-white/5 animate-pulse rounded-3xl" />)}
             </div>
           </div>
-        ) : allProducts.length === 0 ? (
+        ) : (allProducts.length === 0 && !isLoading && !isFetching) ? (
           <div className="py-40 text-center">
             <p className="text-gray-500 uppercase tracking-[0.3em] font-bold">No hay artículos disponibles en esta categoría actualmente.</p>
           </div>

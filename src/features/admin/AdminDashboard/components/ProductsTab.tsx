@@ -1,14 +1,16 @@
- 
+
 import React from 'react';
-import { Plus, Eye, EyeOff, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Product } from "@/types";
+import { motion } from 'framer-motion';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
 interface ProductsTabProps {
   products?: Product[];
   totalProducts: number;
+  isLoading?: boolean;
   selectedIds: string[];
   productPage: number;
   pageSize: number;
@@ -37,6 +39,7 @@ const calculateStock = (product: Product) => {
 export const ProductsTab: React.FC<ProductsTabProps> = ({
   products,
   totalProducts,
+  isLoading,
   selectedIds,
   productPage,
   pageSize,
@@ -109,6 +112,15 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               onChange={(e) => onSearchChange(e.target.value)}
               className="block w-full pl-10 pr-4 py-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white shadow-sm transition-all"
             />
+            {isLoading && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full"
+                />
+              </div>
+            )}
           </div>
           <Button size="sm" className="col-span-2 md:col-auto font-black tracking-widest text-[10px] px-8 py-3 h-auto" onClick={onCreate}>
             <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
@@ -136,7 +148,17 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       )}
 
       {/* Desktop View */}
-      <div className="hidden md:block bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-[2.5rem] shadow-sm">
+      <div className="hidden md:block bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-[2.5rem] shadow-sm relative">
+        {isLoading && !products && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <img src="/logo-corona.png" alt="Cargando..." className="w-10 h-10 object-contain opacity-50" />
+            </motion.div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[800px]">
             <thead>
@@ -256,6 +278,13 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </td>
                 </tr>
               ))}
+              {products?.length === 0 && !isLoading && (
+                <tr>
+                  <td colSpan={7} className="px-8 py-20 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">
+                    No se han encontrado productos que coincidan con tu búsqueda.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -316,6 +345,16 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       
       {/* Mobile View */}
       <div className="md:hidden space-y-6">
+        {isLoading && !products && (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+             <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
+            />
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Buscando...</p>
+          </div>
+        )}
         {products?.map((product) => (
           <div 
             key={product.product_id}
@@ -368,6 +407,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
              </div>
           </div>
         ))}
+        {products?.length === 0 && !isLoading && (
+          <div className="py-20 text-center text-gray-400 uppercase tracking-widest text-[10px] font-black">
+            Sin resultados
+          </div>
+        )}
         {/* Pagination Mobile */}
         <div className="flex justify-center items-center gap-3 py-6">
            <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, productPage - 1))} disabled={productPage === 1} className="text-[9px] font-black uppercase tracking-widest px-5">Ant.</Button>

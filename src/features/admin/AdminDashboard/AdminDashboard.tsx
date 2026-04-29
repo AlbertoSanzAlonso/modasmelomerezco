@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { ProductModal } from "@/features/admin/ProductModal/ProductModal";
@@ -32,6 +32,11 @@ export const AdminDashboard: React.FC = () => {
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
   const pageSize = 10;
 
+  // Reset page when filters or search change
+  useEffect(() => {
+    setProductPage(1);
+  }, [productSearch, statusFilter, isNewFilter]);
+
   // Newsletter state
   const [newsletterSubject, setNewsletterSubject] = useState('');
   const [newsletterContent, setNewsletterContent] = useState('');
@@ -41,6 +46,7 @@ export const AdminDashboard: React.FC = () => {
   const {
     products,
     totalProducts,
+    loadingProducts,
     customers,
     totalCustomers,
     orders,
@@ -219,6 +225,7 @@ export const AdminDashboard: React.FC = () => {
           <ProductsTab 
             products={products}
             totalProducts={totalProducts}
+            isLoading={loadingProducts}
             selectedIds={selectedIds}
             productPage={productPage}
             pageSize={pageSize}

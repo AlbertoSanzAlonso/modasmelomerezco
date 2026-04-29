@@ -29,8 +29,8 @@ export const products = {
     if (category) query = query.eq('category_id', category);
     if (subcategory) query = query.eq('subcategory_id', subcategory);
     if (search) query = query.ilike('name', `%${search}%`);
-    if (publishedOnly) query = query.eq('is_published', true);
-    if (isNewOnly) query = query.eq('is_new', true);
+    if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
+    if (isNewOnly !== undefined) query = query.eq('is_new', isNewOnly);
 
     const { data, count, error } = await query
       .order('created_at', { ascending: false })
@@ -61,7 +61,7 @@ export const products = {
       .select('*, product_variants(*), categories(name), subcategories(name)')
       .eq('is_new', true);
 
-    if (publishedOnly) query = query.eq('is_published', true);
+    if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
 
     const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
@@ -69,8 +69,6 @@ export const products = {
   },
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
-    // Nota: El ID se generará automáticamente o lo manejaremos en el admin
-    // Implementaremos la lógica de vectores en el panel de admin para no saturar el cliente
     const { data, error } = await supabase
       .from('products')
       .insert([productData])
@@ -103,7 +101,6 @@ export const products = {
   },
 
   decrementStock: async (variant_id: string, quantity: number): Promise<void> => {
-    // Implementación atómica en Supabase
     const { data: variant, error: fetchError } = await supabase
       .from('product_variants')
       .select('stock')

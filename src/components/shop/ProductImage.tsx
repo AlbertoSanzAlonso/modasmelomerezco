@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
 interface ProductImageProps {
@@ -19,8 +19,10 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   aspectRatio = "aspect-auto"
 }) => {
   const [loaded, setLoaded] = useState(false);
-  const isPlaceholder = !src || src === PRODUCT_PLACEHOLDER;
-  const imageSrc = src || PRODUCT_PLACEHOLDER;
+  const [error, setError] = useState(false);
+  
+  const isPlaceholder = !src || src === PRODUCT_PLACEHOLDER || error;
+  const imageSrc = error ? PRODUCT_PLACEHOLDER : (src || PRODUCT_PLACEHOLDER);
 
   return (
     <div className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-white'} ${containerClassName}`}>
@@ -33,11 +35,15 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         src={imageSrc}
         alt={alt}
         onLoad={() => setLoaded(true)}
-        initial={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+        onError={() => {
+          console.error(`Error loading image: ${imageSrc}`);
+          setError(true);
+          setLoaded(true);
+        }}
+        initial={{ opacity: 0, scale: 1.05 }}
         animate={loaded || isPlaceholder ? { 
           opacity: 1, 
-          scale: 1, 
-          filter: 'blur(0px)' 
+          scale: 1,
         } : {}}
         transition={{ 
           duration: 0.8, 

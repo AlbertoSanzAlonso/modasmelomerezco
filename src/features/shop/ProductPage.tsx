@@ -152,6 +152,10 @@ const ProductPage = () => {
                   src={displayImages[activeImage]} 
                   alt={product.name} 
                   onLoad={() => setImageLoaded(true)}
+                  onError={() => {
+                    console.error("Error loading image in ProductPage");
+                    setImageLoaded(true); // Still set to true to show the broken image icon or placeholder
+                  }}
                   className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                   loading="eager"
                   fetchPriority="high"

@@ -13,7 +13,10 @@ export const storage = {
     
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, file, { 
+        upsert: true,
+        cacheControl: '0'
+      });
 
     if (error) {
       throw error;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from "@/lib/api";
+import { useCartStore } from "@/store/useCartStore";
 import type { Product, Category, Subcategory } from "@/types/index";
 
 export const useProductForm = (product: Product | null | undefined, onSave: (product: Partial<Product>) => void) => {
@@ -85,18 +86,23 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
       const webpFile = new File([croppedBlob], fileName, { type: 'image/webp' });
 
       const publicUrl = await api.storage.upload(webpFile, fileName);
+      const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
 
       if (editingImageIndex !== null) {
         const newImages = [...currentImages];
-        newImages[editingImageIndex] = publicUrl;
+        newImages[editingImageIndex] = cacheBustedUrl;
         setFormData(prev => ({ ...prev, images: newImages }));
         setEditingImageIndex(null);
       } else {
-        setFormData(prev => ({ ...prev, images: [...(prev.images || []), publicUrl] }));
+        setFormData(prev => ({ ...prev, images: [...(prev.images || []), cacheBustedUrl] }));
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Error al subir la imagen.');
+      useCartStore.getState().openModal({
+        title: 'Error de subida',
+        message: 'No se pudo subir la imagen. Por favor, inténtalo de nuevo.',
+        type: 'error'
+      });
     } finally {
       setIsUploading(false);
     }
@@ -128,20 +134,28 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     e.preventDefault();
     
     // Validaciones básicas
+    const openError = (msg: string) => {
+      useCartStore.getState().openModal({
+        title: 'Información incompleta',
+        message: msg,
+        type: 'warning'
+      });
+    };
+
     if (!formData.name?.trim()) {
-      alert('Por favor, indica un nombre para el producto.');
+      openError('Por favor, indica un nombre para el producto.');
       return;
     }
     if (!formData.category_id) {
-      alert('Debes seleccionar una categoría.');
+      openError('Debes seleccionar una categoría.');
       return;
     }
     if (formData.price === undefined || formData.price < 0) {
-      alert('Por favor, indica un precio válido.');
+      openError('Por favor, indica un precio válido.');
       return;
     }
     if (!formData.images || formData.images.length === 0) {
-      alert('Añade al menos una imagen al producto.');
+      openError('Para guardar el producto, es necesario añadir al menos una imagen.');
       return;
     }
 

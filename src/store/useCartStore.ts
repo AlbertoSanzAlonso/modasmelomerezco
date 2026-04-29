@@ -10,7 +10,7 @@ interface ModalConfig {
   isOpen: boolean;
   title: string;
   message: string;
-  type: 'success' | 'warning' | 'info' | 'favorites' | 'confirm' | 'action' | 'product_created';
+  type: 'success' | 'warning' | 'error' | 'info' | 'favorites' | 'confirm' | 'action' | 'product_created';
   onConfirm?: () => void;
   actionLabel?: string;
   onAction?: () => void;

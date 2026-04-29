@@ -80,6 +80,7 @@ export const products = {
   },
 
   update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
+    console.log('PATCH updates:', updates);
     const { data, error } = await supabase
       .from('products')
       .update(updates)
@@ -87,7 +88,10 @@ export const products = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return normalise(data);
   },
 

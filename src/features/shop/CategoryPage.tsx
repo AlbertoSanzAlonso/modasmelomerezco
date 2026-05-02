@@ -14,8 +14,14 @@ const CategoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const subQuery = searchParams.get('sub')?.toLowerCase();
   const [selectedSub, setSelectedSub] = useState<number | null>(subQuery ? parseInt(subQuery) : null);
-  const [page, setPage] = useState(1);
+  const savedPage = sessionStorage.getItem(`page-${category}-${selectedSub}`);
+  const [page, setPage] = useState(savedPage ? parseInt(savedPage) : 1);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Persist page
+  React.useEffect(() => {
+    sessionStorage.setItem(`page-${category}-${selectedSub}`, page.toString());
+  }, [category, selectedSub, page]);
 
   React.useEffect(() => {
     const subId = subQuery ? parseInt(subQuery) : null;
@@ -53,7 +59,13 @@ const CategoryPage: React.FC = () => {
   const { data: productsData, isLoading, isFetching } = useQuery<{ products: Product[], total: number }>({
     queryKey: ['products', categoryId, selectedSub, page],
     queryFn: () => {
-      return api.products.getAll(categoryId?.toString(), selectedSub?.toString(), page, pageSize, true);
+      // If we are restoring a deep page, we need to load all products up to that page
+      // to allow the scroll restoration to work correctly.
+      const isInitialRestore = page > 1 && allProducts.length === 0;
+      const actualPage = isInitialRestore ? 1 : page;
+      const actualPageSize = isInitialRestore ? page * pageSize : pageSize;
+      
+      return api.products.getAll(categoryId?.toString(), selectedSub?.toString(), actualPage, actualPageSize, true);
     },
     enabled: !!categoryId
   });
@@ -77,7 +89,8 @@ const CategoryPage: React.FC = () => {
 
   React.useEffect(() => {
     if (products) {
-      if (page === 1) {
+      if (page === 1 || (allProducts.length === 0 && products.length > pageSize)) {
+        // If it's page 1 OR we just loaded multiple pages for restoration
         setAllProducts(products);
       } else {
         setAllProducts(prev => {
@@ -87,7 +100,7 @@ const CategoryPage: React.FC = () => {
         });
       }
     }
-  }, [products, page]);
+  }, [products, page, pageSize]);
 
   const hasMore = productsData ? allProducts.length < productsData.total : false;
 

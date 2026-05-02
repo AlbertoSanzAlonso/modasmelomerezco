@@ -113,23 +113,41 @@ const ProductPage = () => {
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
       <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
         {/* Breadcrumbs */}
-        <nav className="flex items-center flex-wrap gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-secondary/40 mb-12">
-          <Link to="/" className="hover:text-secondary transition-colors">Inicio</Link>
-          <ChevronRight className="w-3 h-3" />
-          <Link to={`/categoria/${product.category?.toLowerCase() || 'todas'}`} className="hover:text-secondary transition-colors">{product.category || 'Sin Categoría'}</Link>
-          <ChevronRight className="w-3 h-3" />
-          {product.subcategory && (
-            <>
-              <Link 
-                to={`/categoria/${product.category.toLowerCase()}?sub=${product.subcategory_id}`} 
-                className="hover:text-secondary transition-colors"
-              >
-                {product.subcategory}
-              </Link>
-              <ChevronRight className="w-3 h-3" />
-            </>
-          )}
-          <span className="text-primary">{product.name}</span>
+        <nav className="flex items-center justify-between mb-12">
+          <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-secondary/40">
+            <Link to="/" state={{ fromProduct: true }} className="hover:text-secondary transition-colors">Inicio</Link>
+            <ChevronRight className="w-3 h-3" />
+            <Link 
+              to={`/categoria/${product.category?.toLowerCase() || 'todas'}`} 
+              state={{ fromProduct: true }}
+              className="hover:text-secondary transition-colors"
+            >
+              {product.category || 'Sin Categoría'}
+            </Link>
+            <ChevronRight className="w-3 h-3" />
+            {product.subcategory && (
+              <>
+                <Link 
+                  to={`/categoria/${product.category.toLowerCase()}?sub=${product.subcategory_id}`} 
+                  state={{ fromProduct: true }}
+                  className="hover:text-secondary transition-colors"
+                >
+                  {product.subcategory}
+                </Link>
+                <ChevronRight className="w-3 h-3" />
+              </>
+            )}
+            <span className="text-primary">{product.name}</span>
+          </div>
+
+          <Link 
+            to={`/categoria/${product.category?.toLowerCase() || 'todas'}`} 
+            state={{ fromProduct: true }}
+            className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-secondary/60 hover:text-primary transition-all group"
+          >
+            <ChevronRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
+            Volver a la lista
+          </Link>
         </nav>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">

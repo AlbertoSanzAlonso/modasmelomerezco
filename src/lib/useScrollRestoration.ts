@@ -7,7 +7,7 @@ import { useLocation, useNavigationType } from 'react-router-dom';
  * @param dependency Optional dependency that signals content has loaded (e.g. products array)
  */
 export const useScrollRestoration = (key: string, dependency?: any) => {
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const navType = useNavigationType();
 
   // Save scroll position before navigating away
@@ -16,25 +16,25 @@ export const useScrollRestoration = (key: string, dependency?: any) => {
       sessionStorage.setItem(`scrollPos-${key}`, window.scrollY.toString());
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [key]);
 
-  // Restore scroll position when navigating back (POP)
+  // Restore scroll position
   useEffect(() => {
-    if (navType === 'POP') {
-      const savedPos = sessionStorage.getItem(`scrollPos-${key}`);
-      if (savedPos) {
-        // We use a small timeout to ensure the DOM has rendered if dependency is not provided
-        // or if we want to be extra safe with React's rendering cycle.
-        const timeout = setTimeout(() => {
-          window.scrollTo({
-            top: parseInt(savedPos),
-            behavior: 'instant' as ScrollBehavior
-          });
-        }, 50);
-        return () => clearTimeout(timeout);
-      }
+    const savedPos = sessionStorage.getItem(`scrollPos-${key}`);
+    const shouldRestore = navType === 'POP' || (state as any)?.fromProduct;
+
+    if (savedPos && parseInt(savedPos) > 0 && shouldRestore) {
+      // We use a slightly longer timeout to ensure the DOM has rendered
+      // especially for lists with images
+      const timeout = setTimeout(() => {
+        window.scrollTo({
+          top: parseInt(savedPos),
+          behavior: 'instant' as ScrollBehavior
+        });
+      }, 150);
+      return () => clearTimeout(timeout);
     }
-  }, [key, navType, dependency]);
+  }, [key, dependency, navType, state]); // Run when key, dependency, navigation type or state changes
 };

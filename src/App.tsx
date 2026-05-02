@@ -111,10 +111,10 @@ const ScrollToTop: FC = () => {
   const navType = useNavigationType();
 
   useEffect(() => {
-    if (navType !== 'POP') {
+    if (navType !== 'POP' && !(location.state as any)?.fromProduct) {
       window.scrollTo(0, 0);
     }
-  }, [pathname, navType]);
+  }, [pathname, navType, location.state]);
 
   return null;
 };

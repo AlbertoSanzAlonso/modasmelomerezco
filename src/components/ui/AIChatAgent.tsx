@@ -177,7 +177,7 @@ ${productsInfo}
 REGLAS DE RESPUESTA:
 1. Sé persuasiva pero concisa.
 2. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
-3. Comparte siempre la URL del producto si lo recomiendas.
+3. Genera el enlace al producto usando ESTE FORMATO EXACTO: ${window.location.origin}/producto/[product_id]. (Ejemplo: ${window.location.origin}/producto/20). NO inventes nombres o slugs, usa solo el ID numérico.
 4. Si preguntan por una talla, mira el "Tallas/Stock" y confirma si la tienes. Si el stock es 0, di que está agotada pero ofrece algo similar.
 5. Si no encuentras nada en el inventario, invita a escribir por WhatsApp o sugiere mirar las "Novedades" en la web.
 `;

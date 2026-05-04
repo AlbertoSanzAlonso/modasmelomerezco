@@ -34,9 +34,11 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
       updateUser: (updates) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        })),
+        set((state) => {
+          const newUser = state.user ? { ...state.user, ...updates } : null;
+          if (newUser && !newUser.favorites) newUser.favorites = [];
+          return { user: newUser };
+        }),
       pendingFavorite: null,
       setPendingFavorite: (id) => set({ pendingFavorite: id }),
     }),

@@ -92,7 +92,7 @@ export const auth = {
     }
     
     return {
-      user: { ...rawUser, addresses: customer.addresses || [] },
+      user: { ...rawUser, addresses: customer.addresses || [], favorites: [] },
       token: 'supabase-jwt-' + rawUser.customer_id
     };
   },

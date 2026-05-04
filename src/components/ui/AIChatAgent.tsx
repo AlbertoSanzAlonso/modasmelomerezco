@@ -27,6 +27,7 @@ const formatMessage = (text: string) => {
 
   return parts.map((part, index) => {
     if (part.match(/^https?:\/\//)) {
+      // Caso 1: WhatsApp
       if (part.includes('wa.me') || part.includes('whatsapp')) {
         return (
           <a
@@ -34,25 +35,43 @@ const formatMessage = (text: string) => {
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-2 px-4 py-2 bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[#20BD5A] transition-colors"
+            className="inline-flex items-center gap-2 mt-3 px-5 py-2.5 bg-[#25D366] text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-[#20BD5A] transition-all hover:scale-105 shadow-md shadow-green-500/20 active:scale-95"
           >
-            WhatsApp
+            <span>Hablar por WhatsApp</span>
           </a>
         );
       }
+      
+      // Caso 2: Producto de la tienda
+      if (part.includes('/producto/')) {
+        return (
+          <a
+            key={index}
+            href={part}
+            className="flex items-center justify-between mt-4 px-6 py-4 bg-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] italic rounded-2xl hover:bg-primary transition-all group shadow-xl shadow-secondary/10 active:scale-[0.98]"
+          >
+            <span>Ver Producto</span>
+            <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors">
+              <Send className="w-3 h-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+            </div>
+          </a>
+        );
+      }
+
+      // Caso 3: Otras URLs (links genéricos)
       return (
         <a
           key={index}
           href={part}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary underline hover:text-primary/80 break-all"
+          className="text-primary font-bold underline hover:text-primary/80 break-all"
         >
           {part}
         </a>
       );
     }
-    return <span key={index}>{part}</span>;
+    return <span key={index} className="leading-relaxed">{part}</span>;
   });
 };
 

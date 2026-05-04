@@ -99,26 +99,27 @@ const CategoryPage: React.FC = () => {
   const products = productsData?.products;
 
   // Restore scroll position
-  // We use the length and a boolean to ensure it triggers correctly
-  const restorationTrigger = wasRestored.current ? 9999 : allProducts.length;
+  // We use a more stable trigger for restoration
+  const restorationTrigger = allProducts.length;
   useScrollRestoration(`category-${category}-${selectedSub || 'null'}`, restorationTrigger);
 
   React.useEffect(() => {
     if (products) {
       setAllProducts(prev => {
-        // Case A: First load or restoration load (received more than pageSize items)
+        // Case A: First load or restoration load
         if (prev.length === 0 || page === 1) {
+          // If we are restoring multiple pages, mark it so the hook knows we have content
           if (products.length > pageSize) wasRestored.current = true;
           return products;
         } 
         
         // Case B: Normal pagination append
+        // Avoid duplicates if any
         const existingIds = new Set(prev.map(p => p.product_id));
-        const newProducts = products.filter(p => !existingIds.has(p.product_id));
-        return [...prev, ...newProducts];
+        const newItems = products.filter(p => !existingIds.has(p.product_id));
+        if (newItems.length === 0) return prev;
+        return [...prev, ...newItems];
       });
-      
-      isInitialMount.current = false;
     }
   }, [products, page]);
 

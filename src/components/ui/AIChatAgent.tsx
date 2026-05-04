@@ -2,23 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from "@/lib/supabase";
-import { pipeline, env } from '@xenova/transformers';
+// Eliminamos Xenova/Transformers para usar OpenAI directamente (más preciso)
+const getQueryEmbedding = async (text: string) => {
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "text-embedding-3-small",
+      input: text
+    })
+  });
 
-// Configuración para evitar errores de carga de modelos en producción
-env.allowLocalModels = false;
-env.useBrowserCache = true;
-env.remoteHost = 'https://huggingface.co';
-env.remotePathTemplate = '{model}/resolve/{revision}/';
-
-// Singleton para el modelo de IA de vectores
-let embedderPromise: Promise<any> | null = null;
-const getEmbedder = () => {
-  if (!embedderPromise) {
-    embedderPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
-      revision: 'main',
-    });
-  }
-  return embedderPromise;
+  if (!response.ok) throw new Error('OpenAI Embedding Error');
+  const data = await response.json();
+  return data.data[0].embedding;
 };
 
 const formatMessage = (text: string) => {
@@ -101,15 +101,13 @@ export const AIChatAgent = () => {
       let searchMethod = 'semantic';
 
       try {
-        // 1. Intentar Búsqueda Semántica (Vectorial)
-        const extractor = await getEmbedder();
-        const output = await extractor(userMsg, { pooling: 'mean', normalize: true });
-        const embedding = Array.from(output.data);
+        // 1. Intentar Búsqueda Semántica (OpenAI + Supabase)
+        const embedding = await getQueryEmbedding(userMsg);
 
         const { data, error: rpcError } = await supabase.rpc('match_products', {
           query_embedding: embedding,
-          match_threshold: 0.1, // Umbral más bajo para ser más permisivo
-          match_count: 10
+          match_threshold: 0.3, // Umbral más estricto para OpenAI (es más preciso)
+          match_count: 8
         });
 
         if (rpcError) throw rpcError;

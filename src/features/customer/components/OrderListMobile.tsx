@@ -34,15 +34,18 @@ export const OrderListMobile: React.FC<OrderListMobileProps> = ({
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Estado</p>
               <div className="flex flex-col gap-1">
-                <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border w-fit ${
-                  order.order_status === 'Shipped' || order.order_status === 'Paid' ? 'border-primary/30 text-primary bg-primary/5' :
-                  order.order_status === 'Delivered' ? 'border-green-500/30 text-green-500 bg-green-500/5' :
-                  'border-red-500/30 text-red-500 bg-red-500/5'
-                }`}>
-                  {order.order_status === 'Paid' ? 'Pagado' : 
-                   order.order_status === 'Shipped' ? 'Enviado' : 
-                   order.order_status === 'Delivered' ? 'Entregado' : 'Pendiente'}
-                </span>
+                {(() => {
+                  const isPaid = order.payment_status?.toLowerCase() === 'paid' || order.order_status === 'Paid';
+                  return (
+                    <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border w-fit ${
+                      isPaid 
+                        ? 'border-green-500/30 text-green-500 bg-green-500/5' 
+                        : 'border-orange-500/30 text-orange-500 bg-orange-500/5'
+                    }`}>
+                      {isPaid ? 'Pagado' : 'Pendiente'}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
             <div className="text-right">

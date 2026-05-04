@@ -35,45 +35,48 @@ export const useScrollRestoration = (key: string, dependency?: any) => {
 
     if (savedPos && parseInt(savedPos) > 0 && shouldRestore) {
       isRestoring.current = true;
+      let timeoutId: NodeJS.Timeout;
       
       const lastId = sessionStorage.getItem(`lastId-${key}`);
-      
-      // Attempt restoration with retries to wait for layout/images
       let attempts = 0;
-      const maxAttempts = 20;
+      const maxAttempts = 30; // Increased attempts
       
       const tryScroll = () => {
         const targetElement = lastId ? document.getElementById(`product-${lastId}`) : null;
+        
+        // If we have a target element, we use its position. 
+        // Otherwise we use the absolute saved position.
         const targetPos = targetElement 
-          ? (targetElement.getBoundingClientRect().top + window.scrollY - 200) // Scroll to element with some offset
+          ? (targetElement.getBoundingClientRect().top + window.scrollY - 250) 
           : parseInt(savedPos);
           
         const docHeight = document.documentElement.scrollHeight;
         const winHeight = window.innerHeight;
         
-        // If we found the target element OR the document is tall enough OR we've tried many times
-        if (targetElement || docHeight >= targetPos + winHeight || attempts >= maxAttempts) {
+        // Success conditions:
+        // 1. Found the element we were looking for
+        // 2. The document is tall enough to reach the saved position
+        // 3. We exhausted attempts (fallback)
+        const isReady = targetElement || (docHeight >= targetPos + winHeight);
+
+        if (isReady || attempts >= maxAttempts) {
           window.scrollTo({
             top: Math.max(0, targetPos),
             behavior: 'instant' as ScrollBehavior
           });
           
-          // Small delay before allowing saving again to avoid race conditions
-          setTimeout(() => {
-            isRestoring.current = false;
-            // Clear lastId after restoration so it doesn't stick
-            sessionStorage.removeItem(`lastId-${key}`);
-          }, 100);
+          isRestoring.current = false;
+          // Clear lastId after restoration
+          sessionStorage.removeItem(`lastId-${key}`);
         } else {
           attempts++;
-          setTimeout(tryScroll, 100);
+          timeoutId = setTimeout(tryScroll, 100);
         }
       };
 
-      // Initial delay to let the first render happen
-      const initialTimeout = setTimeout(tryScroll, 150);
+      timeoutId = setTimeout(tryScroll, 100);
       return () => {
-        clearTimeout(initialTimeout);
+        if (timeoutId) clearTimeout(timeoutId);
         isRestoring.current = false;
       };
     }

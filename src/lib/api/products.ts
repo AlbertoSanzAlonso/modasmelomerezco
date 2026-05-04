@@ -6,12 +6,24 @@ import type { Product } from '@/types';
 const normalise = (p: any): Product => ({
   ...p,
   is_published: p.is_published ?? true,
-  // En Supabase ya guardamos el array de URLs directamente en el campo 'images'
-  images: p.images || [],
-  variants: (p.product_variants || p.variants || []).map((v: any) => ({
-    ...v,
-    id: v.variant_id.toString(),
-  })),
+  // Priorizar tabla relacional sobre columna JSON
+  images: (() => {
+    if (p.product_images && p.product_images.length > 0) {
+      return p.product_images
+        .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
+        .map((img: any) => img.image_url);
+    }
+    return p.images || [];
+  })(),
+  variants: (() => {
+    const rawVariants = (p.product_variants && p.product_variants.length > 0) 
+      ? p.product_variants 
+      : (p.variants || []);
+    return rawVariants.map((v: any) => ({
+      ...v,
+      id: (v.variant_id || v.id || Math.random().toString()).toString(),
+    }));
+  })(),
   // Mapear categorías si vienen de un join
   category: p.categories?.name || p.category,
   subcategory: p.subcategories?.name || p.subcategory,
@@ -24,7 +36,7 @@ export const products = {
 
     let query = supabase
       .from('products')
-      .select('*, product_variants(*), categories(name), subcategories(name)', { count: 'exact' });
+      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)', { count: 'exact' });
 
     if (category) query = query.eq('category_id', category);
     if (subcategory) query = query.eq('subcategory_id', subcategory);
@@ -73,7 +85,7 @@ export const products = {
   getById: async (product_id: string): Promise<Product> => {
     const { data, error } = await supabase
       .from('products')
-      .select('*, product_variants(*), categories(name), subcategories(name)')
+      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)')
       .eq('product_id', product_id)
       .single();
 
@@ -84,7 +96,7 @@ export const products = {
   getNewArrivals: async (publishedOnly = true): Promise<Product[]> => {
     let query = supabase
       .from('products')
-      .select('*, product_variants(*), categories(name), subcategories(name)')
+      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)')
       .eq('is_new', true);
 
     if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
@@ -95,40 +107,93 @@ export const products = {
   },
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
-    const { data, error } = await supabase
+    const { variants, images, ...pData } = productData as any;
+    
+    // 1. Create product
+    const { data: product, error } = await supabase
       .from('products')
-      .insert([productData])
+      .insert([pData])
       .select()
       .single();
 
     if (error) throw error;
-    return normalise(data);
+
+    // 2. Create variants if any
+    if (variants && variants.length > 0) {
+      const cleanVariants = variants.map((v: any) => ({
+        product_id: product.product_id,
+        size: v.size,
+        color: v.color || 'Único',
+        stock: v.stock || 0
+      }));
+      await supabase.from('product_variants').insert(cleanVariants);
+    }
+
+    // 3. Create images if any
+    if (images && images.length > 0) {
+      const imageRecords = images.map((url: string, index: number) => ({
+        product_id: product.product_id,
+        image_url: url,
+        orden: index,
+        is_main: index === 0
+      }));
+      await supabase.from('product_images').insert(imageRecords);
+    }
+
+    return normalise(product);
   },
 
   update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
-    // Solo enviar campos que existen en la tabla products
+    const { variants, images, ...pUpdates } = updates as any;
+
+    // 1. Update product table
     const validColumns = [
-      'name', 'description', 'price', 'category', 'subcategory',
-      'images', 'variants', 'is_published', 'is_new', 'stock',
+      'name', 'description', 'price', 'is_published', 'is_new', 'stock',
       'category_id', 'subcategory_id'
     ];
     const filteredUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([key]) => validColumns.includes(key))
+      Object.entries(pUpdates).filter(([key]) => validColumns.includes(key))
     );
-    console.log('PATCH updates (filtered):', filteredUpdates);
     
-    const { data, error } = await supabase
+    const { data: product, error } = await supabase
       .from('products')
       .update(filteredUpdates)
       .eq('product_id', product_id)
       .select()
       .single();
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw error;
+    if (error) throw error;
+
+    // 2. Update variants if provided
+    if (variants) {
+      // Simplest: Delete and re-insert (common in small scale admin panels)
+      await supabase.from('product_variants').delete().eq('product_id', product_id);
+      if (variants.length > 0) {
+        const cleanVariants = variants.map((v: any) => ({
+          product_id,
+          size: v.size,
+          color: v.color || 'Único',
+          stock: v.stock || 0
+        }));
+        await supabase.from('product_variants').insert(cleanVariants);
+      }
     }
-    return normalise(data);
+
+    // 3. Update images if provided
+    if (images) {
+      await supabase.from('product_images').delete().eq('product_id', product_id);
+      if (images.length > 0) {
+        const imageRecords = images.map((url: string, index: number) => ({
+          product_id,
+          image_url: url,
+          orden: index,
+          is_main: index === 0
+        }));
+        await supabase.from('product_images').insert(imageRecords);
+      }
+    }
+
+    return normalise(product);
   },
 
   delete: async (product_id: string): Promise<void> => {

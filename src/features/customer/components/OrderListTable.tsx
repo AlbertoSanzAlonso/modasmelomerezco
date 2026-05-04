@@ -37,23 +37,19 @@ export const OrderListTable: React.FC<OrderListTableProps> = ({
               <td className="py-6 text-xs text-gray-400 font-medium lowercase italic">
                 {order.order_date ? format(new Date(order.order_date), "d 'de' MMMM, yyyy", { locale: es }) : 'N/A'}
               </td>
-              <td className="py-6 flex flex-col gap-1">
-                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border w-fit ${
-                  order.order_status === 'Shipped' || order.order_status === 'Paid' ? 'border-primary/30 text-primary bg-primary/5' :
-                  order.order_status === 'Delivered' ? 'border-green-500/30 text-green-500 bg-green-500/5' :
-                  'border-red-500/30 text-red-500 bg-red-500/5'
-                }`}>
-                  {order.order_status === 'Paid' ? 'Pagado' : 
-                  order.order_status === 'Shipped' ? 'Enviado' : 
-                  order.order_status === 'Delivered' ? 'Entregado' : 'Pendiente'}
-                </span>
-                {order.payment_status && (
-                  <span className={`text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border w-fit ${
-                    order.payment_status.toLowerCase() === 'paid' ? 'border-green-500/20 text-green-500/70' : 'border-orange-500/20 text-orange-500/70'
-                  }`}>
-                    Pago: {order.payment_status}
-                  </span>
-                )}
+              <td className="py-6">
+                {(() => {
+                  const isPaid = order.payment_status?.toLowerCase() === 'paid' || order.order_status === 'Paid';
+                  return (
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border w-fit ${
+                      isPaid 
+                        ? 'border-green-500/30 text-green-500 bg-green-500/5' 
+                        : 'border-orange-500/30 text-orange-500 bg-orange-500/5'
+                    }`}>
+                      {isPaid ? 'Pagado' : 'Pendiente'}
+                    </span>
+                  );
+                })()}
               </td>
               <td className="py-6 text-sm font-bold">
                 {Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + (item.quantity || 0), 0) : 0}

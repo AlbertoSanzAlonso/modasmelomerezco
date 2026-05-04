@@ -45,17 +45,27 @@ export const ResetPasswordPage: React.FC = () => {
       if (type === 'admin') {
         const admin = await api.admins.getByEmail(email);
         if (!admin) throw new Error('Administrador no encontrado.');
-        const updatedAdmin = await api.admins.update(admin.admin_id, { password });
         
-        // Automatic login for admin
+        // Cifrar la nueva contraseña
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        
+        const updatedAdmin = await api.admins.update(admin.admin_id, { password: hashedPassword });
+        if (!updatedAdmin) throw new Error('No se pudo actualizar la cuenta de administrador.');
+        
         const token = 'fake-admin-jwt-' + updatedAdmin.admin_id;
         adminLogin(updatedAdmin, token);
       } else {
         const user = await api.customers.getByEmail(email);
         if (!user) throw new Error('Usuario no encontrado.');
-        const updatedUser = await api.customers.update(user.customer_id, { password });
         
-        // Automatic login for customer
+        // Cifrar la nueva contraseña
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        
+        const updatedUser = await api.customers.update(user.customer_id, { password: hashedPassword });
+        if (!updatedUser) throw new Error('No se pudo actualizar tu cuenta. Inténtalo de nuevo.');
+        
         const token = 'fake-jwt-' + updatedUser.customer_id;
         login(updatedUser, token);
       }

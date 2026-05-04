@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState, type FC, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigationType } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CartSidebar } from "@/components/shop/CartSidebar";
 import { AddToCartModal } from "@/components/shop/AddToCartModal";
 import { useCartStore } from "@/store/useCartStore";
@@ -107,14 +107,14 @@ const AdminProtectedRoute: FC<{ children: React.ReactNode }> = ({ children }) =>
 };
 
 const ScrollToTop: FC = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
   const navType = useNavigationType();
 
   useEffect(() => {
     if (navType !== 'POP' && !(location.state as any)?.fromProduct) {
       window.scrollTo(0, 0);
     }
-  }, [pathname, navType, location.state]);
+  }, [location.pathname, navType, location.state]);
 
   return null;
 };

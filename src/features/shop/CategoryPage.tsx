@@ -13,25 +13,49 @@ const CategoryPage: React.FC = () => {
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const subQuery = searchParams.get('sub')?.toLowerCase();
-  const [selectedSub, setSelectedSub] = useState<number | null>(subQuery ? parseInt(subQuery) : null);
-  const savedPage = sessionStorage.getItem(`page-${category}-${selectedSub}`);
-  const [page, setPage] = useState(savedPage ? parseInt(savedPage) : 1);
+  
+  // Ref to track if we have already performed the initial restoration
+  const isInitialMount = React.useRef(true);
+  const wasRestored = React.useRef(false);
+
+  // Initialize state from URL and SessionStorage
+  const [selectedSub, setSelectedSub] = useState<number | null>(() => {
+    return subQuery ? parseInt(subQuery) : null;
+  });
+
+  const [page, setPage] = useState(() => {
+    const savedPage = sessionStorage.getItem(`page-${category}-${subQuery || 'null'}`);
+    return savedPage ? parseInt(savedPage) : 1;
+  });
+
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Persist page
+  // Sync subcategory and page from URL/Storage when they change
+  const lastState = React.useRef({ category, subQuery });
+
   React.useEffect(() => {
-    sessionStorage.setItem(`page-${category}-${selectedSub}`, page.toString());
+    if (lastState.current.category !== category || lastState.current.subQuery !== subQuery) {
+      const subId = subQuery ? parseInt(subQuery) : null;
+      setSelectedSub(subId);
+      
+      const saved = sessionStorage.getItem(`page-${category}-${subQuery || 'null'}`);
+      const newPage = saved ? parseInt(saved) : 1;
+      
+      setPage(newPage);
+      setAllProducts([]); 
+      wasRestored.current = false;
+      
+      lastState.current = { category, subQuery };
+    }
+  }, [subQuery, category]);
+
+  // Persist page number
+  React.useEffect(() => {
+    sessionStorage.setItem(`page-${category}-${selectedSub || 'null'}`, page.toString());
   }, [category, selectedSub, page]);
 
-  React.useEffect(() => {
-    const subId = subQuery ? parseInt(subQuery) : null;
-    if (subId !== selectedSub) {
-      setSelectedSub(subId);
-    }
-  }, [subQuery, selectedSub]);
-
   const handleSubChange = (subId: number | null) => {
-    setSelectedSub(subId);
     if (subId) {
       setSearchParams({ sub: subId.toString() });
     } else {
@@ -39,8 +63,8 @@ const CategoryPage: React.FC = () => {
     }
     setIsMobileMenuOpen(false);
   };
+  
   const pageSize = 12;
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
 
   const { data: categoryData } = useQuery({
     queryKey: ['category-info', category],
@@ -59,48 +83,45 @@ const CategoryPage: React.FC = () => {
   const { data: productsData, isLoading, isFetching } = useQuery<{ products: Product[], total: number }>({
     queryKey: ['products', categoryId, selectedSub, page],
     queryFn: () => {
-      // If we are restoring a deep page, we need to load all products up to that page
-      // to allow the scroll restoration to work correctly.
-      const isInitialRestore = page > 1 && allProducts.length === 0;
-      const actualPage = isInitialRestore ? 1 : page;
-      const actualPageSize = isInitialRestore ? page * pageSize : pageSize;
+      // If we are on page > 1 and haven't loaded products yet, we are restoring
+      const isRestoring = page > 1 && allProducts.length === 0;
+      const actualPage = isRestoring ? 1 : page;
+      const actualPageSize = isRestoring ? page * pageSize : pageSize;
       
-      return api.products.getAll(categoryId?.toString(), selectedSub?.toString(), actualPage, actualPageSize, true);
+      const catId = category?.toLowerCase() === 'todas' ? undefined : categoryId?.toString();
+      
+      return api.products.getAll(catId, selectedSub?.toString(), actualPage, actualPageSize, true);
     },
-    enabled: !!categoryId
+    enabled: category?.toLowerCase() === 'todas' || !!categoryId,
+    staleTime: 1000 * 60 * 5, 
   });
 
   const products = productsData?.products;
 
   // Restore scroll position
-  useScrollRestoration(`category-${category}-${selectedSub}`, products);
-
-  const prevCategory = React.useRef(category);
-  const prevSub = React.useRef(selectedSub);
-
-  React.useEffect(() => {
-    if (prevCategory.current !== category || prevSub.current !== selectedSub) {
-      setPage(1);
-      setAllProducts([]);
-      prevCategory.current = category;
-      prevSub.current = selectedSub;
-    }
-  }, [category, selectedSub]);
+  // We use the length and a boolean to ensure it triggers correctly
+  const restorationTrigger = wasRestored.current ? 9999 : allProducts.length;
+  useScrollRestoration(`category-${category}-${selectedSub || 'null'}`, restorationTrigger);
 
   React.useEffect(() => {
     if (products) {
-      if (page === 1 || (allProducts.length === 0 && products.length > pageSize)) {
-        // If it's page 1 OR we just loaded multiple pages for restoration
-        setAllProducts(products);
-      } else {
-        setAllProducts(prev => {
-          const existingIds = new Set(prev.map(p => p.product_id));
-          const newProducts = products.filter(p => !existingIds.has(p.product_id));
-          return [...prev, ...newProducts];
-        });
-      }
+      setAllProducts(prev => {
+        // Case A: First load or restoration load (received more than pageSize items)
+        if (prev.length === 0 || page === 1) {
+          if (products.length > pageSize) wasRestored.current = true;
+          return products;
+        } 
+        
+        // Case B: Normal pagination append
+        const existingIds = new Set(prev.map(p => p.product_id));
+        const newProducts = products.filter(p => !existingIds.has(p.product_id));
+        return [...prev, ...newProducts];
+      });
+      
+      isInitialMount.current = false;
     }
-  }, [products, page, pageSize]);
+  }, [products, page]);
+
 
   const hasMore = productsData ? allProducts.length < productsData.total : false;
 
@@ -217,6 +238,7 @@ const CategoryPage: React.FC = () => {
               {allProducts.map((product: Product, index: number) => (
                 <motion.div 
                   key={product.product_id}
+                  id={`product-${product.product_id}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ 

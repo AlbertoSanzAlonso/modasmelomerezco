@@ -41,7 +41,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
             </div>
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <Link to="/" className="group flex flex-col items-center leading-none">
                 <img src="/assets/logo/logo-corona.png" alt="Logo" className="h-14 w-auto object-contain transition-transform group-hover:scale-110" />
               </Link>
@@ -97,14 +97,14 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-secondary/40 backdrop-blur-sm z-[60] lg:hidden"
+              className="fixed inset-0 bg-secondary/40 backdrop-blur-sm z-60 lg:hidden"
             />
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 w-[80%] max-w-sm bg-accent z-[70] lg:hidden shadow-2xl flex flex-col overflow-y-auto"
+              className="fixed top-0 left-0 bottom-0 w-[80%] max-w-sm bg-accent z-70 lg:hidden shadow-2xl flex flex-col overflow-y-auto"
             >
               <div className="p-6 flex justify-between items-center border-b border-secondary/3">
                 <img src="/assets/logo/logo-corona.png" alt="Logo" className="h-10 w-auto" />

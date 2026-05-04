@@ -32,7 +32,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-accent z-[101] shadow-2xl flex flex-col text-secondary"
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-accent z-101 shadow-2xl flex flex-col text-secondary"
           >
             <div className="p-8 border-b border-secondary/5 flex justify-between items-center">
               <div className="flex items-center gap-3">

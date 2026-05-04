@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Share2, Heart, ShoppingBag, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Share2, Heart, ShoppingBag, X } from 'lucide-react';
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/useCartStore";
@@ -12,6 +12,7 @@ import type { ProductVariant } from '@/types';
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [activeImage, setActiveImage] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -80,6 +81,22 @@ const ProductPage = () => {
     enabled: !!id
   });
 
+  const { data: siblings } = useQuery({
+    queryKey: ['product-siblings', id, product?.category_id, product?.subcategory_id],
+    queryFn: () => api.products.getSiblings(id!, product?.category_id?.toString(), product?.subcategory_id?.toString()),
+    enabled: !!product
+  });
+
+  // Save the last viewed product ID for scroll restoration
+  useEffect(() => {
+    if (product) {
+      const categoryKey = product.category?.toLowerCase() || 'todas';
+      const subKey = product.subcategory_id?.toString() || 'null';
+      const key = `category-${categoryKey}-${subKey}`;
+      sessionStorage.setItem(`lastId-${key}`, product.product_id);
+    }
+  }, [product]);
+
   if (isLoading) return (
     <div className="h-screen bg-accent flex flex-col items-center justify-center gap-8">
       <motion.div
@@ -140,14 +157,35 @@ const ProductPage = () => {
             <span className="text-primary">{product.name}</span>
           </div>
 
-          <Link 
-            to={`/categoria/${product.category?.toLowerCase() || 'todas'}`} 
-            state={{ fromProduct: true }}
-            className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-secondary/60 hover:text-primary transition-all group"
-          >
-            <ChevronRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
-            Volver a la lista
-          </Link>
+          <div className="flex items-center gap-4 sm:gap-8">
+            <div className="flex items-center gap-2 border-r border-secondary/10 pr-4 sm:pr-8">
+              <Link 
+                to={siblings?.prevId ? `/producto/${siblings.prevId}` : '#'}
+                replace={true}
+                className={`p-2 transition-all ${!siblings?.prevId ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
+                title="Producto Anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+              <Link 
+                to={siblings?.nextId ? `/producto/${siblings.nextId}` : '#'}
+                replace={true}
+                className={`p-2 transition-all ${!siblings?.nextId ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
+                title="Siguiente Producto"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Link>
+            </div>
+
+            <button 
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-secondary/60 hover:text-primary transition-all group"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
+              <span className="hidden sm:inline">Volver a la lista</span>
+              <span className="sm:hidden">Volver</span>
+            </button>
+          </div>
         </nav>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
@@ -310,13 +348,13 @@ const ProductPage = () => {
       {showFullscreen && (
         <div 
           ref={scrollRef}
-          className="fixed inset-0 z-[100] bg-black/95 overflow-auto cursor-default"
+          className="fixed inset-0 z-100 bg-black/95 overflow-auto cursor-default"
           onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
         >
           {/* Close Button */}
           <button 
             onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
-            className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[120]"
+            className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-120"
           >
             <X className="w-6 h-6" />
           </button>
@@ -326,13 +364,13 @@ const ProductPage = () => {
             <>
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveImage(prev => prev === 0 ? product.images.length - 1 : prev - 1); }}
-                className="fixed left-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-[110]"
+                className="fixed left-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-110"
               >
                 <ChevronRight className="w-8 h-8 rotate-180" />
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveImage(prev => prev === product.images.length - 1 ? 0 : prev + 1); }}
-                className="fixed right-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-[110]"
+                className="fixed right-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-110"
               >
                 <ChevronRight className="w-8 h-8" />
               </button>
@@ -367,7 +405,7 @@ const ProductPage = () => {
 
           {/* Thumbnails row */}
           {!isZoomed && product.images.length > 1 && (
-            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex gap-3 px-6 py-4 bg-black/40 backdrop-blur-md rounded-2xl z-[120]">
+            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex gap-3 px-6 py-4 bg-black/40 backdrop-blur-md rounded-2xl z-120">
               {product.images.map((img: string, idx: number) => (
                 <button
                   key={idx}

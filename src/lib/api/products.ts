@@ -34,6 +34,7 @@ export const products = {
 
     const { data, count, error } = await query
       .order('created_at', { ascending: false })
+      .order('product_id', { ascending: true })
       .range(from, to);
 
     if (error) throw error;
@@ -41,6 +42,31 @@ export const products = {
     return {
       products: (data || []).map(normalise),
       total: count || 0
+    };
+  },
+
+  getSiblings: async (productId: string, categoryId?: string, subcategoryId?: string): Promise<{ nextId: string | null, prevId: string | null }> => {
+    // Fetch all IDs in order to find siblings (simplest way to ensure correct sorting logic)
+    let query = supabase
+      .from('products')
+      .select('product_id')
+      .eq('is_published', true);
+
+    if (categoryId) query = query.eq('category_id', categoryId);
+    if (subcategoryId) query = query.eq('subcategory_id', subcategoryId);
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .order('product_id', { ascending: true });
+
+    if (error) throw error;
+
+    const ids = data.map(p => p.product_id);
+    const currentIndex = ids.indexOf(productId);
+
+    return {
+      prevId: currentIndex > 0 ? ids[currentIndex - 1] : null,
+      nextId: currentIndex < ids.length - 1 ? ids[currentIndex + 1] : null
     };
   },
 

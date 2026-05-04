@@ -28,7 +28,7 @@ export const ShopLayout: FC<ShopLayoutProps> = ({ children, setIsCartOpen, isMen
         setIsMenuOpen={setIsMenuOpen} 
       />
       
-      <main className="flex-grow pt-20">
+      <main className="grow pt-20">
         {children}
       </main>
 

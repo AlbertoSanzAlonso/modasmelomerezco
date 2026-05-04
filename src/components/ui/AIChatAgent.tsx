@@ -128,7 +128,11 @@ export const AIChatAgent = () => {
 
       // 3. Preparar info para el prompt
       const productsInfo = matchedProducts.length > 0 
-        ? matchedProducts.map((p: any) => `Artículo: ${p.name} (${p.category || p.categories?.name || 'Moda'}). Precio: ${p.price}€. Detalles: ${p.description}`).join('\n---\n')
+        ? matchedProducts.map((p: any) => {
+            const stockInfo = p.variants?.map((v: any) => `${v.size}: ${v.stock}uds`).join(', ') || 'Sin info de stock';
+            const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
+            return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${window.location.origin}/producto/${p.product_id}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
+          }).join('\n---\n')
         : 'No hay artículos específicos en el catálogo que coincidan.';
 
       const conversationHistory = messages.slice(1).map(m => ({
@@ -137,13 +141,27 @@ export const AIChatAgent = () => {
       }));
 
       const systemPrompt = `
-Eres MeloMe, la asistente de la tienda "Modas Me lo Merezco". Responde de forma amable, breve y femenina.
-INFO: Envíos 5,50€ (48h), recogida gratis. Pagos: Tarjeta y Bizum (Redsys).
+Eres MeloMe, la asistente virtual experta de la boutique "Modas Me lo Merezco". Tu objetivo es asesorar a las clientas con amabilidad, elegancia y un toque cercano.
 
-INVENTARIO RELEVANTE ENCONTRADO MEDIANTE BÚSQUEDA SEMÁNTICA:
+INFORMACIÓN DE LA TIENDA:
+- Ubicación: Calle Aragón, 2, Local 2, Benalmádena (Málaga).
+- Teléfono/WhatsApp: 685 011 494.
+- Envíos: 5,50€ tarifa plana a Península (Nacex/Correos). Gratis en compras > 50€. Entrega en 24-48h laborables. No enviamos fuera de la Península.
+- Recogida: Gratis en tienda física.
+- Devoluciones: 14 días naturales desde la recepción. El producto debe estar impecable y con etiquetas. Los gastos de envío de devolución corren a cargo de la clienta.
+- Pagos: Aceptamos Tarjeta y Bizum (pasarela segura Redsys).
+- Sobre nosotros: Boutique dedicada a celebrar la feminidad y exclusividad. "Donde la elegancia y el estilo se encuentran a la orilla del mar".
+
+INVENTARIO REAL (Usa esta info para recomendar):
 ${productsInfo}
 
-Reglas: Basa tus respuestas en este inventario. Si no encuentras nada exacto, sugiere lo más parecido o invita a contactar por WhatsApp.`;
+REGLAS DE RESPUESTA:
+1. Sé persuasiva pero concisa.
+2. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
+3. Comparte siempre la URL del producto si lo recomiendas.
+4. Si preguntan por una talla, mira el "Tallas/Stock" y confirma si la tienes. Si el stock es 0, di que está agotada pero ofrece algo similar.
+5. Si no encuentras nada en el inventario, invita a escribir por WhatsApp o sugiere mirar las "Novedades" en la web.
+`;
 
       // 4. Llamada a Groq
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -159,8 +177,8 @@ Reglas: Basa tus respuestas en este inventario. Si no encuentras nada exacto, su
             ...conversationHistory,
             { role: 'user', content: userMsg }
           ],
-          temperature: 0.7,
-          max_tokens: 500
+          temperature: 0.6,
+          max_tokens: 600
         })
       });
 
@@ -172,7 +190,7 @@ Reglas: Basa tus respuestas en este inventario. Si no encuentras nada exacto, su
       setMessages(prev => [...prev, { id: Date.now().toString(), text: botResponse, isBot: true }]);
     } catch (error) {
       console.error('AIChat Error:', error);
-      setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Lo siento, estoy teniendo un problema técnico. ¿Podrías repetirme la pregunta?', isBot: true }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Lo siento, estoy teniendo un problema técnico. ¿Podrías repetirme la pregunta o contactarnos por WhatsApp?', isBot: true }]);
     } finally {
       setIsLoading(false);
     }

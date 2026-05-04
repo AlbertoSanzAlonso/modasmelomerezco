@@ -125,7 +125,7 @@ export const AIChatAgent = () => {
 
         const { data, error: rpcError } = await supabase.rpc('match_products', {
           query_embedding: embedding,
-          match_threshold: 0.3, // Umbral más estricto para OpenAI (es más preciso)
+          match_threshold: 0.5, // Mucho más estricto para evitar confusiones (Chaqueta vs Pantalón)
           match_count: 8
         });
 
@@ -174,12 +174,12 @@ INFORMACIÓN DE LA TIENDA:
 INVENTARIO REAL (Usa esta info para recomendar):
 ${productsInfo}
 
-REGLAS DE RESPUESTA:
-1. Sé persuasiva pero concisa.
-2. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
-3. Genera el enlace al producto usando ESTE FORMATO EXACTO: ${window.location.origin}/producto/[product_id]. (Ejemplo: ${window.location.origin}/producto/20). NO inventes nombres o slugs, usa solo el ID numérico.
-4. Si preguntan por una talla, mira el "Tallas/Stock" y confirma si la tienes. Si el stock es 0, di que está agotada pero ofrece algo similar.
-5. Si no encuentras nada en el inventario, invita a escribir por WhatsApp o sugiere mirar las "Novedades" en la web.
+REGLAS CRÍTICAS DE RESPUESTA:
+1. SOLO recomienda artículos que estén en el "INVENTARIO REAL" arriba indicado.
+2. Si la clienta pide una categoría (ej: Pantalón) y no hay ninguno en el inventario real, NO inventes ni recomiendes otra cosa de distinta categoría. Di amablemente que no tienes stock de eso ahora mismo y ofrece mirar las "Novedades" o contactar por WhatsApp.
+3. Genera el enlace al producto usando ESTE FORMATO EXACTO: ${window.location.origin}/producto/[product_id].
+4. Sé persuasiva pero muy concisa.
+5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
 `;
 
       // 4. Llamada a Groq

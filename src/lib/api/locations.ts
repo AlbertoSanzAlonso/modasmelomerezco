@@ -48,7 +48,7 @@ export const locations = {
               province: result.province
             }])
             .select()
-            .single();
+            .maybeSingle();
           
           return {
             id: savedData?.id,

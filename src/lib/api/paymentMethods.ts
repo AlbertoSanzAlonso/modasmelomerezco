@@ -18,7 +18,7 @@ export const paymentMethods = {
       .from('payment_methods')
       .insert([method])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -30,7 +30,7 @@ export const paymentMethods = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;

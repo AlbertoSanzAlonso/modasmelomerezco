@@ -25,7 +25,7 @@ export const customers = {
       .from('customers')
       .select('*, shipping_addresses(*)')
       .eq('customer_id', id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -36,7 +36,7 @@ export const customers = {
       .from('customers')
       .select('*, shipping_addresses(*)')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -47,7 +47,7 @@ export const customers = {
       .from('customers')
       .insert([customer])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -61,7 +61,7 @@ export const customers = {
       .update(rest)
       .eq('customer_id', id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;

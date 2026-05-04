@@ -42,7 +42,7 @@ export const addresses = {
         is_default: address.isDefault
       }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return {
@@ -64,7 +64,7 @@ export const addresses = {
       .update(dbUpdates)
       .eq('shipping_address_id', shipping_address_id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return {

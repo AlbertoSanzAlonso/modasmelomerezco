@@ -71,7 +71,7 @@ export const auth = {
         phone: customer.phone?.trim() || ''
       }])
       .select()
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     const rawUser = data;

@@ -9,7 +9,7 @@ export const admins = {
       .from('admins')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data || null;
@@ -20,7 +20,7 @@ export const admins = {
       .from('admins')
       .select('*')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data || null;
@@ -38,7 +38,7 @@ export const admins = {
       .update(dataToUpdate)
       .eq('admin_id', admin_id)
       .select()
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     return data;

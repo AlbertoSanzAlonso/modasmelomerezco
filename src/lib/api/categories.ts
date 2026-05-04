@@ -18,7 +18,7 @@ export const categories = {
       .from('categories')
       .select('*')
       .ilike('name', name)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
     return data || undefined;
@@ -44,7 +44,7 @@ export const categories = {
       .from('categories')
       .insert([{ name }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -55,7 +55,7 @@ export const categories = {
       .from('subcategories')
       .insert([{ name, category_id }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;

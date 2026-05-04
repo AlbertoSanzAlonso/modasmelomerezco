@@ -48,7 +48,7 @@ export const orders = {
       .from('orders')
       .insert([order])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -60,7 +60,7 @@ export const orders = {
       .update(updates)
       .eq('order_id', order_id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;

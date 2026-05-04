@@ -87,7 +87,7 @@ export const products = {
       .from('products')
       .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)')
       .eq('product_id', product_id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return normalise(data);
@@ -111,7 +111,7 @@ export const products = {
       // Obtener el nombre de la categoría para un mejor embedding
       let categoryName = '';
       if (categoryId) {
-        const { data: cat } = await supabase.from('categories').select('name').eq('id', categoryId).single();
+        const { data: cat } = await supabase.from('categories').select('name').eq('id', categoryId).maybeSingle();
         categoryName = cat?.name || '';
       }
 
@@ -156,7 +156,7 @@ export const products = {
       .from('products')
       .insert([pData])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -205,7 +205,7 @@ export const products = {
       .update(filteredUpdates)
       .eq('product_id', product_id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -260,7 +260,7 @@ export const products = {
       .from('product_variants')
       .select('stock')
       .eq('variant_id', variant_id)
-      .single();
+      .maybeSingle();
 
     if (fetchError) throw fetchError;
 

@@ -18,7 +18,7 @@ export const subscriptions = {
       .from('subscriptions')
       .insert([{ email, status, confirmation_token: confirmationToken }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -30,7 +30,7 @@ export const subscriptions = {
       .update(updates)
       .eq('email', email)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -41,7 +41,7 @@ export const subscriptions = {
       .from('subscriptions')
       .select('*')
       .eq('confirmation_token', token)
-      .single();
+      .maybeSingle();
 
     if (error) return null;
     return data;

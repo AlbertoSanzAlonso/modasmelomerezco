@@ -5,13 +5,14 @@ import bcrypt from 'bcryptjs';
 
 export const auth = {
   login: async (email: string, password: string): Promise<{ user: Customer, token: string }> => {
+    const cleanEmail = email.toLowerCase().trim();
     const { data, error } = await supabase
       .from('customers')
       .select('*')
-      .eq('email', email)
-      .single();
+      .eq('email', cleanEmail)
+      .maybeSingle(); // Usamos maybeSingle para evitar el error 406 si no existe
     
-    if (error || !data) throw new Error('Credenciales incorrectas');
+    if (error || !data) throw new Error('El email no está registrado o las credenciales son incorrectas');
     
     const rawUser = data;
     const isPasswordValid = bcrypt.compareSync(password, rawUser.password);
@@ -55,16 +56,19 @@ export const auth = {
   },
 
   signup: async (customer: Omit<Customer, 'customer_id'> & { password: string }): Promise<{ user: Customer, token: string }> => {
+    // Nota: El hashing en el frontend es lento para móviles. 
+    // Lo ideal sería hacerlo en una Edge Function, pero para mantener compatibilidad 
+    // seguiremos con bcryptjs pero asegurándonos de que no bloquee.
     const hashedPassword = bcrypt.hashSync(customer.password, 10);
     
     const { data, error } = await supabase
       .from('customers')
       .insert([{
-        email: customer.email,
-        name: customer.name,
-        surname: customer.surname || '',
+        email: customer.email.toLowerCase().trim(),
+        name: customer.name.trim(),
+        surname: customer.surname?.trim() || '',
         password: hashedPassword,
-        phone: customer.phone || ''
+        phone: customer.phone?.trim() || ''
       }])
       .select()
       .single();

@@ -188,8 +188,7 @@ const CheckoutPage = () => {
         color: item.selectedVariant.color
       })),
       payment_status: 'Paid',
-      carrier: shippingOption,
-      notes: shippingOption === 'nacex_point' ? `Recogida en Punto Nacex: ${selectedPoint}` : ''
+      carrier: shippingOption === 'nacex_point' ? `Nacex Point: ${selectedPoint}` : shippingOption
     };
 
     try {
@@ -263,8 +262,7 @@ const CheckoutPage = () => {
       total_amount: finalTotal,
       order_status: 'Pending',
       payment_method: paymentMethod === 'card' ? 'Redsys (Tarjeta)' : 'Redsys (Bizum)',
-      carrier: shippingOption,
-      notes: shippingOption === 'nacex_point' ? `Recogida en Punto Nacex: ${selectedPoint}` : '',
+      carrier: shippingOption === 'nacex_point' ? `Nacex Point: ${selectedPoint}` : shippingOption,
       shipping_address_id: shippingAddressId,
       shipping_city: formData.city,
       shipping_province: formData.province,

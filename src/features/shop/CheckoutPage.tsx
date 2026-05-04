@@ -31,6 +31,7 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'bizum'>('card');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [shippingOption, setShippingOption] = useState<'home' | 'local' | 'nacex_point'>('home');
+  const [selectedPoint, setSelectedPoint] = useState<string>('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -187,7 +188,8 @@ const CheckoutPage = () => {
         color: item.selectedVariant.color
       })),
       payment_status: 'Paid',
-      carrier: shippingOption
+      carrier: shippingOption,
+      notes: shippingOption === 'nacex_point' ? `Recogida en Punto Nacex: ${selectedPoint}` : ''
     };
 
     try {
@@ -257,6 +259,7 @@ const CheckoutPage = () => {
       order_status: 'Pending',
       payment_method: paymentMethod === 'card' ? 'Redsys (Tarjeta)' : 'Redsys (Bizum)',
       carrier: shippingOption,
+      notes: shippingOption === 'nacex_point' ? `Recogida en Punto Nacex: ${selectedPoint}` : '',
       shipping_address_id: shippingAddressId,
       shipping_city: formData.city,
       shipping_province: formData.province,
@@ -406,6 +409,8 @@ const CheckoutPage = () => {
               <ShippingMethodSelector 
                 selectedOption={shippingOption} 
                 onSelect={setShippingOption} 
+                selectedPoint={selectedPoint}
+                onPointSelect={setSelectedPoint}
                 city={formData.city}
               />
 

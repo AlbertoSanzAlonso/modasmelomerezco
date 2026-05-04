@@ -3,15 +3,21 @@ import { Truck, CheckCircle2 } from 'lucide-react';
 
 type ShippingOption = 'home' | 'local' | 'nacex_point';
 
+import { NacexPointSelector } from './NacexPointSelector';
+
 interface ShippingMethodSelectorProps {
   selectedOption: ShippingOption;
   onSelect: (option: ShippingOption) => void;
+  selectedPoint?: string;
+  onPointSelect?: (point: string) => void;
   city?: string;
 }
 
 export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
   selectedOption,
   onSelect,
+  selectedPoint,
+  onPointSelect,
   city
 }) => {
   return (
@@ -89,11 +95,10 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
       </div>
 
       {selectedOption === 'nacex_point' && (
-        <div className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-xl">
-          <p className="text-[10px] font-medium text-secondary/60 italic">
-            * El punto Nacex varía según la ciudad. Te contactaremos para elegir el más cercano a {city || 'tu ubicación'}.
-          </p>
-        </div>
+        <NacexPointSelector 
+          selectedPoint={selectedPoint}
+          onSelect={onPointSelect || (() => {})}
+        />
       )}
     </section>
   );

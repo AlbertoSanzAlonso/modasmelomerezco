@@ -106,6 +106,48 @@ export const products = {
     return (data || []).map(normalise);
   },
 
+  syncEmbedding: async (productId: string, name: string, description: string, categoryId?: string): Promise<void> => {
+    try {
+      // Obtener el nombre de la categoría para un mejor embedding
+      let categoryName = '';
+      if (categoryId) {
+        const { data: cat } = await supabase.from('categories').select('name').eq('id', categoryId).single();
+        categoryName = cat?.name || '';
+      }
+
+      const content = `Producto: ${name}. Categoría: ${categoryName}. Descripción: ${description}`;
+      
+      const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "text-embedding-3-small",
+          input: content
+        })
+      });
+
+      if (!response.ok) throw new Error('OpenAI Embedding Error');
+      const { data: [{ embedding }] } = await response.json();
+
+      // Upsert: si existe lo actualiza, si no lo crea
+      const { error } = await supabase
+        .from('product_embeddings')
+        .upsert({
+          product_id: productId,
+          content: content,
+          embedding: embedding
+        }, { onConflict: 'product_id' });
+
+      if (error) throw error;
+      console.log(`Embedding synced for ${name}`);
+    } catch (err) {
+      console.error('Error syncing embedding:', err);
+    }
+  },
+
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
     const { variants, images, ...pData } = productData as any;
     
@@ -140,6 +182,9 @@ export const products = {
       await supabase.from('product_images').insert(imageRecords);
     }
 
+    // 4. Sync Embedding (Background)
+    products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
+
     return normalise(product);
   },
 
@@ -166,7 +211,6 @@ export const products = {
 
     // 2. Update variants if provided
     if (variants) {
-      // Simplest: Delete and re-insert (common in small scale admin panels)
       await supabase.from('product_variants').delete().eq('product_id', product_id);
       if (variants.length > 0) {
         const cleanVariants = variants.map((v: any) => ({
@@ -193,6 +237,11 @@ export const products = {
       }
     }
 
+    // 4. Sync Embedding (Background) - Solo si cambió nombre, descripción o categoría
+    if (updates.name || updates.description || updates.category_id) {
+      products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
+    }
+
     return normalise(product);
   },
 
@@ -203,6 +252,7 @@ export const products = {
       .eq('product_id', product_id);
 
     if (error) throw error;
+    // El embedding se borra solo por CASCADE en la DB
   },
 
   decrementStock: async (variant_id: string, quantity: number): Promise<void> => {

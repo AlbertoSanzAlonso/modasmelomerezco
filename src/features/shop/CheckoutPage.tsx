@@ -221,6 +221,11 @@ const CheckoutPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    if (shippingOption === 'nacex_point' && !selectedPoint) {
+      alert('Por favor, selecciona un Punto Nacex Shop para continuar.');
+      setIsSubmitting(false);
+      return;
+    }
 
     const selectedAddress = user?.addresses?.find(a => a.type === selectedAddressId);
     let shippingAddressId = selectedAddress?.shipping_address_id || null;

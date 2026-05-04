@@ -81,12 +81,11 @@ interface Message {
   isBot: boolean;
 }
 
+import { useChatStore } from "@/store/useChatStore";
+
 export const AIChatAgent = () => {
   const { pathname } = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: '¡Hola! Soy MeloMe, tu asistente virtual. ¿En qué puedo ayudarte? Si prefieres hablar por WhatsApp, pulsa aquí: https://wa.me/34685011494', isBot: true }
-  ]);
+  const { messages, isOpen, setIsOpen, addMessage, isLoading: isChatLoading } = useChatStore();
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,7 +100,6 @@ export const AIChatAgent = () => {
     }
   }, [messages, isOpen]);
 
-  // No mostrar en admin ni cuenta
   if (pathname.startsWith('/admin') || pathname.startsWith('/cuenta')) {
     return null;
   }
@@ -112,40 +110,22 @@ export const AIChatAgent = () => {
 
     const userMsg = inputValue.trim();
     setInputValue('');
-    setMessages(prev => [...prev, { id: Date.now().toString(), text: userMsg, isBot: false }]);
+    addMessage({ id: Date.now().toString(), text: userMsg, isBot: false });
     setIsLoading(true);
 
     try {
       let matchedProducts = [];
-      let searchMethod = 'semantic';
+      const embedding = await getQueryEmbedding(userMsg);
 
-      try {
-        // 1. Intentar Búsqueda Semántica (OpenAI + Supabase)
-        const embedding = await getQueryEmbedding(userMsg);
+      const { data, error: rpcError } = await supabase.rpc('match_products', {
+        query_embedding: embedding,
+        match_threshold: 0.5,
+        match_count: 8
+      });
 
-        const { data, error: rpcError } = await supabase.rpc('match_products', {
-          query_embedding: embedding,
-          match_threshold: 0.5, // Mucho más estricto para evitar confusiones (Chaqueta vs Pantalón)
-          match_count: 8
-        });
+      if (rpcError) throw rpcError;
+      matchedProducts = data || [];
 
-        if (rpcError) throw rpcError;
-        matchedProducts = data || [];
-      } catch (vectorError) {
-        console.warn('Vector search failed, falling back to keywords:', vectorError);
-        searchMethod = 'keyword';
-        // 2. Fallback: Búsqueda por palabras clave más amplia
-        const firstWord = userMsg.split(' ')[0];
-        const { data: keywordProducts } = await supabase
-          .from('products')
-          .select('*, categories(name)')
-          .or(`name.ilike.%${userMsg}%,description.ilike.%${userMsg}%,name.ilike.%${firstWord}%`)
-          .limit(10);
-        
-        matchedProducts = keywordProducts || [];
-      }
-
-      // 3. Preparar info para el prompt
       const productsInfo = matchedProducts.length > 0 
         ? matchedProducts.map((p: any) => {
             const stockInfo = p.variants?.map((v: any) => `${v.size}: ${v.stock}uds`).join(', ') || 'Sin info de stock';
@@ -154,7 +134,7 @@ export const AIChatAgent = () => {
           }).join('\n---\n')
         : 'No hay artículos específicos en el catálogo que coincidan.';
 
-      const conversationHistory = messages.slice(1).map(m => ({
+      const conversationHistory = messages.map(m => ({
         role: m.isBot ? 'assistant' : 'user',
         content: m.text
       }));
@@ -182,7 +162,6 @@ REGLAS CRÍTICAS DE RESPUESTA:
 5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
 `;
 
-      // 4. Llamada a Groq
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -203,13 +182,13 @@ REGLAS CRÍTICAS DE RESPUESTA:
 
       if (!response.ok) throw new Error('Groq API Error');
       
-      const data = await response.json();
-      const botResponse = data.choices[0].message.content;
+      const resData = await response.json();
+      const botResponse = resData.choices[0].message.content;
 
-      setMessages(prev => [...prev, { id: Date.now().toString(), text: botResponse, isBot: true }]);
+      addMessage({ id: Date.now().toString(), text: botResponse, isBot: true });
     } catch (error) {
       console.error('AIChat Error:', error);
-      setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Lo siento, estoy teniendo un problema técnico. ¿Podrías repetirme la pregunta o contactarnos por WhatsApp?', isBot: true }]);
+      addMessage({ id: Date.now().toString(), text: 'Lo siento, estoy teniendo un problema técnico. ¿Podrías repetirme la pregunta o contactarnos por WhatsApp?', isBot: true });
     } finally {
       setIsLoading(false);
     }
@@ -246,7 +225,7 @@ REGLAS CRÍTICAS DE RESPUESTA:
         <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
-              <div className={`p-3 text-sm rounded-2xl max-w-[85%] ${msg.isBot ? 'bg-white border border-gray-100' : 'bg-secondary text-white'}`}>
+              <div className={`p-3 text-sm rounded-2xl max-w-[85%] ${msg.isBot ? 'bg-white border border-gray-100 shadow-sm' : 'bg-secondary text-white shadow-md'}`}>
                 {msg.isBot ? formatMessage(msg.text) : msg.text}
               </div>
             </div>

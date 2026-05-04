@@ -144,7 +144,7 @@ export const AddToCartModal: React.FC = () => {
                 ) : modalConfig.type === 'warning' || modalConfig.type === 'error' ? (
                   <>
                     <Button 
-                      className={`w-full py-4 text-xs font-black uppercase tracking-[0.2em] italic ${modalConfig.type === 'error' ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'}`}
+                      className={`w-full py-4 text-xs font-black uppercase tracking-[0.2em] italic ${modalConfig.type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'}`}
                       onClick={() => {
                         modalConfig.onAction?.();
                         closeModal();

@@ -119,8 +119,8 @@ export const AIChatAgent = () => {
 
       const { data, error: rpcError } = await supabase.rpc('match_products', {
         query_embedding: embedding,
-        match_threshold: 0.5,
-        match_count: 8
+        match_threshold: 0.35,
+        match_count: 12
       });
 
       if (rpcError) throw rpcError;

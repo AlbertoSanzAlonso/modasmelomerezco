@@ -19,9 +19,9 @@ export const useAdminData = (productPage: number, orderPage: number, customerPag
     queryFn: async () => {
       const res = await api.customers.getAll(customerPage, pageSize, customerSearch);
       
-      // Inject subscription status (Corrected: it returns an array directly)
-      const subs = await api.subscriptions.getAll();
-      const activeEmails = new Set(subs.filter(s => s.status === 'active').map(s => s.email.toLowerCase()));
+      // Inject subscription status
+      const subsRes = await api.subscriptions.getAll(1, 1000);
+      const activeEmails = new Set(subsRes.subscriptions.filter(s => s.status === 'active').map(s => s.email.toLowerCase()));
       
       const customersWithStatus = res.customers.map(c => ({
         ...c,
@@ -43,10 +43,11 @@ export const useAdminData = (productPage: number, orderPage: number, customerPag
   const orders = ordersData?.orders;
   const totalOrders = ordersData?.total || 0;
 
-  const { data: subscriptions } = useQuery({
+  const { data: subscriptionsData } = useQuery({
     queryKey: ['admin-subscriptions'],
     queryFn: () => api.subscriptions.getAll(1, 1000)
   });
+  const subscriptions = subscriptionsData?.subscriptions;
 
   return {
     products,

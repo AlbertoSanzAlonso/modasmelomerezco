@@ -3,14 +3,21 @@ import { supabase } from '../supabase';
 import type { Subscription } from '@/types';
 
 export const subscriptions = {
-  getAll: async (): Promise<Subscription[]> => {
-    const { data, error } = await supabase
+  getAll: async (page = 1, pageSize = 1000): Promise<{ subscriptions: Subscription[], total: number }> => {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
       .from('subscriptions')
-      .select('*')
-      .order('subscribed_at', { ascending: false });
+      .select('*', { count: 'exact' })
+      .order('subscribed_at', { ascending: false })
+      .range(from, to);
 
     if (error) throw error;
-    return data || [];
+    return {
+      subscriptions: data || [],
+      total: count || 0
+    };
   },
 
   create: async (email: string, status: 'pending' | 'active' = 'pending', confirmationToken?: string): Promise<Subscription> => {

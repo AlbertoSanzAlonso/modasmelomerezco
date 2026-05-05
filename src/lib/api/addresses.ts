@@ -45,6 +45,8 @@ export const addresses = {
       .maybeSingle();
 
     if (error) throw error;
+    if (!data) return { ...address, shipping_address_id: Date.now() } as any;
+
     return {
       ...data,
       type: data.address_type,
@@ -67,6 +69,8 @@ export const addresses = {
       .maybeSingle();
 
     if (error) throw error;
+    if (!data) return updates as any;
+
     return {
       ...data,
       type: data.address_type,

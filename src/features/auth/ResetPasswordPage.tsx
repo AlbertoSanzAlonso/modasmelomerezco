@@ -50,13 +50,11 @@ export const ResetPasswordPage: React.FC = () => {
       if (updateError) throw updateError;
 
       // 2. Hacer login automático con la nueva clave
-      const { user: profile, token } = type === 'admin' 
-        ? await api.auth.adminLogin(email, password)
-        : await api.auth.login(email, password);
-
       if (type === 'admin') {
+        const { admin: profile, token } = await api.auth.adminLogin(email, password);
         adminLogin(profile as any, token);
       } else {
+        const { user: profile, token } = await api.auth.login(email, password);
         login(profile as any, token);
       }
       

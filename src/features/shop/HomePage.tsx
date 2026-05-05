@@ -53,7 +53,11 @@ const HomePage = () => {
       setEmail('');
     } catch (error) {
       console.error('Subscription error:', error);
-      alert('Error al suscribirse. Por favor, inténtalo de nuevo.');
+      useCartStore.getState().openModal({
+        title: 'Error de Suscripción',
+        message: error instanceof Error ? error.message : 'No se pudo procesar tu suscripción. Por favor, inténtalo más tarde.',
+        type: 'info'
+      });
     } finally {
       setIsSubmitting(false);
     }

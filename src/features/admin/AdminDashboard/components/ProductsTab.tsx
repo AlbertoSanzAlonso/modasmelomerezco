@@ -155,7 +155,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              <img src="/logo-corona.png" alt="Cargando..." className="w-10 h-10 object-contain opacity-50" />
+              <img src="/assets/logo/logo-corona.png" alt="Cargando..." className="w-10 h-10 object-contain opacity-50" />
             </motion.div>
           </div>
         )}

@@ -31,7 +31,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
       <div className="md:hidden flex items-center justify-between p-4 border-b border-(--border-main) bg-(--bg-main) fixed top-0 left-0 w-full z-50">
         <Link to="/" className="flex items-center">
           <img 
-            src={theme === 'dark' ? "/LOGO MELOMEREZCO completo blanco.png" : "/LOGO MELOMEREZCO completo transparente.png"} 
+            src={theme === 'dark' ? "/assets/logo/LOGO MELOMEREZCO completo blanco.png" : "/assets/logo/LOGO MELOMEREZCO completo transparente.png"} 
             alt="Modas Me lo Merezco" 
             className="h-16 w-auto object-contain"
           />
@@ -50,7 +50,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
           <div className="flex flex-col mb-16 items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src={theme === 'dark' ? "/LOGO MELOMEREZCO completo blanco.png" : "/LOGO MELOMEREZCO completo transparente.png"} 
+                src={theme === 'dark' ? "/assets/logo/LOGO MELOMEREZCO completo blanco.png" : "/assets/logo/LOGO MELOMEREZCO completo transparente.png"} 
                 alt="Modas Me lo Merezco" 
                 className="h-56 w-auto object-contain"
               />

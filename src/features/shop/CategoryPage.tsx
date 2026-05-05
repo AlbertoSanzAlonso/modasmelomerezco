@@ -222,7 +222,7 @@ const CategoryPage: React.FC = () => {
                 }}
                 className="relative"
               >
-                <img src="/logo-corona.png" alt="Cargando..." className="w-12 h-12 object-contain" />
+                <img src="/assets/logo/logo-corona.png" alt="Cargando..." className="w-12 h-12 object-contain" />
               </motion.div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">

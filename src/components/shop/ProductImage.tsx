@@ -46,7 +46,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({
       {!loaded && !isPlaceholder && (
         <div className="absolute inset-0 flex items-center justify-center bg-secondary/5">
           <motion.img 
-            src="/logo-corona.png" 
+            src="/assets/logo/logo-corona.png" 
             alt="Cargando..." 
             className="w-12 h-12 object-contain opacity-20"
             animate={{ 
@@ -83,7 +83,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({
           duration: 0.6, 
           ease: [0.21, 0, 0.07, 1] 
         }}
-        className={`w-full h-full transition-opacity duration-300 ${
+        className={`w-full h-full transition-all duration-700 ${
           loaded || isPlaceholder ? 'opacity-100' : 'opacity-0'
         } ${
           isPlaceholder 
@@ -96,7 +96,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({
       {loaded && !isPlaceholder && (
         <div className="absolute bottom-4 right-4 w-1/5 max-w-[100px] pointer-events-none opacity-60 select-none z-10">
           <img 
-            src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" 
+            src="/assets/logo/LOGO MELOMEREZCO corona blanco.png" 
             alt="" 
             className="w-full h-auto drop-shadow-lg" 
           />

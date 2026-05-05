@@ -20,15 +20,22 @@ export const subscriptions = {
     };
   },
 
-  create: async (email: string, status: 'pending' | 'active' = 'pending', confirmationToken?: string): Promise<Subscription> => {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .insert([{ email, status, confirmation_token: confirmationToken }])
-      .select()
-      .maybeSingle();
+  create: async (email: string, status: 'pending' | 'active' = 'pending', confirmation_token?: string): Promise<Subscription> => {
+    const response = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, status, confirmation_token }),
+    });
 
-    if (error) throw error;
-    return data;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al procesar la suscripción');
+    }
+
+    const res = await response.json();
+    return res.data;
   },
 
   update: async (email: string, updates: Partial<Subscription>): Promise<Subscription> => {

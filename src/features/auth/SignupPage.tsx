@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCartStore } from "@/store/useCartStore";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CITIES_BY_PROVINCE } from "@/constants/locations";
@@ -174,6 +175,8 @@ export const SignupPage: React.FC = () => {
         friendlyMessage = 'Ya existe una cuenta con este email. Prueba a iniciar sesión o recupera tu contraseña.';
       } else if (errorMsg.includes('invalid_email')) {
         friendlyMessage = 'El formato del email no es válido. Revisa que esté bien escrito.';
+      } else if (errorMsg.includes('security purposes')) {
+        friendlyMessage = 'Por seguridad, debes esperar un minuto antes de intentarlo de nuevo. ¡Tómate un respiro! ☕';
       }
 
       useCartStore.getState().openModal({

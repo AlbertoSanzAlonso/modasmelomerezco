@@ -2,7 +2,8 @@
 import { supabase } from '../supabase';
 
 export const paymentMethods = {
-  getByUser: async (customer_id: string) => {
+  // Cambiamos el nombre a getByCustomer para que coincida con la web
+  getByCustomer: async (customer_id: string) => {
     const { data, error } = await supabase
       .from('payment_methods')
       .select('*')
@@ -14,9 +15,16 @@ export const paymentMethods = {
   },
 
   create: async (method: any) => {
+    // Aseguramos que usamos customer_id en la inserción
+    const cleanMethod = { ...method };
+    if (cleanMethod.user_id) {
+      cleanMethod.customer_id = cleanMethod.user_id;
+      delete cleanMethod.user_id;
+    }
+
     const { data, error } = await supabase
       .from('payment_methods')
-      .insert([method])
+      .insert([cleanMethod])
       .select()
       .maybeSingle();
 

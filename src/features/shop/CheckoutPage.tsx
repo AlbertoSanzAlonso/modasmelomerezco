@@ -290,12 +290,6 @@ const CheckoutPage = () => {
     try {
       const createdOrder = await api.orders.create(orderData);
       
-      for (const item of items) {
-        if (item.selectedVariant.variant_id) {
-          await api.products.decrementStock(item.selectedVariant.variant_id.toString(), item.quantity);
-        }
-      }
-
       queryClient.invalidateQueries({ queryKey: ['orders', user?.email] });
       
       const redsysParams = await fetchRedsysParameters(
@@ -304,7 +298,7 @@ const CheckoutPage = () => {
         {
           urlOk: `${window.location.origin}/cuenta/pedidos?payment=success`,
           urlKo: `${window.location.origin}/checkout?payment=error`,
-          urlNotification: `${import.meta.env.VITE_INSFORGE_URL}/api/webhooks/redsys`, 
+          urlNotification: `${window.location.origin}/api/webhooks/redsys`, 
           productDescription: `Pedido #${createdOrder.order_id.split('-')[0].toUpperCase()}`,
           paymentMethod: paymentMethod
         }

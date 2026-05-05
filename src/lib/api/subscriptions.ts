@@ -55,26 +55,19 @@ export const subscriptions = {
   },
 
   confirm: async (token: string): Promise<boolean> => {
-    // 1. Buscar la suscripción por el token
-    const { data, error: fetchError } = await supabase
-      .from('subscriptions')
-      .select('email')
-      .eq('confirmation_token', token)
-      .maybeSingle();
+    const response = await fetch('/api/confirm-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
 
-    if (fetchError || !data) throw new Error('Token de confirmación no válido o expirado.');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al confirmar la suscripción');
+    }
 
-    // 2. Marcar como activa y limpiar el token
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update({ 
-        status: 'active',
-        confirmation_token: null,
-        subscribed_at: new Date().toISOString()
-      })
-      .eq('email', data.email);
-
-    if (updateError) throw updateError;
     return true;
   }
 };

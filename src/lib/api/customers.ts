@@ -3,13 +3,19 @@ import { supabase } from '../supabase';
 import type { Customer } from '@/types';
 
 export const customers = {
-  getAll: async (page = 1, pageSize = 20): Promise<{ customers: Customer[], total: number }> => {
+  getAll: async (page = 1, pageSize = 20, searchTerm?: string): Promise<{ customers: Customer[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('customers')
-      .select('*, shipping_addresses(*)', { count: 'exact' })
+      .select('*, shipping_addresses(*)', { count: 'exact' });
+
+    if (searchTerm) {
+      query = query.or(`name.ilike.%${searchTerm}%,surname.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+    }
+
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
       .range(from, to);
 

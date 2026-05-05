@@ -30,6 +30,7 @@ export const AdminDashboard: React.FC = () => {
   const [productSearch, setProductSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
+  const [customerSearch, setCustomerSearch] = useState('');
   const pageSize = 10;
 
   // Reset page when filters or search change
@@ -53,7 +54,7 @@ export const AdminDashboard: React.FC = () => {
     totalOrders,
     subscriptions,
     queryClient
-  } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch, statusFilter, isNewFilter);
+  } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch, statusFilter, isNewFilter, customerSearch);
 
   const openModal = useCartStore((state) => state.openModal);
 
@@ -285,6 +286,8 @@ export const AdminDashboard: React.FC = () => {
             totalCustomers={totalCustomers}
             customerPage={customerPage}
             pageSize={pageSize}
+            searchTerm={customerSearch}
+            onSearchChange={setCustomerSearch}
             onPageChange={setCustomerPage}
             onCreate={() => {
               const name = prompt('Nombre:');

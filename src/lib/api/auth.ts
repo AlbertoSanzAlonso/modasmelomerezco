@@ -69,20 +69,50 @@ export const auth = {
     if (authError) throw authError;
     if (!authData.user) throw new Error('Error al crear la cuenta de autenticación');
 
-    // 2. Crear el perfil en nuestra tabla customers vinculado al auth_id
-    const { data: newCustomer, error: custError } = await supabase
+    // 2. Vincular o crear el perfil en nuestra tabla customers
+    const { data: existingCustomer } = await supabase
       .from('customers')
-      .insert([{
-        auth_id: authData.user.id,
-        email: cleanEmail,
-        name: customer.name.trim(),
-        surname: customer.surname?.trim() || '',
-        phone: customer.phone?.trim() || ''
-      }])
-      .select()
+      .select('*')
+      .eq('email', cleanEmail)
       .maybeSingle();
 
-    if (custError || !newCustomer) throw custError || new Error('Error al crear perfil');
+    let finalCustomer;
+
+    if (existingCustomer) {
+      // Si el cliente existe pero no tiene auth_id (o queremos actualizarlo), lo vinculamos
+      const { data: updatedCustomer, error: updateError } = await supabase
+        .from('customers')
+        .update({ 
+          auth_id: authData.user.id,
+          name: customer.name.trim(),
+          surname: customer.surname?.trim() || '',
+          phone: customer.phone?.trim() || ''
+        })
+        .eq('email', cleanEmail)
+        .select()
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+      finalCustomer = updatedCustomer;
+    } else {
+      // Si no existe, lo creamos de cero
+      const { data: newCustomer, error: insertError } = await supabase
+        .from('customers')
+        .insert([{
+          auth_id: authData.user.id,
+          email: cleanEmail,
+          name: customer.name.trim(),
+          surname: customer.surname?.trim() || '',
+          phone: customer.phone?.trim() || ''
+        }])
+        .select()
+        .maybeSingle();
+
+      if (insertError) throw insertError;
+      finalCustomer = newCustomer;
+    }
+
+    if (!finalCustomer) throw new Error('Error al gestionar el perfil de cliente');
 
     // 3. Crear direcciones si existen
     if (customer.addresses && customer.addresses.length > 0) {

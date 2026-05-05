@@ -51,8 +51,8 @@ export const OrderHistory: React.FC = () => {
   }, [clearCart, openModal, user]);
 
   const { data: orders, isLoading, error } = useQuery({
-    queryKey: ['orders', user?.customer_id, currentPage],
-    queryFn: () => api.orders.getByCustomer(user?.customer_id || user?.email || '', currentPage, itemsPerPage),
+    queryKey: ['orders', user?.email || user?.customer_id, currentPage],
+    queryFn: () => api.orders.getByCustomer(user?.email || user?.customer_id || '', currentPage, itemsPerPage),
     enabled: !!user?.customer_id || !!user?.email
   });
 

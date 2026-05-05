@@ -30,7 +30,7 @@ export const orders = {
       .select('*, customer:customers(name, surname, email, phone)');
 
     if (isEmail) {
-      query = query.eq('customer_email', idOrEmail);
+      query = query.or(`customer_email.eq."${idOrEmail}",customer_id.eq."${idOrEmail}"`);
     } else {
       query = query.eq('customer_id', idOrEmail);
     }

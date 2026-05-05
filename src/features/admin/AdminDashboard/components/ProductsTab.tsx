@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { Plus, Eye, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, Download, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Product } from "@/types";
 import { motion } from 'framer-motion';
+import { downloadProductImagesAsZip } from '@/utils/imageDownloader';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
@@ -59,7 +60,29 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   onDelete,
   onCreate
 }) => {
+  const [isDownloading, setIsDownloading] = React.useState(false);
   const totalPages = Math.ceil(totalProducts / pageSize);
+
+  const handleBulkDownload = async () => {
+    if (!products) return;
+    setIsDownloading(true);
+    try {
+      const selectedProducts = products.filter(p => selectedIds.includes(p.product_id));
+      await downloadProductImagesAsZip(selectedProducts);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleSingleDownload = async (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    setIsDownloading(true);
+    try {
+      await downloadProductImagesAsZip([product]);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const getPageRange = () => {
     const range: number[] = [];
@@ -112,7 +135,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               onChange={(e) => onSearchChange(e.target.value)}
               className="block w-full pl-10 pr-4 py-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white shadow-sm transition-all"
             />
-            {isLoading && (
+            {(isLoading || isDownloading) && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -137,6 +160,14 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             <p className="text-[10px] font-black uppercase tracking-widest">Elementos seleccionados</p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
+            <button 
+              onClick={handleBulkDownload} 
+              disabled={isDownloading}
+              className="flex-1 sm:flex-none px-6 py-2.5 bg-white text-primary hover:bg-white/90 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {isDownloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+              Descargar Fotos
+            </button>
             <button onClick={() => onBulkStatusChange(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Publicar</button>
             <button onClick={() => onBulkStatusChange(false)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Ocultar</button>
             <button onClick={onBulkDelete} className="flex-1 sm:flex-none px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Eliminar</button>
@@ -246,6 +277,14 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                     <div className="flex justify-end gap-2">
                       <button 
                         className="p-3 text-gray-400 hover:text-primary transition-colors bg-transparent rounded-full hover:bg-primary/10"
+                        title="Descargar Fotos"
+                        disabled={isDownloading}
+                        onClick={(e) => handleSingleDownload(e, product)}
+                      >
+                        <ImageIcon className={`w-4 h-4 ${isDownloading ? 'animate-pulse' : ''}`} />
+                      </button>
+                      <button 
+                        className="p-3 text-gray-400 hover:text-primary transition-colors bg-transparent rounded-full hover:bg-primary/10"
                         title="Ver en la web"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -278,6 +317,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </td>
                 </tr>
               ))}
+
               {products?.length === 0 && !isLoading && (
                 <tr>
                   <td colSpan={7} className="px-8 py-20 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">

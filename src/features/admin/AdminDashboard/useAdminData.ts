@@ -19,8 +19,8 @@ export const useAdminData = (productPage: number, orderPage: number, customerPag
     queryFn: async () => {
       const res = await api.customers.getAll(customerPage, pageSize, customerSearch);
       
-      // Inject subscription status
-      const { data: subs } = await api.subscriptions.getAll(1, 1000);
+      // Inject subscription status (Corrected: it returns an array directly)
+      const subs = await api.subscriptions.getAll();
       const activeEmails = new Set(subs.filter(s => s.status === 'active').map(s => s.email.toLowerCase()));
       
       const customersWithStatus = res.customers.map(c => ({

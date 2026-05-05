@@ -98,10 +98,11 @@ export const auth = {
       if (updateError) throw updateError;
       finalCustomer = updatedCustomer;
     } else {
-      // Si no existe, lo creamos de cero
+      // Si no existe, lo creamos de cero con un ID generado manualmente
       const { data: newCustomer, error: insertError } = await supabase
         .from('customers')
         .insert([{
+          customer_id: crypto.randomUUID(),
           auth_id: authData.user.id,
           email: cleanEmail,
           name: customer.name.trim(),

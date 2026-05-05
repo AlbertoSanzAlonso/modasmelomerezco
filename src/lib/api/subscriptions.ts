@@ -74,7 +74,8 @@ export const subscriptions = {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Error al confirmar la suscripción');
     }
-
+    return true;
+  },
   unsubscribe: async (email: string): Promise<boolean> => {
     const response = await fetch('/api/unsubscribe', {
       method: 'POST',

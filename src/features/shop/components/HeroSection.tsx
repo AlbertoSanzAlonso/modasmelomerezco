@@ -22,7 +22,6 @@ export const HeroSection: React.FC = () => {
           className="w-full h-full object-cover"
         >
           <source src="/assets/videos/hero.mp4" type="video/mp4" />
-          <source src="/assets/videos/hero.webm" type="video/webm" />
         </video>
       </motion.div>
 

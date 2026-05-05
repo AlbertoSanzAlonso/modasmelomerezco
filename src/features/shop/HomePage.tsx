@@ -47,7 +47,7 @@ const HomePage = () => {
       
       await api.subscriptions.create(email, 'pending', token);
 
-      await api.mail.sendConfirmationEmail(email, token);
+      await api.mail.sendConfirmationEmail(email, token, window.location.origin);
       
       setIsSubscribed(true);
       setEmail('');

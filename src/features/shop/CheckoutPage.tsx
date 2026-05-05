@@ -411,7 +411,7 @@ const CheckoutPage = () => {
                 onSelect={setShippingOption} 
                 selectedPoint={selectedPoint}
                 onPointSelect={setSelectedPoint}
-                city={formData.city}
+                zipCode={formData.zip}
               />
 
               {(selectedAddressId === 'new' || !user?.addresses?.length) && (

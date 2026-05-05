@@ -1,19 +1,45 @@
+import React, { useState, useEffect } from 'react';
+import { MapPin, CheckCircle2, Search, Loader2 } from 'lucide-react';
 
-import React, { useState } from 'react';
-import { MapPin, ExternalLink, CheckCircle2, Search } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+interface NacexPoint {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  zip: string;
+}
 
 interface NacexPointSelectorProps {
   onSelect: (pointName: string) => void;
   selectedPoint?: string;
+  zipCode?: string;
 }
 
-export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect, selectedPoint }) => {
-  const [pointName, setPointName] = useState(selectedPoint || '');
+export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect, selectedPoint, zipCode }) => {
+  const [points, setPoints] = useState<NacexPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const openNacexMap = () => {
-    window.open('https://www.nacex.com/puntos-nacex-shop', '_blank');
-  };
+  useEffect(() => {
+    const fetchPoints = async () => {
+      if (!zipCode || zipCode.length < 5) return;
+      
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/nacex?method=get_puntos_shop&cp=${zipCode}`);
+        const data = await response.json();
+        setPoints(data);
+      } catch (err) {
+        console.error('Error fetching Nacex points:', err);
+        setError('No se pudieron cargar los puntos Nacex. Inténtalo de nuevo.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPoints();
+  }, [zipCode]);
 
   return (
     <div className="mt-6 p-6 bg-primary/5 border border-primary/10 rounded-3xl animate-in fade-in slide-in-from-top-4 duration-500">
@@ -22,54 +48,54 @@ export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect
           <MapPin className="text-primary w-5 h-5" />
         </div>
         <div>
-          <h4 className="text-[11px] font-black uppercase tracking-widest text-secondary">Selecciona tu Punto Nacex Shop</h4>
+          <h4 className="text-[11px] font-black uppercase tracking-widest text-secondary">Puntos Nacex.shop Cercanos</h4>
           <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1 leading-relaxed">
-            Busca el punto más cercano en el mapa oficial y escribe su nombre o código abajo.
+            {zipCode ? `Mostrando puntos cerca de ${zipCode}` : 'Introduce tu código postal para ver puntos cercanos'}
           </p>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={openNacexMap}
-          className="w-full flex items-center justify-center gap-3 py-4 border-dashed border-primary/30 hover:border-primary text-[10px] font-black uppercase tracking-widest italic"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Abrir Buscador Oficial Nacex
-        </Button>
-
-        <div className="relative group">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary/20 group-focus-within:text-primary transition-colors">
-            <Search className="w-4 h-4" />
-          </div>
-          <input
-            type="text"
-            placeholder="Ej: Librería Central (C0432)"
-            value={pointName}
-            onChange={(e) => {
-              const val = e.target.value;
-              setPointName(val);
-              onSelect(val);
-            }}
-            className="w-full bg-white border border-secondary/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all"
-          />
-          {pointName.length > 5 && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
+      {isLoading ? (
+        <div className="flex flex-col items-center py-8 gap-3">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 text-center">Buscando tiendas...</p>
+        </div>
+      ) : error ? (
+        <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl text-center">
+          <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{error}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3">
+          {points.map((point) => (
+            <div
+              key={point.id}
+              onClick={() => onSelect(`${point.name} (${point.id})`)}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all flex justify-between items-center ${
+                selectedPoint?.includes(point.id)
+                  ? 'bg-white border-primary shadow-lg ring-1 ring-primary'
+                  : 'bg-white/50 border-secondary/10 hover:border-primary/50'
+              }`}
+            >
+              <div className="flex flex-col gap-1">
+                <p className="text-[10px] font-black uppercase tracking-tighter text-secondary">{point.name}</p>
+                <p className="text-[9px] text-secondary/60 uppercase tracking-widest">{point.address}, {point.city}</p>
+              </div>
+              {selectedPoint?.includes(point.id) && <CheckCircle2 className="w-4 h-4 text-primary" />}
             </div>
+          ))}
+          {zipCode && zipCode.length === 5 && points.length === 0 && (
+            <p className="text-[10px] text-center text-gray-400 py-4 font-bold uppercase tracking-widest">No se han encontrado puntos Nacex en esta zona.</p>
           )}
         </div>
+      )}
 
-        {pointName.length > 0 && (
-          <div className="flex items-center gap-2 p-3 bg-green-500/5 rounded-xl border border-green-500/10">
-            <span className="text-[9px] font-bold text-green-600 uppercase tracking-widest">
-              Punto Seleccionado Correctamente
-            </span>
-          </div>
-        )}
-      </div>
+      {selectedPoint && (
+        <div className="mt-4 flex items-center gap-2 p-3 bg-green-500/5 rounded-xl border border-green-500/10">
+          <span className="text-[9px] font-bold text-green-600 uppercase tracking-widest truncate">
+            Seleccionado: {selectedPoint}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

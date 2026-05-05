@@ -10,7 +10,7 @@ interface ShippingMethodSelectorProps {
   onSelect: (option: ShippingOption) => void;
   selectedPoint?: string;
   onPointSelect?: (point: string) => void;
-  city?: string;
+  zipCode?: string;
 }
 
 export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
@@ -18,7 +18,7 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
   onSelect,
   selectedPoint,
   onPointSelect,
-  city
+  zipCode
 }) => {
   return (
     <section className="bg-secondary/5 p-8 border border-secondary/10 rounded-2xl mb-12">
@@ -98,6 +98,7 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
         <NacexPointSelector 
           selectedPoint={selectedPoint}
           onSelect={onPointSelect || (() => {})}
+          zipCode={zipCode}
         />
       )}
     </section>

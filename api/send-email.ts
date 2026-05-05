@@ -35,11 +35,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+
+  if (!gmailUser || !gmailPass) {
+    console.error('Server configuration error: GMAIL_USER or GMAIL_APP_PASSWORD missing');
+    return res.status(500).json({ message: 'Server configuration error: Email credentials missing' });
+  }
+
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: gmailUser,
+      pass: gmailPass,
     },
   });
 

@@ -108,12 +108,20 @@ export const SignupPage: React.FC = () => {
     e.preventDefault();
     
     if (password !== repeatPassword) {
-      alert('Las contraseñas no coinciden');
+      useCartStore.getState().openModal({
+        title: 'Contraseñas distintas',
+        message: 'Por favor, asegúrate de que ambas contraseñas coinciden.',
+        type: 'info'
+      });
       return;
     }
 
     if (password.length < 8) {
-      alert('La contraseña debe tener al menos 8 caracteres');
+      useCartStore.getState().openModal({
+        title: 'Clave demasiado corta',
+        message: 'Tu contraseña debe tener al menos 8 caracteres para tu seguridad.',
+        type: 'info'
+      });
       return;
     }
 
@@ -148,12 +156,10 @@ export const SignupPage: React.FC = () => {
         
         useAuthStore.getState().setPendingFavorite(null);
         
-        import("@/store/useCartStore").then(m => {
-          m.useCartStore.getState().openModal({
-            title: '¡Bienvenida!',
-            message: 'Hemos guardado el artículo en tu lista de deseos.',
-            type: 'success'
-          });
+        useCartStore.getState().openModal({
+          title: '¡Bienvenida!',
+          message: 'Hemos guardado el artículo en tu lista de deseos.',
+          type: 'success'
         });
 
         navigate(`/producto/${pendingFavorite}`);
@@ -161,7 +167,20 @@ export const SignupPage: React.FC = () => {
         navigate('/');
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Error al crear cuenta');
+      const errorMsg = error instanceof Error ? error.message : 'Error al crear cuenta';
+      let friendlyMessage = 'No hemos podido crear tu cuenta. Por favor, inténtalo de nuevo.';
+      
+      if (errorMsg.includes('User already registered')) {
+        friendlyMessage = 'Ya existe una cuenta con este email. Prueba a iniciar sesión o recupera tu contraseña.';
+      } else if (errorMsg.includes('invalid_email')) {
+        friendlyMessage = 'El formato del email no es válido. Revisa que esté bien escrito.';
+      }
+
+      useCartStore.getState().openModal({
+        title: 'Ocurrió un problema',
+        message: friendlyMessage,
+        type: 'info'
+      });
     } finally {
       setIsLoading(false);
     }

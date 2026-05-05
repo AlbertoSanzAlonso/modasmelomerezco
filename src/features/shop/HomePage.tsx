@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from "@/lib/api";
+import { useCartStore } from "@/store/useCartStore";
 
 
 // Sub-components

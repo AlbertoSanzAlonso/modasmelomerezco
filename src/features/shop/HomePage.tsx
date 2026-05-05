@@ -45,11 +45,7 @@ const HomePage = () => {
     try {
       const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
-      await api.subscriptions.create({
-        email,
-        status: 'pending',
-        confirmation_token: token
-      });
+      await api.subscriptions.create(email, 'pending', token);
 
       await api.mail.sendConfirmationEmail(email, token);
       

@@ -46,7 +46,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
 
       {/* Sidebar */}
       <aside className={`fixed md:static inset-y-0 left-0 w-72 border-r border-(--border-main) flex flex-col bg-(--bg-main) z-40 transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="p-10 flex-grow overflow-y-auto">
+        <div className="p-10 grow overflow-y-auto">
           <div className="flex flex-col mb-16 items-center">
             <Link to="/" className="flex items-center">
               <img 

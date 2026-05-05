@@ -368,7 +368,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                <div>
                  <div className="flex justify-between items-start gap-2">
                    <h4 className="text-xs font-black uppercase italic truncate leading-tight text-(--text-main)">{product.name}</h4>
-                   <div className="flex-shrink-0 flex gap-2">
+                   <div className="shrink-0 flex gap-2">
                       {product.is_new && (
                         <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                       )}

@@ -97,14 +97,14 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-secondary/60 backdrop-blur-md z-[60] lg:hidden"
+              className="fixed inset-0 bg-secondary/60 backdrop-blur-md z-60 lg:hidden"
             />
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white z-[70] lg:hidden shadow-2xl flex flex-col"
+              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white z-70 lg:hidden shadow-2xl flex flex-col"
             >
               <div className="p-8 flex justify-between items-center border-b border-secondary/5">
                 <img src="/assets/logo/logo-corona.png" alt="Logo" className="h-12 w-auto brightness-0" />

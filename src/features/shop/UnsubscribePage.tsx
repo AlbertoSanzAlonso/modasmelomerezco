@@ -18,11 +18,8 @@ const UnsubscribePage: React.FC = () => {
       }
 
       try {
-        const sub = await api.subscriptions.getByEmail(email);
-        if (sub) {
-          if (sub.status !== 'unsubscribed') {
-            await api.subscriptions.update(sub.id, { status: 'unsubscribed' });
-          }
+        const success = await api.subscriptions.unsubscribe(email);
+        if (success) {
           setStatus('success');
         } else {
           setStatus('not-found');

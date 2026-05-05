@@ -51,7 +51,7 @@ export const HeroSection: React.FC = () => {
         className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
       >
         <span className="text-[10px] font-bold tracking-[0.5em] uppercase vertical-rl text-white">Desliza</span>
-        <div className="w-[1px] h-12 bg-white" />
+        <div className="w-px h-12 bg-white" />
       </motion.div>
     </section>
   );

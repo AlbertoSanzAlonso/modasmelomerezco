@@ -19,7 +19,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onGenerateLabel
 }) => {
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-110 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
       <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         <header className="p-8 border-b border-(--border-main) flex justify-between items-center bg-(--bg-main)">
           <div>

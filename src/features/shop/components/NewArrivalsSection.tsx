@@ -42,19 +42,19 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
         {isLoading ? (
           <div className="flex gap-6 md:gap-12 overflow-hidden">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="w-[160px] sm:w-[300px] md:w-[450px] aspect-3/4 bg-white/5 animate-pulse rounded-2xl flex-shrink-0" />
+              <div key={i} className="w-[160px] sm:w-[300px] md:w-[450px] aspect-3/4 bg-white/5 animate-pulse rounded-2xl shrink-0" />
             ))}
           </div>
         ) : (
           <>
             <div className="hidden md:flex justify-center gap-12 mb-10">
               <button onClick={() => scroll('left')} className="group flex items-center gap-4 text-primary transition-all">
-                <div className="w-12 h-[1px] bg-primary/20 group-hover:w-20 transition-all origin-right" />
+                <div className="w-12 h-px bg-primary/20 group-hover:w-20 transition-all origin-right" />
                 <ArrowRight className="w-8 h-8 rotate-180 stroke-[1px]" />
               </button>
               <button onClick={() => scroll('right')} className="group flex items-center gap-4 text-primary transition-all">
                 <ArrowRight className="w-8 h-8 stroke-[1px]" />
-                <div className="w-12 h-[1px] bg-primary/20 group-hover:w-20 transition-all origin-left" />
+                <div className="w-12 h-px bg-primary/20 group-hover:w-20 transition-all origin-left" />
               </button>
             </div>
 
@@ -69,7 +69,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
               {products?.map((product: Product) => (
                 <div 
                   key={product.product_id}
-                  className="w-[160px] sm:w-[300px] md:w-[400px] lg:w-[450px] snap-center snap-always flex-shrink-0"
+                  className="w-[160px] sm:w-[300px] md:w-[400px] lg:w-[450px] snap-center snap-always shrink-0"
                 >
                   <ProductCard product={product} />
                 </div>

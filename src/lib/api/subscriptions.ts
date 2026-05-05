@@ -75,6 +75,21 @@ export const subscriptions = {
       throw new Error(errorData.message || 'Error al confirmar la suscripción');
     }
 
+  unsubscribe: async (email: string): Promise<boolean> => {
+    const response = await fetch('/api/unsubscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      if (response.status === 404) return false; // Not found but not an "error" in flow
+      throw new Error(errorData.message || 'Error al tramitar la baja');
+    }
+
     return true;
   }
 };

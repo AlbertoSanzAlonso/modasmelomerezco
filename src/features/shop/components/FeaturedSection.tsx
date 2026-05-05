@@ -47,7 +47,7 @@ export const FeaturedSection: React.FC = () => {
           <h2 className="text-3xl md:text-4xl lg:text-6xl font-serif italic mb-12 leading-tight text-white max-w-4xl mx-auto">
             "Vestir bien es recordarte quién eres. Es darte ese capricho porque, simplemente, te lo mereces."
           </h2>
-          <div className="w-20 h-[1px] bg-white mx-auto mb-12" />
+          <div className="w-20 h-px bg-white mx-auto mb-12" />
           <p className="text-[10px] font-black tracking-[0.6em] uppercase text-white/80">Modas Me lo Merezco</p>
         </div>
       </section>

@@ -86,6 +86,7 @@ export interface Order {
   shipping_door?: string;
   shipping_stair?: string;
   tracking_number?: string;
+  carrier?: string;
   items: OrderItem[];
   customer?: {
     name: string;

@@ -95,6 +95,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // 4. Send Confirmation Email
       if (order && order.customer_email) {
+        const orderId = order.order_id.split('-')[0].toUpperCase();
+        const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+        
+        // Build items HTML
+        const itemsHtml = items ? items.map((item: any) => `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 10px 0; font-size: 12px;">${item.name || `Producto #${item.product_id}`} ${item.size ? `<span style="color: #ff3366;">(Talla: ${item.size})</span>` : ''}</td>
+            <td style="padding: 10px 0; text-align: center; font-size: 12px;">${item.quantity}</td>
+            <td style="padding: 10px 0; text-align: right; font-size: 12px;">${item.price.toFixed(2)}€</td>
+          </tr>
+        `).join('') : '';
+
+        const html = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px;">
+            <div style="text-align: center; margin-bottom: 10px;">
+              <img src="${logoUrl}" alt="Modas Me lo Merezco" style="width: 200px; height: auto;">
+            </div>
+            <h1 style="color: #000; text-transform: uppercase; font-style: italic; border-bottom: 2px solid #000; padding-bottom: 20px; text-align: center;">
+              Pedido <span style="color: #ff3366;">#${orderId}</span> Confirmado
+            </h1>
+            <p style="text-align: center;">¡Hola!</p>
+            <p style="text-align: center;">Gracias por tu compra en <strong>Modas Me lo Merezco</strong>. Tu pedido ya ha sido pagado y está siendo preparado.</p>
+            
+            <div style="margin: 30px 0;">
+              <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; text-transform: uppercase; font-size: 12px; color: #888;">Detalles de tu compra</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #eee; text-align: left; color: #888; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding-bottom: 10px;">Artículo</th>
+                    <th style="padding-bottom: 10px; text-align: center;">Cant.</th>
+                    <th style="padding-bottom: 10px; text-align: right;">Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                </tbody>
+              </table>
+              
+              <div style="margin-top: 20px; text-align: right; font-weight: bold;">
+                <p style="margin: 5px 0; font-size: 12px; color: #888; font-weight: normal;">Subtotal: ${(order.total_amount - (order.shipping_cost || 0)).toFixed(2)}€</p>
+                <p style="margin: 5px 0; font-size: 12px; color: #888; font-weight: normal;">Envío: ${order.shipping_cost?.toFixed(2) || '0.00'}€</p>
+                <p style="margin: 10px 0; font-size: 18px; color: #000;">TOTAL: ${order.total_amount.toFixed(2)}€</p>
+              </div>
+            </div>
+
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0; font-size: 13px;">
+              <h4 style="margin-top: 0; text-transform: uppercase; font-size: 11px; color: #888;">Dirección de Envío</h4>
+              <p style="margin: 5px 0;">${order.shipping_street}</p>
+              <p style="margin: 5px 0;">${order.shipping_zip} ${order.shipping_city}, ${order.shipping_province}</p>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+            <p style="font-size: 11px; color: #999; text-align: center;">Si tienes alguna pregunta, simplemente responde a este email. Gracias por confiar en nosotros.</p>
+          </div>
+        `;
+
         const transporter = nodemailer.createTransport({
           host: 'smtp.gmail.com',
           port: 465,
@@ -108,8 +164,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await transporter.sendMail({
           from: '"Modas Me lo Merezco" <info@modasmelomerezco.com>',
           to: order.customer_email,
-          subject: `¡Gracias por tu compra! Pedido #${orderUuid.split('-')[0].toUpperCase()}`,
-          html: `<h1>¡Hola!</h1><p>Tu pedido ha sido confirmado y pagado correctamente.</p><p>ID de pedido: ${orderUuid}</p>`
+          subject: `Confirmación de pedido #${orderId} - Modas Me lo Merezco`,
+          html
         });
       }
 

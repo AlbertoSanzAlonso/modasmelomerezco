@@ -2,11 +2,11 @@
 import { supabase } from '../supabase';
 
 export const paymentMethods = {
-  getByUser: async (user_id: string) => {
+  getByUser: async (customer_id: string) => {
     const { data, error } = await supabase
       .from('payment_methods')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('customer_id', customer_id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -36,11 +36,11 @@ export const paymentMethods = {
     return data;
   },
 
-  setAllInactive: async (user_id: string) => {
+  setAllInactive: async (customer_id: string) => {
     const { error } = await supabase
       .from('payment_methods')
       .update({ is_active: false })
-      .eq('user_id', user_id);
+      .eq('customer_id', customer_id);
 
     if (error) throw error;
   },

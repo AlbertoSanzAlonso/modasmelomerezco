@@ -185,7 +185,8 @@ const CheckoutPage = () => {
         quantity: item.quantity, 
         price: item.price,
         size: item.selectedVariant.size,
-        color: item.selectedVariant.color
+        color: item.selectedVariant.color,
+        image_url: item.images?.[0] || ''
       })),
       payment_status: 'Paid',
       carrier: shippingOption === 'nacex_point' ? `Nacex Point: ${selectedPoint}` : shippingOption
@@ -280,7 +281,8 @@ const CheckoutPage = () => {
         quantity: item.quantity, 
         price: item.price,
         size: item.selectedVariant.size,
-        color: item.selectedVariant.color
+        color: item.selectedVariant.color,
+        image_url: item.images?.[0] || ''
       })),
       payment_status: 'pending'
     };

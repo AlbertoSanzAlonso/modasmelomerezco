@@ -48,10 +48,25 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <div className="space-y-6">
               <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Dirección de Envío</h4>
               <div className="bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl text-xs text-gray-500 font-bold leading-relaxed space-y-1">
-                <p>{order.shipping_street}</p>
-                {order.shipping_floor && <p>Piso {order.shipping_floor} {order.shipping_door}</p>}
-                <p>{order.shipping_zip} {order.shipping_city}</p>
-                <p>{order.shipping_province}</p>
+                {order.shipping_street ? (
+                  <>
+                    <p className="text-(--text-main) uppercase">{order.shipping_street}</p>
+                    {(order.shipping_floor || order.shipping_door) && (
+                      <p>Piso {order.shipping_floor} {order.shipping_door} {order.shipping_stair && `Esc. ${order.shipping_stair}`}</p>
+                    )}
+                    <p>{order.shipping_zip} {order.shipping_city}</p>
+                    <p>{order.shipping_province}</p>
+                  </>
+                ) : (
+                  <p className="italic text-gray-400">Sin dirección de envío detallada</p>
+                )}
+                
+                {order.carrier?.includes('Nacex Point') && (
+                  <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                    <p className="text-[10px] text-primary font-black uppercase">Punto NACEX Seleccionado:</p>
+                    <p className="text-[10px] mt-1">{order.carrier.replace('Nacex Point: ', '')}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -62,8 +77,15 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <div className="bg-(--bg-card) border border-(--border-main) rounded-2xl overflow-hidden">
               {order.items?.map((item, idx) => (
                 <div key={idx} className="p-4 flex items-center gap-4 border-b border-(--border-main) last:border-0">
-                  <div className="w-12 h-16 bg-black rounded-lg overflow-hidden shrink-0">
-                    <img src={item.image_url || undefined} alt="" className="w-full h-full object-cover" />
+                  <div className="w-12 h-16 bg-secondary/5 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border border-(--border-main)">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-1 text-center">
+                        <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="Logo" className="w-6 h-6 opacity-20" />
+                        <span className="text-[6px] font-black opacity-30 mt-1 uppercase tracking-tighter">Sin Foto</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1">
                     <p className="text-xs font-black uppercase italic text-(--text-main)">{item.name}</p>

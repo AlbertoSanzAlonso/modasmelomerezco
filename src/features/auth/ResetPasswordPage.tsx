@@ -6,6 +6,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStore } from "@/store/useAdminStore";
+import { useCartStore } from "@/store/useCartStore";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const ResetPasswordPage: React.FC = () => {
@@ -50,13 +51,20 @@ export const ResetPasswordPage: React.FC = () => {
 
       if (updateError) throw updateError;
 
-      // 2. Hacer login automático con la nueva clave
-      if (type === 'admin') {
-        const { admin: profile, token } = await api.auth.adminLogin(email, password);
-        adminLogin(profile as any, token);
-      } else {
-        const { user: profile, token } = await api.auth.login(email, password);
-        login(profile as any, token);
+      // 2. Hacer login automático con la nueva clave (si tenemos el email)
+      if (email) {
+        try {
+          if (type === 'admin') {
+            const { admin: profile, token } = await api.auth.adminLogin(email, password);
+            adminLogin(profile as any, token);
+          } else {
+            const { user: profile, token } = await api.auth.login(email, password);
+            login(profile as any, token);
+          }
+        } catch (loginErr) {
+          console.error('Auto-login failed after reset:', loginErr);
+          // Si el login falla, al menos la clave se cambió.
+        }
       }
       
       setIsSuccess(true);
@@ -65,23 +73,17 @@ export const ResetPasswordPage: React.FC = () => {
         navigate(type === 'admin' ? '/admin' : '/cuenta');
       }, 2000);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Error al restablecer la contraseña.');
+      useCartStore.getState().openModal({
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Error al restablecer la contraseña.',
+        type: 'info'
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!email) {
-    return (
-      <div className="min-h-screen bg-(--bg-main) flex items-center justify-center p-6 text-center transition-colors duration-300">
-        <div className="max-w-md space-y-6">
-          <h1 className="text-3xl font-display font-black text-(--text-main) uppercase tracking-tighter">Enlace <span className="text-primary italic font-serif lowercase">inválido</span></h1>
-          <p className="text-gray-500">Parece que el enlace de recuperación no es correcto o ha expirado.</p>
-          <Link to="/login" className="inline-block text-primary font-black uppercase tracking-widest hover:underline">Volver al login</Link>
-        </div>
-      </div>
-    );
-  }
+  const displayEmail = email || 'tu cuenta';
 
   return (
     <div className="min-h-screen bg-(--bg-main) flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
@@ -109,7 +111,7 @@ export const ResetPasswordPage: React.FC = () => {
           <>
             <div className="text-center mb-10">
               <h1 className="text-4xl font-display font-black text-(--text-main) uppercase tracking-tighter mb-2">Nueva <span className="italic font-serif lowercase text-primary">contraseña</span></h1>
-              <p className="text-gray-500 text-sm font-medium tracking-wide">Introduce tu nueva clave de acceso para <strong>{email}</strong>.</p>
+              <p className="text-gray-500 text-sm font-medium tracking-wide">Introduce tu nueva clave de acceso para <strong>{displayEmail}</strong>.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">

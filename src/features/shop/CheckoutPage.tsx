@@ -198,7 +198,8 @@ const CheckoutPage = () => {
       try {
         const targetEmail = user?.email || formData.email;
         if (!targetEmail) throw new Error('No se ha podido determinar el email del cliente.');
-        await api.mail.sendOrderConfirmation(createdOrder, targetEmail);
+        // Aseguramos que pasamos los items del pedido para que el email se genere correctamente
+        await api.mail.sendOrderConfirmation({ ...createdOrder, items: orderData.items }, targetEmail);
       } catch (mailError) {
         console.error('Failed to send confirmation email:', mailError);
       }

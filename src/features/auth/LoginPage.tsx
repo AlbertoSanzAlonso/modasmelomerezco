@@ -68,9 +68,20 @@ export const LoginPage: React.FC = () => {
         navigate(from);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al entrar';
+      let friendlyMessage = 'Las credenciales introducidas no son correctas. Revisa tu email y contraseña.';
+      
+      if (errorMsg.includes('Invalid login credentials')) {
+        friendlyMessage = 'El email o la contraseña no son correctos. Si no la recuerdas, prueba a restablecerla.';
+      } else if (errorMsg.includes('security purposes')) {
+        friendlyMessage = 'Has intentado entrar demasiadas veces. Por seguridad, espera un minuto antes de volver a probar.';
+      } else if (errorMsg.includes('Email not confirmed')) {
+        friendlyMessage = 'Debes confirmar tu email antes de poder entrar. Revisa tu bandeja de entrada.';
+      }
+
       useCartStore.getState().openModal({
         title: 'Error de acceso',
-        message: error instanceof Error ? error.message : 'Las credenciales introducidas no son correctas.',
+        message: friendlyMessage,
         type: 'info'
       });
     } finally {

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Plus, Search, Mail, MailOff } from 'lucide-react';
+import { Plus, Search, Mail } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Customer } from "@/types";
 
@@ -76,8 +76,8 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                           <Mail className="w-3 h-3" /> Suscrito
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-500/5 text-gray-400 border border-gray-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">
-                          <MailOff className="w-3 h-3" /> No Suscrito
+                        <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-500/5 text-gray-400 border border-gray-500/20 rounded-full text-[9px] font-black uppercase tracking-widest opacity-50">
+                          <Mail className="w-3 h-3" /> No Suscrito
                         </span>
                       )}
                     </div>

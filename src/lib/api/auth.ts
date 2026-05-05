@@ -66,7 +66,10 @@ export const auth = {
       password: customer.password,
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      console.error('Supabase Auth Signup Error:', authError);
+      throw authError;
+    }
     if (!authData.user) throw new Error('Error al crear la cuenta de autenticación');
 
     // 2. Vincular o crear el perfil en nuestra tabla customers

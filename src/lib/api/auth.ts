@@ -135,5 +135,13 @@ export const auth = {
 
   logout: async () => {
     await supabase.auth.signOut();
+  },
+
+  resetPassword: async (email: string, redirectTo: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo
+    });
+    if (error) throw error;
+    return true;
   }
 };

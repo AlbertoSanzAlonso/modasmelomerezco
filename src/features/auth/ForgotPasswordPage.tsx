@@ -46,7 +46,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
         targetEmail = customer.email;
       }
 
-      await api.mail.sendPasswordRecovery(
+      await api.auth.resetPassword(
         targetEmail, 
         `${window.location.origin}/reset-password?email=${encodeURIComponent(targetEmail)}${isAdmin ? '&type=admin' : ''}`
       );

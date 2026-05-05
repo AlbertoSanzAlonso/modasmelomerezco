@@ -42,39 +42,29 @@ export const ResetPasswordPage: React.FC = () => {
     try {
       const type = searchParams.get('type') || 'customer';
       
+      // 1. Actualizar la contraseña en Supabase Auth (Oficial)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (updateError) throw updateError;
+
+      // 2. Hacer login automático con la nueva clave
+      const { user: profile, token } = type === 'admin' 
+        ? await api.auth.adminLogin(email, password)
+        : await api.auth.login(email, password);
+
       if (type === 'admin') {
-        const admin = await api.admins.getByEmail(email);
-        if (!admin) throw new Error('Administrador no encontrado.');
-        
-        // Cifrar la nueva contraseña
-        const bcrypt = await import('bcryptjs');
-        const hashedPassword = bcrypt.hashSync(password, 10);
-        
-        const updatedAdmin = await api.admins.update(admin.admin_id, { password: hashedPassword });
-        if (!updatedAdmin) throw new Error('No se pudo actualizar la cuenta de administrador.');
-        
-        const token = 'fake-admin-jwt-' + updatedAdmin.admin_id;
-        adminLogin(updatedAdmin, token);
+        adminLogin(profile as any, token);
       } else {
-        const user = await api.customers.getByEmail(email);
-        if (!user) throw new Error('Usuario no encontrado.');
-        
-        // Cifrar la nueva contraseña
-        const bcrypt = await import('bcryptjs');
-        const hashedPassword = bcrypt.hashSync(password, 10);
-        
-        const updatedUser = await api.customers.update(user.customer_id, { password: hashedPassword });
-        if (!updatedUser) throw new Error('No se pudo actualizar tu cuenta. Inténtalo de nuevo.');
-        
-        const token = 'fake-jwt-' + updatedUser.customer_id;
-        login(updatedUser, token);
+        login(profile as any, token);
       }
       
       setIsSuccess(true);
       
       setTimeout(() => {
         navigate(type === 'admin' ? '/admin' : '/cuenta');
-      }, 3000);
+      }, 2000);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Error al restablecer la contraseña.');
     } finally {

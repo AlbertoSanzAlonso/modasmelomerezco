@@ -18,13 +18,32 @@ export const auth = {
     // 2. Recuperar el perfil de nuestra tabla customers usando el auth_id
     const { data: customer, error: custError } = await supabase
       .from('customers')
-      .select('*, shipping_addresses(*)')
+      .select('*')
       .eq('auth_id', authData.user.id)
       .maybeSingle();
 
     if (custError || !customer) throw new Error('Perfil de usuario no encontrado.');
 
-    // 3. Recuperar favoritos
+    // 3. Recuperar direcciones por separado para evitar errores 400
+    const { data: addrData } = await supabase
+      .from('shipping_addresses')
+      .select('*')
+      .eq('customer_id', customer.customer_id);
+
+    const addresses = (addrData || []).map((addr: any) => ({
+      shipping_address_id: addr.shipping_address_id,
+      type: addr.address_type,
+      street: addr.street,
+      floor: addr.floor,
+      door: addr.door,
+      stair: addr.stair,
+      province: addr.province,
+      city: addr.city,
+      zip: addr.zip,
+      isDefault: addr.is_default
+    }));
+
+    // 4. Recuperar favoritos
     const { data: favoritesData } = await supabase
       .from('customer_favorites')
       .select('product_id')
@@ -33,7 +52,7 @@ export const auth = {
     const favorites = (favoritesData || []).map((f: any) => f.product_id);
 
     return {
-      user: { ...customer, favorites },
+      user: { ...customer, addresses, favorites },
       token: authData.session?.access_token || ''
     };
   },

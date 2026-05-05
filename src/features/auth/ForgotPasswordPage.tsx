@@ -54,9 +54,16 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
       setSentTo(targetEmail);
       setIsSuccess(true);
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'No se pudo procesar la solicitud.';
+      let friendlyMessage = errorMsg;
+      
+      if (errorMsg.includes('security purposes')) {
+        friendlyMessage = 'Por seguridad, debes esperar un minuto antes de pedir otro enlace. ¡Un poquito de paciencia! ☕';
+      }
+
       useCartStore.getState().openModal({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'No se pudo procesar la solicitud.',
+        title: 'Atención',
+        message: friendlyMessage,
         type: 'info'
       });
     } finally {

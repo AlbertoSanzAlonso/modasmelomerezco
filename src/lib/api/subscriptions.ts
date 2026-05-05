@@ -23,7 +23,10 @@ export const subscriptions = {
   create: async (email: string, status: 'pending' | 'active' = 'pending', confirmationToken?: string): Promise<Subscription> => {
     const { data, error } = await supabase
       .from('subscriptions')
-      .insert([{ email, status, confirmation_token: confirmationToken }])
+      .upsert(
+        [{ email, status, confirmation_token: confirmationToken }],
+        { onConflict: 'email' }
+      )
       .select()
       .maybeSingle();
 

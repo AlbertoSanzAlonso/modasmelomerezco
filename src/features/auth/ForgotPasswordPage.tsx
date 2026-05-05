@@ -57,8 +57,8 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
       const errorMsg = error instanceof Error ? error.message : 'No se pudo procesar la solicitud.';
       let friendlyMessage = errorMsg;
       
-      if (errorMsg.includes('security purposes')) {
-        friendlyMessage = 'Por seguridad, debes esperar un minuto antes de pedir otro enlace. ¡Un poquito de paciencia! ☕';
+      if (errorMsg.includes('security purposes') || errorMsg.includes('rate limit exceeded')) {
+        friendlyMessage = 'Has superado el límite de intentos. Por seguridad, debes esperar unos minutos antes de pedir otro enlace. ¡Un poquito de paciencia! ☕';
       }
 
       useCartStore.getState().openModal({

@@ -73,8 +73,8 @@ export const LoginPage: React.FC = () => {
       
       if (errorMsg.includes('Invalid login credentials')) {
         friendlyMessage = 'El email o la contraseña no son correctos. Si no la recuerdas, prueba a restablecerla.';
-      } else if (errorMsg.includes('security purposes')) {
-        friendlyMessage = 'Has intentado entrar demasiadas veces. Por seguridad, espera un minuto antes de volver a probar.';
+      } else if (errorMsg.includes('security purposes') || errorMsg.includes('rate limit exceeded')) {
+        friendlyMessage = 'Has intentado entrar demasiadas veces. Por seguridad, espera unos minutos antes de volver a probar.';
       } else if (errorMsg.includes('Email not confirmed')) {
         friendlyMessage = 'Debes confirmar tu email antes de poder entrar. Revisa tu bandeja de entrada.';
       }

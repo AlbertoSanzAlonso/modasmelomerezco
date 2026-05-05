@@ -175,8 +175,8 @@ export const SignupPage: React.FC = () => {
         friendlyMessage = 'Ya existe una cuenta con este email. Prueba a iniciar sesión o recupera tu contraseña.';
       } else if (errorMsg.includes('invalid_email')) {
         friendlyMessage = 'El formato del email no es válido. Revisa que esté bien escrito.';
-      } else if (errorMsg.includes('security purposes')) {
-        friendlyMessage = 'Por seguridad, debes esperar un minuto antes de intentarlo de nuevo. ¡Tómate un respiro! ☕';
+      } else if (errorMsg.includes('security purposes') || errorMsg.includes('rate limit exceeded')) {
+        friendlyMessage = 'Has superado el límite de intentos. Por seguridad, debes esperar unos minutos antes de volver a probar. ¡Tómate un respiro! ☕';
       }
 
       useCartStore.getState().openModal({

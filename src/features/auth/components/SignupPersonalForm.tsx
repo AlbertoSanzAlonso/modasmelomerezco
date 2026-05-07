@@ -78,6 +78,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
         />
         <button
           type="button"
+          tabIndex={-1}
           onClick={() => setShowPassword(!showPassword)}
           className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
         >
@@ -99,6 +100,7 @@ export const SignupPersonalForm: React.FC<SignupPersonalFormProps> = ({
         />
         <button
           type="button"
+          tabIndex={-1}
           onClick={() => setShowPassword(!showPassword)}
           className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
         >

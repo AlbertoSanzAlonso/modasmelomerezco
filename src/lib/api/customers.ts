@@ -34,7 +34,15 @@ export const customers = {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    if (!data) return data;
+
+    return {
+      ...data,
+      addresses: (data.shipping_addresses || []).map((addr: any) => ({
+        ...addr,
+        isDefault: addr.is_default
+      }))
+    };
   },
 
   getByEmail: async (email: string): Promise<Customer> => {
@@ -45,7 +53,15 @@ export const customers = {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    if (!data) return data;
+
+    return {
+      ...data,
+      addresses: (data.shipping_addresses || []).map((addr: any) => ({
+        ...addr,
+        isDefault: addr.is_default
+      }))
+    };
   },
 
   create: async (customer: Omit<Customer, 'customer_id'>): Promise<Customer> => {

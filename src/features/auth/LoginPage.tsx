@@ -70,19 +70,26 @@ export const LoginPage: React.FC = () => {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error al entrar';
       let friendlyMessage = 'Las credenciales introducidas no son correctas. Revisa tu email y contraseña.';
+      let alertType: 'warning' | 'info' | 'error' = 'info';
       
       if (errorMsg.includes('Invalid login credentials')) {
-        friendlyMessage = 'El email o la contraseña no son correctos. Si no la recuerdas, prueba a restablecerla.';
-      } else if (errorMsg.includes('security purposes') || errorMsg.includes('rate limit exceeded')) {
-        friendlyMessage = 'Has intentado entrar demasiadas veces. Por seguridad, espera unos minutos antes de volver a probar.';
+        friendlyMessage = 'El email o la contraseña no son correctos. Revisa los datos e inténtalo de nuevo.';
+        alertType = 'warning';
       } else if (errorMsg.includes('Email not confirmed')) {
-        friendlyMessage = 'Debes confirmar tu email antes de poder entrar. Revisa tu bandeja de entrada.';
+        friendlyMessage = 'Tu cuenta aún no ha sido confirmada. Por favor, revisa tu correo electrónico (incluyendo la carpeta de Spam) para activar tu cuenta.';
+        alertType = 'info';
+      } else if (errorMsg.includes('Perfil de usuario no encontrado')) {
+        friendlyMessage = 'Tu cuenta de acceso es correcta, pero no hemos encontrado tu perfil de cliente. Por favor, contacta con nosotros para vincular tu cuenta.';
+        alertType = 'error';
+      } else if (errorMsg.includes('security purposes') || errorMsg.includes('rate limit exceeded')) {
+        friendlyMessage = 'Has realizado demasiados intentos fallidos. Por seguridad, tu cuenta ha sido bloqueada temporalmente. Inténtalo de nuevo en unos minutos.';
+        alertType = 'warning';
       }
 
       useCartStore.getState().openModal({
-        title: 'Error de acceso',
+        title: alertType === 'error' ? 'Error de configuración' : 'Aviso de acceso',
         message: friendlyMessage,
-        type: 'info'
+        type: alertType as any
       });
     } finally {
       setIsLoading(false);
@@ -163,6 +170,7 @@ export const LoginPage: React.FC = () => {
               />
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-primary transition-colors"
               >

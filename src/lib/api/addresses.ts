@@ -25,11 +25,15 @@ export const addresses = {
     }));
   },
 
-  create: async (address: Omit<Address, 'shipping_address_id'> & { customer_id: string }): Promise<Address> => {
+  create: async (customer_id: string, address: Omit<Address, 'shipping_address_id'>): Promise<Address> => {
+    console.log('--- API CREATE ADDRESS ---');
+    console.log('Customer ID:', customer_id);
+    console.log('Address Data:', address);
+
     const { data, error } = await supabase
       .from('shipping_addresses')
       .insert([{
-        customer_id: address.customer_id,
+        customer_id,
         address_type: address.type,
         street: address.street,
         floor: address.floor,

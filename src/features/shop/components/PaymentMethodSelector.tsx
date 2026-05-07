@@ -20,7 +20,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Card Option */}
+        {/* Card Option - Hidden for now as per user request
         <div 
           onClick={() => onSelect('card')}
           className={`p-6 rounded-2xl border cursor-pointer transition-all flex flex-col gap-4 ${
@@ -38,6 +38,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Visa, Mastercard, Maestro</p>
           </div>
         </div>
+        */}
 
         {/* Bizum Option */}
         <div 

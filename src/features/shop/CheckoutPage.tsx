@@ -28,10 +28,11 @@ const CheckoutPage = () => {
   );
   const [saveToAccount, setSaveToAccount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bizum'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bizum'>('bizum');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [shippingOption, setShippingOption] = useState<'home' | 'local' | 'nacex_point'>('home');
   const [selectedPoint, setSelectedPoint] = useState<string>('');
+  const [isChangingAddress, setIsChangingAddress] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -380,28 +381,76 @@ const CheckoutPage = () => {
 
             {isAuthenticated && user?.addresses && user.addresses.length > 0 && (
               <section className="mb-12">
-                <h3 className="text-xs font-black tracking-[0.4em] uppercase text-primary mb-6">Tus Direcciones Guardadas</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {user.addresses.map((addr) => (
+                <div className="flex justify-between items-end mb-6">
+                  <h3 className="text-xs font-black tracking-[0.4em] uppercase text-primary">Dirección de Envío</h3>
+                  <button 
+                    type="button"
+                    onClick={() => setIsChangingAddress(!isChangingAddress)}
+                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline underline-offset-4"
+                  >
+                    {isChangingAddress ? 'Cancelar' : 'Cambiar Dirección'}
+                  </button>
+                </div>
+
+                {isChangingAddress ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {user.addresses.map((addr) => (
+                      <div 
+                        key={addr.shipping_address_id || addr.type}
+                        onClick={() => {
+                          setSelectedAddressId(addr.type);
+                          setIsChangingAddress(false);
+                        }}
+                        className={`p-6 rounded-2xl border cursor-pointer transition-all ${
+                          selectedAddressId === addr.type ? 'bg-primary/5 border-primary shadow-lg' : 'bg-white/5 border-white/10 hover:border-white/30'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest">{addr.type}</span>
+                          {selectedAddressId === addr.type && <CheckCircle2 className="w-4 h-4 text-primary" />}
+                        </div>
+                        <p className="text-[11px] text-secondary/60">{addr.street}</p>
+                        <p className="text-[11px] text-secondary/40 uppercase tracking-tighter mt-1">{addr.zip} {addr.city} ({addr.province})</p>
+                      </div>
+                    ))}
                     <div 
-                      key={addr.type}
-                      onClick={() => setSelectedAddressId(addr.type)}
-                      className={`p-6 rounded-2xl border cursor-pointer transition-all ${
-                        selectedAddressId === addr.type ? 'bg-primary/5 border-primary shadow-lg' : 'bg-white/5 border-white/10 hover:border-white/30'
+                      onClick={() => {
+                        setSelectedAddressId('new');
+                        setIsChangingAddress(false);
+                      }} 
+                      className={`p-6 rounded-2xl border border-dashed cursor-pointer transition-all flex items-center justify-center gap-3 ${
+                        selectedAddressId === 'new' ? 'bg-primary/5 border-primary text-primary' : 'bg-transparent border-white/10 text-gray-500 hover:border-white/30'
                       }`}
                     >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest">{addr.type}</span>
-                        {selectedAddressId === addr.type && <CheckCircle2 className="w-4 h-4 text-primary" />}
-                      </div>
-                      <p className="text-[11px] text-secondary/60">{addr.street}</p>
-                      <p className="text-[11px] text-secondary/40 uppercase tracking-tighter mt-1">{addr.zip} {addr.city} ({addr.province})</p>
+                      <Plus className="w-4 h-4" /> 
+                      <span className="text-[10px] font-black uppercase tracking-widest">Nueva Dirección</span>
                     </div>
-                  ))}
-                  <div onClick={() => setSelectedAddressId('new')} className={`p-6 rounded-2xl border border-dashed cursor-pointer transition-all flex items-center justify-center gap-3 ${selectedAddressId === 'new' ? 'bg-primary/5 border-primary text-primary' : 'bg-transparent border-white/10 text-gray-500 hover:border-white/30'}`}>
-                    <Plus className="w-4 h-4" /> <span className="text-[10px] font-black uppercase tracking-widest">Nueva Dirección</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-8 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-between group">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 bg-primary/10 text-primary rounded-full">
+                          {selectedAddressId === 'new' ? 'Nueva Dirección' : user.addresses.find(a => a.type === selectedAddressId)?.type}
+                        </span>
+                        {user.addresses.find(a => a.type === selectedAddressId)?.isDefault && (
+                          <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 italic">(Principal)</span>
+                        )}
+                      </div>
+                      {selectedAddressId === 'new' ? (
+                        <p className="text-sm font-medium text-gray-400">Introduce los datos abajo</p>
+                      ) : (
+                        <>
+                          <p className="text-base font-bold">{user.addresses.find(a => a.type === selectedAddressId)?.street}</p>
+                          <p className="text-xs text-gray-500 font-medium">
+                            {user.addresses.find(a => a.type === selectedAddressId)?.zip} {user.addresses.find(a => a.type === selectedAddressId)?.city}, {user.addresses.find(a => a.type === selectedAddressId)?.province}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <CheckCircle2 className="w-6 h-6 text-primary opacity-50" />
+                  </div>
+                )}
               </section>
             )}
 

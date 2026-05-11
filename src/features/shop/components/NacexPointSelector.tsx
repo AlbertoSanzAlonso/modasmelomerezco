@@ -41,59 +41,117 @@ export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect
     fetchPoints();
   }, [zipCode]);
 
+export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect, selectedPoint, zipCode }) => {
+  const [points, setPoints] = useState<NacexPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPoints = async () => {
+      if (!zipCode || zipCode.length < 5) return;
+      
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/nacex?method=get_puntos_shop&cp=${zipCode}`);
+        const data = await response.json();
+        
+        // Si recibimos un string de error o algo raro, lo manejamos
+        if (!Array.isArray(data)) {
+          console.error('Invalid data received:', data);
+          setError('Nacex no ha devuelto puntos válidos para este CP.');
+          setPoints([]);
+          return;
+        }
+
+        setPoints(data);
+      } catch (err) {
+        console.error('Error fetching Nacex points:', err);
+        setError('No se pudieron cargar los puntos Nacex. Inténtalo de nuevo.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPoints();
+  }, [zipCode]);
+
   return (
-    <div className="mt-6 p-6 bg-primary/5 border border-primary/10 rounded-3xl animate-in fade-in slide-in-from-top-4 duration-500">
-      <div className="flex items-start gap-4 mb-6">
-        <div className="bg-primary/10 p-3 rounded-2xl">
-          <MapPin className="text-primary w-5 h-5" />
+    <div className="mt-8 p-8 bg-white border border-primary/10 rounded-[2.5rem] shadow-xl shadow-primary/5 animate-in fade-in slide-in-from-top-6 duration-700">
+      <div className="flex items-center gap-5 mb-8">
+        <div className="bg-primary/10 p-4 rounded-2xl shadow-inner">
+          <MapPin className="text-primary w-6 h-6" />
         </div>
         <div>
-          <h4 className="text-[11px] font-black uppercase tracking-widest text-secondary">Puntos Nacex.shop Cercanos</h4>
-          <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1 leading-relaxed">
-            {zipCode ? `Mostrando puntos cerca de ${zipCode}` : 'Introduce tu código postal para ver puntos cercanos'}
+          <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-secondary leading-none">Puntos Nacex.Shop</h4>
+          <p className="text-[10px] text-secondary/40 uppercase tracking-widest mt-2 font-bold">
+            {zipCode ? `Tiendas disponibles cerca de ${zipCode}` : 'Introduce tu código postal'}
           </p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center py-8 gap-3">
-          <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 text-center">Buscando tiendas...</p>
+        <div className="flex flex-col items-center py-12 gap-4">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40 animate-pulse">Buscando tiendas cercanas...</p>
         </div>
       ) : error ? (
-        <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl text-center">
-          <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{error}</p>
+        <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl text-center">
+          <p className="text-[11px] font-black text-red-500 uppercase tracking-widest">{error}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {points.map((point) => (
-            <div
-              key={point.id}
-              onClick={() => onSelect(`${point.name} (${point.id})`)}
-              className={`p-4 rounded-2xl border cursor-pointer transition-all flex justify-between items-center ${
-                selectedPoint?.includes(point.id)
-                  ? 'bg-white border-primary shadow-lg ring-1 ring-primary'
-                  : 'bg-white/50 border-secondary/10 hover:border-primary/50'
-              }`}
-            >
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-tighter text-secondary">{point.name}</p>
-                <p className="text-[9px] text-secondary/60 uppercase tracking-widest">{point.address}, {point.city}</p>
+        <div className="space-y-4">
+          {points.map((point) => {
+            const isSelected = selectedPoint?.includes(point.id);
+            return (
+              <div
+                key={point.id}
+                onClick={() => onSelect(`${point.name} (${point.id})`)}
+                className={`group p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 flex items-center justify-between ${
+                  isSelected
+                    ? 'bg-primary/5 border-primary shadow-lg scale-[1.02]'
+                    : 'bg-secondary/5 border-transparent hover:border-primary/30 hover:bg-white hover:shadow-md'
+                }`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-black bg-secondary text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">ID: {point.id}</span>
+                    <p className={`text-[11px] font-black uppercase tracking-tight italic ${isSelected ? 'text-primary' : 'text-secondary'}`}>
+                      {point.name}
+                    </p>
+                  </div>
+                  <p className="text-[10px] text-secondary/60 uppercase tracking-widest font-bold mt-2 flex items-center gap-1">
+                    {point.address} • <span className="text-primary/40">{point.city}</span>
+                  </p>
+                </div>
+                
+                <div className={`shrink-0 ml-4 p-2 rounded-xl transition-all duration-500 ${isSelected ? 'bg-primary text-white rotate-0' : 'bg-white text-secondary/20 rotate-90 opacity-0 group-hover:opacity-100'}`}>
+                  {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <MapPin className="w-4 h-4" />}
+                </div>
               </div>
-              {selectedPoint?.includes(point.id) && <CheckCircle2 className="w-4 h-4 text-primary" />}
-            </div>
-          ))}
+            );
+          })}
+          
           {zipCode && zipCode.length === 5 && points.length === 0 && (
-            <p className="text-[10px] text-center text-gray-400 py-4 font-bold uppercase tracking-widest">No se han encontrado puntos Nacex en esta zona.</p>
+            <div className="py-12 border-2 border-dashed border-secondary/10 rounded-3xl flex flex-col items-center justify-center text-center">
+              <Search className="w-8 h-8 text-secondary/10 mb-4" />
+              <p className="text-[10px] text-secondary/30 font-black uppercase tracking-[0.2em] max-w-[200px]">
+                No hay puntos Nacex registrados en el código postal {zipCode}
+              </p>
+            </div>
           )}
         </div>
       )}
 
       {selectedPoint && (
-        <div className="mt-4 flex items-center gap-2 p-3 bg-green-500/5 rounded-xl border border-green-500/10">
-          <span className="text-[9px] font-bold text-green-600 uppercase tracking-widest truncate">
-            Seleccionado: {selectedPoint}
-          </span>
+        <div className="mt-8 pt-6 border-t border-secondary/5 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-500">
+           <div className="flex items-center gap-3">
+             <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
+             <p className="text-[9px] font-black text-secondary uppercase tracking-[0.3em]">Punto seleccionado:</p>
+           </div>
+           <p className="text-[10px] font-black text-primary uppercase italic tracking-tight bg-primary/5 px-4 py-2 rounded-xl border border-primary/10">
+             {selectedPoint}
+           </p>
         </div>
       )}
     </div>

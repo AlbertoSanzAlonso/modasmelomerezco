@@ -62,17 +62,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const response = await fetch(`${NACEX_WS_URL}?method=getPuntoEntregaCP&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${targetCP}`);
       const rawData = await response.text();
       
-      // Parsear respuesta por tuberías
-      const lines = rawData.split('\n').filter(l => l.trim());
+      // El formato de este método usa tildes (~) y saltos de línea
+      const lines = rawData.split('\n').filter(l => l.trim() && l.includes('~'));
       const points = lines.map(line => {
-        const p = line.split('|');
+        const p = line.split('~');
         return {
           id: p[0],
-          name: p[1],
-          address: p[2],
-          zip: p[3],
-          city: p[4],
-          distance: p[5] ? `${p[5]}km` : ''
+          name: p[1] || 'Punto Nacex',
+          address: p[2] || '',
+          city: p[3] || '',
+          zip: p[4] || '',
+          phone: p[5] || '',
+          hours: p[6] || ''
         };
       });
 

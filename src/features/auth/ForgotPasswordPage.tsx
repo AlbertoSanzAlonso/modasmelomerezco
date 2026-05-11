@@ -52,9 +52,12 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
         targetEmail = customer.email;
       }
 
+      const redirectTo = `${window.location.origin}/reset-password?email=${encodeURIComponent(targetEmail)}${isAdmin ? '&type=admin' : ''}`;
+      console.log('>>> [DEBUG AUTH] Intentando reset con URL:', redirectTo);
+
       await api.auth.resetPassword(
         targetEmail, 
-        `${window.location.origin}/reset-password?email=${encodeURIComponent(targetEmail)}${isAdmin ? '&type=admin' : ''}`
+        redirectTo
       );
       
       setSentTo(targetEmail);

@@ -29,32 +29,6 @@ export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect
       try {
         const response = await fetch(`/api/nacex?method=get_puntos_shop&cp=${zipCode}`);
         const data = await response.json();
-        setPoints(data);
-      } catch (err) {
-        console.error('Error fetching Nacex points:', err);
-        setError('No se pudieron cargar los puntos Nacex. Inténtalo de nuevo.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPoints();
-  }, [zipCode]);
-
-export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect, selectedPoint, zipCode }) => {
-  const [points, setPoints] = useState<NacexPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPoints = async () => {
-      if (!zipCode || zipCode.length < 5) return;
-      
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/nacex?method=get_puntos_shop&cp=${zipCode}`);
-        const data = await response.json();
         
         // Si recibimos un string de error o algo raro, lo manejamos
         if (!Array.isArray(data)) {

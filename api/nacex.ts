@@ -58,8 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      // Probamos con getPuntosSiglas, método común para puntos NacexShop
-      const response = await fetch(`${NACEX_WS_URL}?method=getPuntosSiglas&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${targetCP}`);
+      // Probamos con getAgencias (plural)
+      const response = await fetch(`${NACEX_WS_URL}?method=getAgencias&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${targetCP}`);
       const rawData = await response.text();
       
       // Parsear respuesta por tuberías

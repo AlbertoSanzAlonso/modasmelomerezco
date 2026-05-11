@@ -122,36 +122,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const today = new Date();
     const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-    // Estructura exacta según el ÚLTIMO error de Nacex (Posiciones críticas)
-    const nacexData = [
+    // Estructura exacta según el ÚLTIMO error de Nacex (Mapeo corregido)
+    const nacexDataArray = [
       NACEX_AGENCY,     // 1: del_cli (Pos 1)
       cleanCliente,     // 2: num_cli (Pos 2)
       formattedDate,    // 3: fec (Fecha DD/MM/AAAA) (Pos 3)
       (orderId || 'ORD').split('-')[0], // 4: Referencia (Pos 4)
-      '08',             // 5: tip_ser (Pos 5) - Cambiado de 29 a 08 (Estándar) según error
+      '08',             // 5: tip_ser (Pos 5)
       'O',              // 6: tip_cob (Pos 6)
-      '',               // 7: tip_env
-      '',               // 8: ree (Reembolso)
-      '',               // 9: val (Valor)
+      '',               // 7: (Vacío)
+      '0',              // 8: ree (Reembolso)
+      '0',              // 9: val (Valor)
       '1',              // 10: bul (Bultos) (Pos 10)
       '1.0',            // 11: kil (Kilos) (Pos 11)
       '',               // 12: vol
-      '',               // 13: dec
-      '',               // 14: obs
+      '',               // 13: (Vacío)
+      '',               // 14: (Vacío)
       customerName || 'Cliente', // 15: nom_ent
-      '',               // 16: per_ent
-      '',               // 17: nif_ent
-      '',               // 18: tel_ent
+      '',               // 16: (Vacío)
+      '',               // 17: (Vacío)
+      '',               // 18: (Vacío)
       address || '',    // 19: dir_ent (Pos 19)
       'ES',             // 20: pais_ent (Pos 20)
       zip || '',        // 21: cp_ent (Pos 21)
       city || '',       // 22: pob_ent (Pos 22)
       province || '',   // 23: pro_ent
-      phone || '000000000', // 24: tel_ent_2
-      '',               // 25: email_ent
-    ].join('|');
+      phone || '000000000', // 24: tel_ent
+      '',               // 25: (Vacío)
+      '',               // 26: (Vacío)
+    ];
 
-    console.log('Nacex Data Payload:', nacexData);
+    console.log('Nacex Data Array (Fields):', nacexDataArray.length);
 
     // MODO PRUEBA: Si el ID del pedido empieza por TEST- o viene marcado como isTest
     const isTestOrder = (orderId || '').toString().startsWith('TEST-') || body.isTest === true;
@@ -167,7 +168,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      const response = await fetch(`${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${encodeURIComponent(nacexData)}`);
+      // Construir la URL con múltiples parámetros &data=
+      const dataParams = nacexDataArray.map(val => `&data=${encodeURIComponent(val)}`).join('');
+      const fullUrl = `${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}${dataParams}`;
+      
+      const response = await fetch(fullUrl);
       const rawData = await response.text();
       const parts = rawData.split('|');
       

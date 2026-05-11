@@ -61,10 +61,12 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   <p className="italic text-gray-400">Sin dirección de envío detallada</p>
                 )}
                 
-                {order.carrier?.includes('Nacex Point') && (
-                  <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                    <p className="text-[10px] text-primary font-black uppercase">Punto NACEX Seleccionado:</p>
-                    <p className="text-[10px] mt-1">{order.carrier.replace('Nacex Point: ', '')}</p>
+                {order.carrier?.toLowerCase().includes('nacex') && (
+                  <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 shadow-sm shadow-primary/5">
+                    <p className="text-[9px] text-primary font-black uppercase tracking-widest mb-1">Punto NACEX.Shop Seleccionado:</p>
+                    <p className="text-xs text-(--text-main) font-black italic uppercase leading-tight">
+                      {order.carrier.includes(':') ? order.carrier.split(':').slice(1).join(':').trim() : order.carrier}
+                    </p>
                   </div>
                 )}
               </div>

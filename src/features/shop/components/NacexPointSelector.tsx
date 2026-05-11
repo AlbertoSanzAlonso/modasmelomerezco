@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { MapPin, CheckCircle2, Search, Loader2 } from 'lucide-react';
-import { NacexMap } from './NacexMap';
+
+// Lazy load the map component to reduce initial bundle size
+const NacexMap = lazy(() => import('./NacexMap').then(module => ({ default: module.NacexMap })));
 
 interface NacexPoint {
   id: string;
@@ -112,12 +114,14 @@ export const NacexPointSelector: React.FC<NacexPointSelectorProps> = ({ onSelect
                 </div>
 
                 {isSelected && point.lat && point.lng && (
-                  <NacexMap 
-                    lat={parseFloat(point.lat)} 
-                    lng={parseFloat(point.lng)} 
-                    name={point.name} 
-                    address={point.address} 
-                  />
+                  <Suspense fallback={<div className="h-[250px] w-full bg-secondary/5 rounded-3xl animate-pulse flex items-center justify-center text-[10px] uppercase font-black tracking-widest text-secondary/30">Cargando mapa...</div>}>
+                    <NacexMap 
+                      lat={parseFloat(point.lat)} 
+                      lng={parseFloat(point.lng)} 
+                      name={point.name} 
+                      address={point.address} 
+                    />
+                  </Suspense>
                 )}
               </div>
             );

@@ -95,21 +95,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // --- 3. CREAR ENVÍO ---
-  if (method === 'crear_envio') {
+  if (method === 'create_expedition') {
+    const body = req.body || {};
+    const { orderId, customerName, address, city, zip, province, phone } = body;
+    
+    // Limpiar numero de cliente (quitar espacios o comillas si las hay)
+    const cleanCliente = NACEX_CLIENT.trim().replace(/\D/g, '');
+
+    // Estructura exacta según posiciones del error de Nacex
+    const nacexData = [
+      '',               // 1: Recogida
+      NACEX_AGENCY,     // 2: Agencia Origen
+      cleanCliente,     // 3: Cliente Origen (Pos 3)
+      (orderId || 'ORD').split('-')[0], // 4: Referencia (Pos 4)
+      '29',             // 5: Servicio (Pos 5)
+      '1',              // 6: Bultos (Pos 6)
+      'O',              // 7: Forma de pago (Pos 7)
+      '0',              // 8: Reembolso
+      '0',              // 9: Valor asegurado
+      '',               // 10: Nombre Remitente
+      '',               // 11: Dirección Remitente
+      '',               // 12: CP Remitente
+      '',               // 13: Población Remitente
+      '',               // 14: Teléfono Remitente
+      '',               // 15: País Remitente
+      '',               // 16: Provincia Remitente
+      customerName || 'Cliente', // 17: Nombre Entrega (Destinatario)
+      '',               // 18: Atención (Persona contacto)
+      address || '',    // 19: Dirección Entrega (Pos 19)
+      zip || '',        // 20: CP Entrega
+      city || '',       // 21: Población Entrega
+      province || '',   // 22: Provincia Entrega
+      phone || '000000000', // 23: Teléfono Entrega (OBLIGATORIO)
+      'ES',             // 24: País Entrega
+      '',               // 25: Email
+      '',               // 26: Observaciones
+    ].join('|');
+
+    console.log('Nacex Data Payload:', nacexData);
+
     if (!canUseRealAPI) {
       return res.status(200).json({ success: true, tracking: 'NX' + Date.now(), label_url: '#', mode: 'mock' });
     }
 
     try {
-      const orderData = req.body || {};
-      const dataParams = [
-        NACEX_AGENCY, NACEX_CLIENT, '', '', '', NACEX_CP_RECOGIDA, '',
-        orderData.nombre || 'Cliente', orderData.direccion || '', orderData.poblacion || '', 
-        orderData.cp || '', orderData.telefono || '', orderData.servicio || '1',
-        '2', '1', '1.0', '0', orderData.obs || '', '', orderData.orderId || 'ORD', 'P', '0'
-      ].join('|');
-
-      const response = await fetch(`${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${encodeURIComponent(dataParams)}`);
+      const response = await fetch(`${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${encodeURIComponent(nacexData)}`);
       const rawData = await response.text();
       const parts = rawData.split('|');
       

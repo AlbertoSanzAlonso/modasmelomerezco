@@ -27,6 +27,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const canUseRealAPI = NACEX_PASS && NACEX_PASS !== 'tu_password' && NACEX_PASS !== 'PON_AQUI_TU_CLAVE_MD5';
 
+  // --- 4. SEGUIMIENTO ---
+  if (method === 'get_tracking' || method === 'estado_envio') {
+    if (!canUseRealAPI) return res.status(200).json({ success: true, mode: 'mock' });
+
+    try {
+      const response = await fetch(`${NACEX_WS_URL}?method=getAgencia&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=28001`);
+      const data = await response.text();
+      if (response.ok && !data.includes('ERROR')) {
+        return res.status(200).json({ success: true, mode: 'real' });
+      }
+      return res.status(401).json({ success: false, error: 'Credenciales inválidas', detail: data });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: 'Error de red' });
+    }
+  }
+
   // --- 1. TEST CONNECTION ---
   if (method === 'test_connection') {
     if (!canUseRealAPI) return res.status(200).json({ success: true, mode: 'mock' });
@@ -43,8 +59,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // --- 2. PUNTOS DE RECOGIDA (NacexShop) ---
-  if (method === 'get_puntos_shop') {
+  // --- 2. OBTENER PUNTOS NACEX.SHOP ---
+  if (method === 'getPoints' || method === 'get_puntos_shop') {
     const targetCP = cp || NACEX_CP_RECOGIDA;
     
     if (!canUseRealAPI) {
@@ -95,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // --- 3. CREAR ENVÍO ---
-  if (method === 'create_expedition') {
+  if (method === 'create_expedition' || method === 'crear_envio') {
     const body = req.body || {};
     const { orderId, customerName, address, city, zip, province, phone } = body;
     

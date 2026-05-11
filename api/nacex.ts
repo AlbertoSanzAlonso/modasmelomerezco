@@ -63,24 +63,99 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // --- 3. CREAR ENVÍO ---
   if (method === 'crear_envio') {
-    return res.status(200).json({
-      success: true,
-      message: canUseRealAPI ? 'Envío creado en Nacex' : 'Envío simulado correctamente',
-      tracking: 'NX' + Math.floor(Math.random() * 1000000000),
-      label_url: '#', // Aquí iría la URL de la etiqueta de Nacex
-      mode: canUseRealAPI ? 'real' : 'mock'
-    });
+    if (!canUseRealAPI) {
+      return res.status(200).json({
+        success: true,
+        message: 'Envío simulado correctamente',
+        tracking: 'NX' + Math.floor(Math.random() * 1000000000),
+        label_url: '#',
+        mode: 'mock'
+      });
+    }
+
+    try {
+      // Obtenemos datos del body para el envío real
+      const orderData = req.body || {};
+      
+      /* 
+        Formato DATA para putExpedicion (simplificado):
+        del_cli|num_cli|nom_rec|dir_rec|pob_rec|cp_rec|tel_rec|nom_ent|dir_ent|pob_ent|cp_ent|tel_ent|tip_ser|tip_env|num_pac|pes_pac|val_dec|obs_1|obs_2|ref_cli|tip_cob|imp_cob
+      */
+      const dataParams = [
+        NACEX_AGENCY,                        // del_cli
+        NACEX_CLIENT,                        // num_cli
+        '',                                  // nom_rec (vacio = usa datos cliente)
+        '',                                  // dir_rec
+        '',                                  // pob_rec
+        NACEX_CP,                            // cp_rec
+        '',                                  // tel_rec
+        orderData.nombre || 'Cliente Test',  // nom_ent
+        orderData.direccion || 'Calle Falsa 123', // dir_ent
+        orderData.poblacion || 'Madrid',     // pob_ent
+        orderData.cp || '28001',             // cp_ent
+        orderData.telefono || '600000000',   // tel_ent
+        orderData.servicio || '1',           // tip_ser (1=Nacex 10:00, 2=19:00, etc)
+        '2',                                 // tip_env (2=Paquete)
+        '1',                                 // num_pac
+        '1.0',                               // pes_pac
+        '0',                                 // val_dec
+        orderData.obs || '',                 // obs_1
+        '',                                  // obs_2
+        orderData.orderId || 'ORD-123',      // ref_cli
+        'P',                                 // tip_cob (P=Pagado)
+        '0'                                  // imp_cob
+      ].join('|');
+
+      const response = await fetch(`${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${encodeURIComponent(dataParams)}`);
+      const rawData = await response.text();
+      
+      // La respuesta de Nacex suele ser: "OK|12345678|URL_ETIQUETA" o "ERROR|Mensaje"
+      const parts = rawData.split('|');
+      
+      if (parts[0] === 'OK') {
+        return res.status(200).json({
+          success: true,
+          tracking: parts[1],
+          label_url: parts[2] || '#',
+          mode: 'real'
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Error de Nacex API',
+          detail: rawData
+        });
+      }
+    } catch (err) {
+      return res.status(500).json({ success: false, error: 'Error interno procesando envío' });
+    }
   }
 
   // --- 4. ESTADO ENVÍO ---
   if (method === 'estado_envio') {
-    return res.status(200).json({
-      success: true,
-      tracking: tracking || 'TEST12345',
-      estado: 'EN TRÁNSITO',
-      detalle: 'El envío ha salido de la delegación de origen (' + NACEX_AGENCY + ')',
-      fecha_prevista: 'Mañana'
-    });
+    if (!canUseRealAPI || !tracking) {
+      return res.status(200).json({
+        success: true,
+        tracking: tracking || 'NX_MOCK_123',
+        estado: 'SIMULADO',
+        detalle: 'Envío en proceso de pruebas'
+      });
+    }
+
+    try {
+      const response = await fetch(`${NACEX_WS_URL}?method=getEstado&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${tracking}`);
+      const rawData = await response.text();
+      const parts = rawData.split('|');
+
+      return res.status(200).json({
+        success: true,
+        tracking: tracking,
+        estado: parts[0] || 'DESCONOCIDO',
+        detalle: parts[1] || rawData
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: 'Error consultando estado' });
+    }
   }
 
   return res.status(400).json({ error: 'Método no soportado' });

@@ -171,14 +171,52 @@ export const AdminDashboard: React.FC = () => {
 
   const handleGenerateLabel = async (orderId: string) => {
     try {
-      const res = await api.shipping.createNacexExpedition(orderId);
+      // Buscamos los detalles del pedido para pasarlos a la API de Nacex
+      const order = orders?.find(o => o.order_id === orderId);
+      const orderDetails = order ? {
+        nombre: `${order.customer?.name || ''} ${order.customer?.surname || ''}`.trim(),
+        direccion: order.shipping_street,
+        poblacion: order.shipping_city,
+        cp: order.shipping_zip,
+        telefono: order.customer?.phone,
+        orderId: order.order_id
+      } : {};
+
+      const res = await api.shipping.createNacexExpedition(orderId, orderDetails);
+      
+      // ACTUALIZACIÓN DEL TICKET/PEDIDO EN BASE DE DATOS
+      await api.orders.update(orderId, {
+        tracking_number: res.trackingNumber,
+        carrier: 'NACEX',
+        order_status: 'Shipped',
+        shipped_date: new Date().toISOString()
+      });
+
       openModal({
         title: 'Expedición NACEX',
-        message: `Expedición generada: ${res.trackingNumber}`,
-        type: 'success'
+        message: `Expedición generada y pedido actualizado: ${res.trackingNumber}`,
+        type: 'success',
+        actionLabel: 'Ver Etiqueta',
+        onAction: () => {
+          if (res.labelUrl && res.labelUrl !== '#') {
+            window.open(res.labelUrl, '_blank');
+          } else {
+            alert('URL de etiqueta no disponible en este momento.');
+          }
+        }
       });
+
+      // Refrescar los datos del admin para ver los cambios
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      
     } catch (err) {
-      openModal({ title: 'Error', message: 'No se pudo generar la etiqueta.', type: 'warning' });
+      console.error('Error generando etiqueta:', err);
+      openModal({ 
+        title: 'Error de Nacex', 
+        message: err instanceof Error ? err.message : 'No se pudo generar la etiqueta. Revisa las credenciales o los datos del cliente.', 
+        type: 'warning' 
+      });
     }
   };
 

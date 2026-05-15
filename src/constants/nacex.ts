@@ -6,5 +6,5 @@ export const NACEX_CONFIG = {
   agencia: "2924",
   cliente: "00472",
   codigoPostalRecogida: "29631",
-  entorno: "pruebas", // Cambia a "produccion" cuando corresponda
+  entorno: "produccion", // Cambia a "produccion" cuando corresponda
 };

@@ -76,7 +76,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   <div>
                     <p className="text-xs font-black uppercase tracking-tight">{item.name || `Producto #${item.product_id}`}</p>
                     {item.size && (
-                      <p className="text-[9px] font-bold text-primary uppercase tracking-widest mt-0.5">Talla: {item.size}</p>
+                      <p className="text-[9px] font-bold text-primary uppercase tracking-widest mt-0.5">
+                        {item.color && item.color !== 'Único'
+                          ? `Talla: ${item.size} · ${item.color}`
+                          : `Talla: ${item.size}`}
+                      </p>
                     )}
                   </div>
                 </div>

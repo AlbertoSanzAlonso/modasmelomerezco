@@ -1,6 +1,7 @@
 import React from 'react';
 import { Truck, ShieldCheck } from 'lucide-react';
 import type { CartItem } from '@/types';
+import { getCartItemKey, formatOrderItemDetails } from '@/lib/productVariants';
 
 interface CheckoutSummaryProps {
   items: CartItem[];
@@ -21,13 +22,13 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
         <h3 className="text-xs font-black tracking-[0.4em] uppercase mb-8 border-b border-secondary/5 pb-4 text-secondary">Resumen</h3>
         <div className="space-y-6 max-h-[400px] overflow-y-auto mb-8 pr-4">
           {items.map(item => (
-            <div key={`${item.product_id}-${item.selectedVariant.id}`} className="flex gap-4">
+            <div key={getCartItemKey(item.product_id, item.selectedVariant)} className="flex gap-4">
               <div className="w-16 aspect-3/4 bg-secondary/10 rounded-lg overflow-hidden">
                 <img src={item.images && item.images.length > 0 ? item.images[0] : undefined} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 flex flex-col justify-center text-secondary">
                 <p className="text-[10px] font-black uppercase tracking-tight">{item.name}</p>
-                <p className="text-[9px] text-secondary/40 uppercase tracking-widest mt-1">Talla {item.selectedVariant.size} • Cantidad {item.quantity}</p>
+                <p className="text-[9px] text-secondary/40 uppercase tracking-widest mt-1">{formatOrderItemDetails(item.selectedVariant.size, item.selectedVariant.color)} • Cantidad {item.quantity}</p>
               </div>
               <p className="text-xs font-bold self-center text-secondary">{(item.price * item.quantity).toFixed(2)}€</p>
             </div>

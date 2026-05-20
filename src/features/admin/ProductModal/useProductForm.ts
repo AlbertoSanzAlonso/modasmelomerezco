@@ -2,6 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from "@/lib/api";
 import { useCartStore } from "@/store/useCartStore";
 import type { Product, Category, Subcategory } from "@/types/index";
+import {
+  deriveProductColors,
+  normalizeVariantsForForm,
+  normalizeColor,
+  isDefaultColor,
+  DEFAULT_COLOR,
+  ensureNeutroInCatalog,
+} from '@/lib/productVariants';
 
 export const useProductForm = (product: Product | null | undefined, onSave: (product: Partial<Product>) => void) => {
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -14,11 +22,13 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     stock: 0,
     is_new: false,
     is_published: false,
-    variants: [{ id: 'v1', size: 'M', color: 'Único', stock: 0 }]
+    variants: [{ id: 'v1', size: '', color: DEFAULT_COLOR, stock: 0 }],
+    colors: []
   });
 
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [subcategoriesList, setSubcategoriesList] = useState<Subcategory[]>([]);
+  const [availableColors, setAvailableColors] = useState<any[]>([]);
 
   const [isUploading, setIsUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -27,6 +37,27 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
   useEffect(() => {
     api.categories.getAll().then(setCategoriesList);
+    api.colors
+      .getAll()
+      .then(async (colors) => {
+        const hasNeutro = colors.some(
+          (c) => c.name.toLowerCase() === DEFAULT_COLOR.toLowerCase()
+        );
+        if (!hasNeutro) {
+          try {
+            const created = await api.colors.create({
+              name: DEFAULT_COLOR,
+              hex: '#C4B8A8',
+            });
+            setAvailableColors(ensureNeutroInCatalog([...colors, created]));
+            return;
+          } catch {
+            /* usar Neutro sintético en UI */
+          }
+        }
+        setAvailableColors(ensureNeutroInCatalog(colors));
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -39,7 +70,11 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
   useEffect(() => {
     if (product) {
-      setFormData(product);
+      const variants = normalizeVariantsForForm(
+        product.variants || [],
+        product.colors || []
+      );
+      setFormData({ ...product, variants });
     }
   }, [product]);
 
@@ -159,7 +194,55 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
       return;
     }
 
-    onSave(formData);
+    const validVariants = (formData.variants || [])
+      .filter((v) => v.size?.trim())
+      .map((v) => ({
+        ...v,
+        color: normalizeColor(v.color),
+        stock: Math.max(0, v.stock ?? 0),
+      }));
+
+    const withStock = validVariants.filter((v) => (v.stock ?? 0) > 0);
+    if (withStock.length === 0) {
+      openError('Indica stock mayor que 0 en al menos una talla (y color).');
+      return;
+    }
+
+    const onlyPlaceholders = validVariants.every((v) => (v.stock ?? 0) === 0);
+    if (onlyPlaceholders) {
+      openError('Indica stock en al menos una talla y color.');
+      return;
+    }
+
+    const toSave = validVariants;
+
+    const seen = new Set<string>();
+    for (const v of toSave) {
+      const key = `${v.size.trim().toLowerCase()}::${normalizeColor(v.color).toLowerCase()}`;
+      if (seen.has(key)) {
+        openError(
+          `Hay combinaciones duplicadas (${v.size} · ${normalizeColor(v.color)}). Deja una sola línea por talla y color.`
+        );
+        return;
+      }
+      seen.add(key);
+    }
+
+    const colors = deriveProductColors(toSave, availableColors);
+    const missingColor = toSave.find(
+      (v) =>
+        v.color &&
+        !isDefaultColor(v.color) &&
+        !colors.some((c) => c.name.toLowerCase() === v.color!.toLowerCase())
+    );
+    if (missingColor) {
+      openError(
+        `El color "${missingColor.color}" no está en el catálogo. Créalo con "+ CREAR COLOR" antes de guardar.`
+      );
+      return;
+    }
+
+    onSave({ ...formData, variants: toSave, colors });
   };
 
   return {
@@ -167,6 +250,8 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     setFormData,
     categoriesList,
     subcategoriesList,
+    availableColors,
+    setAvailableColors,
     isUploading,
     cropSrc,
     setCropSrc,

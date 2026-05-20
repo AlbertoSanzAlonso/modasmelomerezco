@@ -2,12 +2,12 @@ import React from 'react';
 import { X, Truck } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
+import { formatOrderItemDetails } from '@/lib/productVariants';
 
 interface OrderDetailsModalProps {
   order: Order;
   trackingInfo: { number: string; carrier: string };
   onClose: () => void;
-  onUpdateTracking: (number: string, carrier: string) => void;
   onGenerateLabel: (orderId: string) => void;
 }
 
@@ -15,7 +15,6 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   order,
   trackingInfo,
   onClose,
-  onUpdateTracking,
   onGenerateLabel
 }) => {
   return (
@@ -84,8 +83,12 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       )}
                       <div className="grid grid-cols-[80px_1fr] gap-2 items-center">
                         <span className="text-[9px] text-gray-400 font-bold uppercase">Estado:</span>
-                        <span className="text-[9px] bg-green-500/20 text-green-600 px-2 py-0.5 rounded-full font-black uppercase w-fit">
-                          Pendiente de Etiqueta
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase w-fit ${
+                          order.tracking_number 
+                            ? 'bg-green-500/20 text-green-600' 
+                            : 'bg-yellow-500/20 text-yellow-600'
+                        }`}>
+                          {order.tracking_number ? 'Etiqueta Generada' : 'Pendiente de Etiqueta'}
                         </span>
                       </div>
                     </div>
@@ -113,7 +116,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </div>
                   <div className="flex-1">
                     <p className="text-xs font-black uppercase italic text-(--text-main)">{item.name}</p>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Talla: {item.size} • Cantidad: {item.quantity}</p>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                      {formatOrderItemDetails(item.size, item.color) || 'Sin talla'} • Cantidad: {item.quantity}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black text-primary">{item.price.toFixed(2)}€</p>
@@ -127,37 +132,25 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           <div className="space-y-6">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Logística y Seguimiento</h4>
             <div className="bg-primary/5 p-8 border border-primary/20 rounded-4xl space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {order.tracking_number && (
                 <div className="space-y-2">
                   <label className="text-[9px] font-black uppercase tracking-widest text-primary">Número de Seguimiento</label>
                   <input 
                     type="text"
-                    value={trackingInfo.number}
-                    onChange={(e) => onUpdateTracking(e.target.value, trackingInfo.carrier)}
-                    placeholder="Escribir número..."
-                    className="w-full bg-white border border-primary/20 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-primary transition-all"
+                    value={order.tracking_number}
+                    disabled
+                    className="w-full bg-gray-50 border border-primary/20 rounded-xl px-4 py-3 text-xs font-bold text-gray-400 cursor-not-allowed transition-all"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-primary">Transportista</label>
-                  <select 
-                    value={trackingInfo.carrier}
-                    onChange={(e) => onUpdateTracking(trackingInfo.number, e.target.value)}
-                    className="w-full bg-white border border-primary/20 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-primary transition-all"
-                  >
-                    <option value="NACEX">NACEX</option>
-                    <option value="CORREOS">CORREOS</option>
-                    <option value="UPS">UPS</option>
-                    <option value="MRW">MRW</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <Button className="flex-1 py-4 text-[10px] font-black tracking-widest italic" onClick={() => onGenerateLabel(order.order_id)}>
-                   <Truck className="w-4 h-4 mr-2" /> GENERAR ETIQUETA NACEX
-                </Button>
-                <Button variant="outline" className="flex-1 py-4 text-[10px] font-black tracking-widest border-primary/20 text-primary">
-                   ACTUALIZAR ESTADO
+              )}
+              <div className="flex gap-4 pt-2">
+                <Button 
+                  className="flex-1 py-4 text-[10px] font-black tracking-widest italic" 
+                  onClick={() => onGenerateLabel(order.order_id)}
+                  disabled={!!order.tracking_number}
+                >
+                   <Truck className="w-4 h-4 mr-2" /> 
+                   {order.tracking_number ? 'ETIQUETA YA GENERADA' : 'GENERAR ETIQUETA NACEX'}
                 </Button>
               </div>
             </div>

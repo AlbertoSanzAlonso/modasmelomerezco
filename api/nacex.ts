@@ -135,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ 
         success: true, 
         tracking: 'TEST-NX' + Date.now(), 
-        label_url: 'https://pda.nacex.com/nacex_ws/img/etiqueta_ejemplo.png', 
+        label_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', 
         mode: 'mock' 
       });
     }

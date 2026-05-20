@@ -128,7 +128,10 @@ export const AIChatAgent = () => {
 
       const productsInfo = matchedProducts.length > 0 
         ? matchedProducts.map((p: any) => {
-            const stockInfo = p.variants?.map((v: any) => `${v.size}: ${v.stock}uds`).join(', ') || 'Sin info de stock';
+            const stockInfo = p.variants?.map((v: any) => {
+              const label = v.color && v.color !== 'Único' ? `${v.size}/${v.color}` : v.size;
+              return `${label}: ${v.stock}uds`;
+            }).join(', ') || 'Sin info de stock';
             const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
             return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${window.location.origin}/producto/${p.product_id}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
           }).join('\n---\n')

@@ -8,12 +8,55 @@ import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { motion, AnimatePresence } from 'framer-motion';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
-import type { ProductVariant } from '@/types';
+import type { ProductVariant, Color } from '@/types';
+import {
+  getUniqueSizes,
+  hasStockForSize,
+  hasStockForColor,
+  findVariant,
+  normalizeColor,
+  isDefaultColor,
+  DEFAULT_COLOR,
+} from '@/lib/productVariants';
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [activeMobileColorTooltip, setActiveMobileColorTooltip] = useState<string>('');
+  const tooltipTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia('(hover: none)').matches);
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSizeSelect = (size: string, variants = product?.variants) => {
+    setSelectedSize(size);
+    if (product?.colors?.length && selectedColor && variants) {
+      const stillAvailable = hasStockForColor(variants, size, selectedColor);
+      if (!stillAvailable) setSelectedColor('');
+    }
+  };
+
+  const handleColorSelect = (colorName: string) => {
+    setSelectedColor(colorName);
+    if (isTouchDevice) {
+      setActiveMobileColorTooltip(colorName);
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setActiveMobileColorTooltip('');
+      }, 2500);
+    }
+  };
   const [activeImage, setActiveImage] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
@@ -125,6 +168,13 @@ const ProductPage = () => {
   if (!product || product.is_published === false) return <div className="h-screen flex items-center justify-center">Producto no encontrado</div>;
 
   const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
+  const availableSizes = getUniqueSizes(product.variants);
+  const catalogColors = (product.colors || []).filter(
+    (c) => !isDefaultColor(c.name)
+  );
+  const requiresColor =
+    catalogColors.length > 0 ||
+    product.variants.some((v) => !isDefaultColor(v.color));
 
   return (
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
@@ -257,22 +307,22 @@ const ProductPage = () => {
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Talla</h4>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
-                  {product.variants.map((v: ProductVariant) => {
-                    const isOutOfStock = v.stock <= 0;
+                  {availableSizes.map((size) => {
+                    const isOutOfStock = !hasStockForSize(product.variants, size);
                     return (
                       <button
-                        key={v.id}
+                        key={size}
                         disabled={isOutOfStock}
-                        onClick={() => setSelectedSize(v.size)}
+                        onClick={() => handleSizeSelect(size)}
                         className={`py-4 text-xs font-black tracking-widest transition-all border relative overflow-hidden
-                          ${selectedSize === v.size 
+                          ${selectedSize === size 
                             ? 'bg-secondary text-white border-secondary shadow-xl' 
                             : isOutOfStock 
                               ? 'opacity-40 cursor-not-allowed border-secondary/5 text-secondary/40 grayscale' 
                               : 'bg-transparent text-secondary border-secondary/10 hover:border-secondary'
                           }`}
                       >
-                        {v.size}
+                        {size}
                         {isOutOfStock && (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-[120%] h-px bg-secondary/30 -rotate-45" />
@@ -283,6 +333,60 @@ const ProductPage = () => {
                   })}
                 </div>
               </div>
+
+              {requiresColor && (
+                <div>
+                  <div className="mb-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Color</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    {catalogColors.map((c: Color) => {
+                      const colorOutOfStock =
+                        !!selectedSize &&
+                        !hasStockForColor(product.variants, selectedSize, c.name);
+                      const colorDisabled = !selectedSize || colorOutOfStock;
+                      return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={colorDisabled}
+                        onClick={() => !colorDisabled && handleColorSelect(c.name)}
+                        className={`relative group transition-all ${colorDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        title={c.name}
+                      >
+                        {/* Outer selected ring */}
+                        <div className={`absolute inset-0 -m-1.5 rounded-full border-2 transition-all duration-300
+                          ${selectedColor === c.name 
+                            ? 'border-primary scale-100 opacity-100' 
+                            : 'border-transparent scale-75 opacity-0 group-hover:border-secondary/30 group-hover:scale-100 group-hover:opacity-100'
+                          }`}
+                        />
+                        {/* Inner color swatch */}
+                        <div 
+                          className="w-10 h-10 rounded-full border border-black/10 shadow-md relative overflow-hidden transition-all duration-300 group-hover:scale-105 active:scale-95"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        
+                        {/* Tooltip */}
+                        <span className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-secondary text-white text-[9px] font-bold uppercase tracking-wider rounded-lg pointer-events-none transition-opacity duration-200 whitespace-nowrap shadow-lg z-10
+                          ${(isTouchDevice && activeMobileColorTooltip === c.name) 
+                            ? 'opacity-100' 
+                            : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          {c.name}
+                        </span>
+                      </button>
+                    );
+                    })}
+                  </div>
+                  {!selectedSize && (
+                    <p className="text-[9px] text-secondary/40 font-bold uppercase tracking-widest mt-4">
+                      Elige una talla para ver los colores disponibles
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-4">
                 <Button 
@@ -297,7 +401,27 @@ const ProductPage = () => {
                       });
                       return;
                     }
-                    const variant = product.variants.find((v: ProductVariant) => v.size === selectedSize)!;
+                    if (requiresColor && !selectedColor) {
+                      openModal({
+                        title: 'Selecciona tu color',
+                        message: 'Por favor, elige un color antes de añadir el artículo a la cesta.',
+                        type: 'warning'
+                      });
+                      return;
+                    }
+                    const variant = findVariant(
+                      product.variants,
+                      selectedSize,
+                      requiresColor ? selectedColor : DEFAULT_COLOR
+                    );
+                    if (!variant || variant.stock <= 0) {
+                      openModal({
+                        title: 'Sin stock',
+                        message: 'Esta combinación de talla y color no está disponible.',
+                        type: 'warning'
+                      });
+                      return;
+                    }
                     addItem(product, variant);
                   }}
                 >

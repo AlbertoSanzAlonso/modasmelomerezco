@@ -12,6 +12,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     setFormData,
     categoriesList,
     subcategoriesList,
+    availableColors,
+    setAvailableColors,
     isUploading,
     cropSrc,
     setCropSrc,
@@ -57,6 +59,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               setFormData={setFormData}
               categoriesList={categoriesList}
               subcategoriesList={subcategoriesList}
+              availableColors={availableColors}
+              setAvailableColors={setAvailableColors}
               isUploading={isUploading}
               fileInputRef={fileInputRef}
               handleFileChange={handleFileChange}

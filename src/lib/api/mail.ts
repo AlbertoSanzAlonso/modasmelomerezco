@@ -51,7 +51,7 @@ export const mailApi = {
 
     const itemsHtml = order.items.map((item: any) => `
       <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 10px 0; font-size: 12px;">${item.name || `Producto #${item.product_id}`} ${item.size ? `<span style="color: #ff3366;">(Talla: ${item.size})</span>` : ''}</td>
+        <td style="padding: 10px 0; font-size: 12px;">${item.name || `Producto #${item.product_id}`} ${item.size ? `<span style="color: #ff3366;">(Talla: ${item.size}${item.color && item.color !== 'Único' ? ` · ${item.color}` : ''})</span>` : ''}</td>
         <td style="padding: 10px 0; text-align: center; font-size: 12px;">${item.quantity}</td>
         <td style="padding: 10px 0; text-align: right; font-size: 12px;">${item.price.toFixed(2)}€</td>
       </tr>

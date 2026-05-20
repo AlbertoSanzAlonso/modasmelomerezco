@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from "@/store/useCartStore";
+import { getCartItemKey, formatOrderItemDetails } from '@/lib/productVariants';
 import { Button } from "@/components/ui/Button";
 
 interface CartSidebarProps {
@@ -57,47 +58,50 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   </Link>
                 </div>
               ) : (
-                items.map((item) => (
-                  <div key={`${item.product_id}-${item.selectedVariant.id}`} className="flex gap-6 group">
-                    <div className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg">
-                      <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="text-sm font-bold leading-tight">{item.name}</h3>
-                          <button 
-                            onClick={() => removeItem(`${item.product_id}-${item.selectedVariant.id}`)}
-                            className="text-gray-600 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-4">
-                          Talla: {item.selectedVariant.size} • {item.selectedVariant.color}
-                        </p>
+                items.map((item) => {
+                  const cartItemId = getCartItemKey(item.product_id, item.selectedVariant);
+                  return (
+                    <div key={cartItemId} className="flex gap-6 group">
+                      <div className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg">
+                        <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
                       </div>
-                      <div className="flex justify-between items-end">
-                        <div className="flex items-center border border-secondary/10 rounded-md overflow-hidden">
-                          <button 
-                            onClick={() => updateQuantity(`${item.product_id}-${item.selectedVariant.id}`, Math.max(1, item.quantity - 1))}
-                            className="p-1 hover:bg-secondary/5 text-secondary/40"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(`${item.product_id}-${item.selectedVariant.id}`, item.quantity + 1)}
-                            className="p-1 hover:bg-secondary/5 text-secondary/40"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="text-sm font-bold leading-tight">{item.name}</h3>
+                            <button 
+                              onClick={() => removeItem(cartItemId)}
+                              className="text-gray-600 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-4">
+                            {formatOrderItemDetails(item.selectedVariant.size, item.selectedVariant.color)}
+                          </p>
                         </div>
-                        <p className="font-bold text-sm text-secondary">{(item.price * item.quantity).toFixed(2)}€</p>
+                        <div className="flex justify-between items-end">
+                          <div className="flex items-center border border-secondary/10 rounded-md overflow-hidden">
+                            <button 
+                              onClick={() => updateQuantity(cartItemId, Math.max(1, item.quantity - 1))}
+                              className="p-1 hover:bg-secondary/5 text-secondary/40"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(cartItemId, item.quantity + 1)}
+                              className="p-1 hover:bg-secondary/5 text-secondary/40"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="font-bold text-sm text-secondary">{(item.price * item.quantity).toFixed(2)}€</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

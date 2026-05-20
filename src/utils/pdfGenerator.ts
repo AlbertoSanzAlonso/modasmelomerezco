@@ -68,13 +68,18 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
   doc.text(`${order.shipping_province || ''}`, 20, startY + 67);
   
   // Table
-  const tableData = order.items.map(item => [
-    item.name || `Producto #${item.product_id}`,
-    (item as any).size || '-',
-    item.quantity,
-    `${item.price.toFixed(2)}€`,
-    `${(item.price * item.quantity).toFixed(2)}€`
-  ]);
+  const tableData = order.items.map(item => {
+    const size = (item as any).size || '-';
+    const color = (item as any).color;
+    const sizeLabel = color && color !== 'Único' ? `${size} · ${color}` : size;
+    return [
+      item.name || `Producto #${item.product_id}`,
+      sizeLabel,
+      item.quantity,
+      `${item.price.toFixed(2)}€`,
+      `${(item.price * item.quantity).toFixed(2)}€`,
+    ];
+  });
   
   autoTable(doc, {
     startY: startY + 80,

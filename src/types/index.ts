@@ -18,6 +18,12 @@ export interface Subcategory {
   category_id: number;
 }
 
+export interface Color {
+  id: number;
+  name: string;
+  hex: string;
+}
+
 export interface Product {
   product_id: string;
   name: string;
@@ -35,7 +41,9 @@ export interface Product {
   is_new?: boolean;
   is_published?: boolean;
   stock: number;
+  colors?: Color[];
 }
+
 
 export interface ProductVariant {
   id: string; // Mapping variant_id
@@ -58,6 +66,7 @@ export interface OrderItem {
   price: number;
   size?: string;
   color?: string;
+  variant_id?: number;
   image_url?: string;
 }
 

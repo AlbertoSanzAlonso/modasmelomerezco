@@ -14,6 +14,7 @@ import { admins } from './admins';
 import { favorites } from './favorites';
 import { subscriptions } from './subscriptions';
 import { categories } from './categories';
+import { colors } from './colors';
 
 export const api = {
   products,
@@ -30,7 +31,9 @@ export const api = {
   admins,
   favorites,
   subscriptions,
-  categories
+  categories,
+  colors
 };
+
 
 export default api;

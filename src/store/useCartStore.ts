@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, Product, ProductVariant } from "@/types/index";
+import { normalizeColor } from '@/lib/productVariants';
 
 const calculateTotal = (items: CartItem[]) => {
   return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -49,13 +50,19 @@ export const useCartStore = create<CartStore>()(
       closeModal: () => set({ modalConfig: { ...get().modalConfig, isOpen: false } }),
       addItem: (product, variant) => {
         const items = get().items;
-        const cartItemId = `${product.product_id}-${variant.id}`;
-        const existingItem = items.find(i => `${i.product_id}-${i.selectedVariant.id}` === cartItemId);
+        const cartItemId = variant.variant_id
+          ? `${product.product_id}-v${variant.variant_id}`
+          : `${product.product_id}-${variant.id}-${normalizeColor(variant.color)}`;
+        const getItemKey = (i: CartItem) =>
+          i.selectedVariant.variant_id
+            ? `${i.product_id}-v${i.selectedVariant.variant_id}`
+            : `${i.product_id}-${i.selectedVariant.id}-${normalizeColor(i.selectedVariant.color)}`;
+        const existingItem = items.find((i) => getItemKey(i) === cartItemId);
 
         if (existingItem) {
-          const updatedItems = items.map(i => 
-            `${i.product_id}-${i.selectedVariant.id}` === cartItemId 
-              ? { ...i, quantity: i.quantity + 1 } 
+          const updatedItems = items.map((i) =>
+            getItemKey(i) === cartItemId
+              ? { ...i, quantity: i.quantity + 1 }
               : i
           );
           set({ 
@@ -84,15 +91,24 @@ export const useCartStore = create<CartStore>()(
         }
       },
       removeItem: (cartItemId) => {
-        const updatedItems = get().items.filter(i => `${i.product_id}-${i.selectedVariant.id}` !== cartItemId);
+        const updatedItems = get().items.filter((i) => {
+          const key = i.selectedVariant.variant_id
+            ? `${i.product_id}-v${i.selectedVariant.variant_id}`
+            : `${i.product_id}-${i.selectedVariant.id}-${normalizeColor(i.selectedVariant.color)}`;
+          return key !== cartItemId;
+        });
         set({ items: updatedItems, total: calculateTotal(updatedItems) });
       },
       updateQuantity: (cartItemId, quantity) => {
-        const updatedItems = get().items.map(i => 
-          `${i.product_id}-${i.selectedVariant.id}` === cartItemId ? { ...i, quantity } : i
-        );
+        const updatedItems = get().items.map((i) => {
+          const key = i.selectedVariant.variant_id
+            ? `${i.product_id}-v${i.selectedVariant.variant_id}`
+            : `${i.product_id}-${i.selectedVariant.id}-${normalizeColor(i.selectedVariant.color)}`;
+          return key === cartItemId ? { ...i, quantity } : i;
+        });
         set({ items: updatedItems, total: calculateTotal(updatedItems) });
       },
+
       clearCart: () => {
         set({ items: [], total: 0 });
       },

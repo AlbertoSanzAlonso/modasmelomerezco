@@ -188,12 +188,29 @@ export const AdminDashboard: React.FC = () => {
       const res = await api.shipping.createNacexExpedition(orderId, orderDetails);
       
       // ACTUALIZACIÓN DEL TICKET/PEDIDO EN BASE DE DATOS
-      await api.orders.update(orderId, {
+      const updatedOrder = await api.orders.update(orderId, {
         tracking_number: res.trackingNumber,
         carrier: 'NACEX',
         order_status: 'Shipped',
         shipped_date: new Date().toISOString()
       });
+
+      // Actualizar estados locales para que la UI se actualice inmediatamente
+      setSelectedOrder(updatedOrder);
+      setTrackingInfo({ number: res.trackingNumber, carrier: 'NACEX' });
+
+      // Enviar notificación por email al cliente de forma automática
+      if (order?.customer?.email) {
+        try {
+          await api.mail.sendStatusUpdate(
+            { ...updatedOrder, customer: order.customer },
+            order.customer.email,
+            'Shipped'
+          );
+        } catch (emailErr) {
+          console.error('Error al enviar email de notificación de envío:', emailErr);
+        }
+      }
 
       openModal({
         title: 'Expedición NACEX',
@@ -219,6 +236,37 @@ export const AdminDashboard: React.FC = () => {
         title: 'Error de Nacex', 
         message: err instanceof Error ? err.message : 'No se pudo generar la etiqueta. Revisa las credenciales o los datos del cliente.', 
         type: 'warning' 
+      });
+    }
+  };
+
+  const handleSaveTracking = async (orderId: string, number: string, carrier: string) => {
+    try {
+      const updatedOrder = await api.orders.update(orderId, {
+        tracking_number: number,
+        carrier: carrier,
+        order_status: 'Shipped',
+        shipped_date: new Date().toISOString()
+      });
+
+      setSelectedOrder(updatedOrder);
+      setTrackingInfo({ number, carrier });
+
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+      openModal({
+        title: 'Estado Actualizado',
+        message: `Número de seguimiento (${carrier}: ${number}) guardado con éxito.`,
+        type: 'info',
+        actionLabel: 'Aceptar'
+      });
+    } catch (err) {
+      console.error('Error al guardar seguimiento:', err);
+      openModal({
+        title: 'Error',
+        message: 'No se pudo actualizar el estado de seguimiento del pedido.',
+        type: 'warning'
       });
     }
   };
@@ -258,7 +306,11 @@ export const AdminDashboard: React.FC = () => {
             orders={orders} 
             products={products} 
             onViewAllOrders={() => setActiveTab('orders')} 
-            onOrderClick={(order) => { setSelectedOrder(order); setShowOrderDetails(true); }}
+            onOrderClick={(order) => { 
+              setSelectedOrder(order); 
+              setTrackingInfo({ number: order.tracking_number || '', carrier: order.carrier || 'NACEX' });
+              setShowOrderDetails(true); 
+            }}
             onEditProduct={(product) => { setEditingProduct(product); setIsModalOpen(true); }}
           />
         )}
@@ -303,7 +355,11 @@ export const AdminDashboard: React.FC = () => {
             orderPage={orderPage}
             pageSize={pageSize}
             onPageChange={setOrderPage}
-            onOrderClick={(order) => { setSelectedOrder(order); setShowOrderDetails(true); }}
+            onOrderClick={(order) => { 
+              setSelectedOrder(order); 
+              setTrackingInfo({ number: order.tracking_number || '', carrier: order.carrier || 'NACEX' });
+              setShowOrderDetails(true); 
+            }}
             onGenerateLabel={handleGenerateLabel}
           />
         )}
@@ -358,7 +414,6 @@ export const AdminDashboard: React.FC = () => {
           order={selectedOrder}
           trackingInfo={trackingInfo}
           onClose={() => setShowOrderDetails(false)}
-          onUpdateTracking={(number, carrier) => setTrackingInfo({ number, carrier })}
           onGenerateLabel={handleGenerateLabel}
         />
       )}

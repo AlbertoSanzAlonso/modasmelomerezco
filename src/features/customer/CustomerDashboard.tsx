@@ -221,7 +221,14 @@ export const CustomerDashboard: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-secondary uppercase">{item.name || `Producto #${item.product_id}`}</p>
-                        <p className="text-[10px] text-secondary/40 font-black">CANT: {item.quantity}</p>
+                        <p className="text-[10px] text-secondary/40 font-black uppercase tracking-widest">
+                          {item.size
+                            ? item.color && item.color !== 'Único'
+                              ? `Talla ${item.size} · ${item.color}`
+                              : `Talla ${item.size}`
+                            : ''}{' '}
+                          · CANT: {item.quantity}
+                        </p>
                       </div>
                     </div>
                     <p className="text-sm font-black text-secondary">{item.price.toFixed(2)}€</p>

@@ -1,6 +1,7 @@
 
 import { supabase } from '../supabase';
 import type { Product } from '@/types';
+import { normalizeColor } from '../productVariants';
 
 // Helper para normalizar los datos de Supabase al tipo Product de nuestra app
 const normalise = (p: any): Product => ({
@@ -22,8 +23,12 @@ const normalise = (p: any): Product => ({
     return rawVariants.map((v: any) => ({
       ...v,
       id: (v.variant_id || v.id || Math.random().toString()).toString(),
+      variant_id: v.variant_id,
+      color: normalizeColor(v.color),
     }));
   })(),
+  // Mapear colores de la tabla intermedia muchos a muchos
+  colors: p.product_colors?.map((pc: any) => pc.colors).filter(Boolean) || [],
   // Mapear categorías si vienen de un join
   category: p.categories?.name || p.category,
   subcategory: p.subcategories?.name || p.subcategory,
@@ -36,7 +41,7 @@ export const products = {
 
     let query = supabase
       .from('products')
-      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)', { count: 'exact' });
+      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name), product_colors(colors(*))', { count: 'exact' });
 
     if (category) query = query.eq('category_id', category);
     if (subcategory) query = query.eq('subcategory_id', subcategory);
@@ -85,7 +90,7 @@ export const products = {
   getById: async (product_id: string): Promise<Product> => {
     const { data, error } = await supabase
       .from('products')
-      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)')
+      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name), product_colors(colors(*))')
       .eq('product_id', product_id)
       .maybeSingle();
 
@@ -96,7 +101,7 @@ export const products = {
   getNewArrivals: async (publishedOnly = true): Promise<Product[]> => {
     let query = supabase
       .from('products')
-      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name)')
+      .select('*, product_variants(*), product_images(*), categories(name), subcategories(name), product_colors(colors(*))')
       .eq('is_new', true);
 
     if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
@@ -149,7 +154,7 @@ export const products = {
   },
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
-    const { variants, images, ...pData } = productData as any;
+    const { variants, images, colors, ...pData } = productData as any;
     
     // 1. Create product
     const { data: product, error } = await supabase
@@ -165,7 +170,7 @@ export const products = {
       const cleanVariants = variants.map((v: any) => ({
         product_id: product.product_id,
         size: v.size,
-        color: v.color || 'Único',
+        color: normalizeColor(v.color),
         stock: v.stock || 0
       }));
       await supabase.from('product_variants').insert(cleanVariants);
@@ -182,14 +187,23 @@ export const products = {
       await supabase.from('product_images').insert(imageRecords);
     }
 
-    // 4. Sync Embedding (Background)
+    // 4. Create color associations if any
+    if (colors && colors.length > 0) {
+      const colorRecords = colors.map((c: any) => ({
+        product_id: product.product_id,
+        color_id: c.id
+      }));
+      await supabase.from('product_colors').insert(colorRecords);
+    }
+
+    // 5. Sync Embedding (Background)
     products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
 
-    return normalise(product);
+    return products.getById(product.product_id);
   },
 
   update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
-    const { variants, images, ...pUpdates } = updates as any;
+    const { variants, images, colors, ...pUpdates } = updates as any;
 
     // 1. Update product table
     const validColumns = [
@@ -216,7 +230,7 @@ export const products = {
         const cleanVariants = variants.map((v: any) => ({
           product_id,
           size: v.size,
-          color: v.color || 'Único',
+          color: normalizeColor(v.color),
           stock: v.stock || 0
         }));
         await supabase.from('product_variants').insert(cleanVariants);
@@ -237,12 +251,24 @@ export const products = {
       }
     }
 
-    // 4. Sync Embedding (Background) - Solo si cambió nombre, descripción o categoría
+    // 4. Update colors if provided
+    if (colors) {
+      await supabase.from('product_colors').delete().eq('product_id', product_id);
+      if (colors.length > 0) {
+        const colorRecords = colors.map((c: any) => ({
+          product_id,
+          color_id: c.id
+        }));
+        await supabase.from('product_colors').insert(colorRecords);
+      }
+    }
+
+    // 5. Sync Embedding (Background) - Solo si cambió nombre, descripción o categoría
     if (updates.name || updates.description || updates.category_id) {
       products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
     }
 
-    return normalise(product);
+    return products.getById(product_id);
   },
 
   delete: async (product_id: string): Promise<void> => {

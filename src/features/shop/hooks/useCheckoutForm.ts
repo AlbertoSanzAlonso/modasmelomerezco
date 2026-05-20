@@ -156,20 +156,13 @@ export const useCheckoutForm = () => {
         price: item.price,
         size: item.selectedVariant.size,
         color: item.selectedVariant.color,
+        variant_id: item.selectedVariant.variant_id,
         image_url: item.images?.[0] || ''
       })),
       payment_status: 'Paid',
       carrier: shippingOption === 'nacex_point' && selectedNacexPoint 
         ? `Nacex Point: ${selectedNacexPoint.name} (${selectedNacexPoint.address})` 
-        : shippingOption,
-      // Guardamos metadatos adicionales si la base de datos tiene el campo JSONB
-      metadata: shippingOption === 'nacex_point' ? {
-        nacex_shop_id: selectedNacexPoint?.id,
-        nacex_shop_name: selectedNacexPoint?.name,
-        nacex_shop_address: selectedNacexPoint?.address,
-        nacex_shop_city: selectedNacexPoint?.city,
-        nacex_shop_zip: selectedNacexPoint?.zip
-      } : null
+        : shippingOption
     };
 
     try {
@@ -204,7 +197,11 @@ export const useCheckoutForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
     if (shippingOption === 'nacex_point' && !selectedNacexPoint) {
-      alert('Por favor, selecciona un Punto Nacex Shop para continuar.');
+      openModal({
+        title: 'Selecciona un Punto Nacex',
+        message: 'Por favor, selecciona un Punto Nacex Shop para continuar con el pedido.',
+        type: 'warning'
+      });
       setIsSubmitting(false);
       return;
     }
@@ -250,13 +247,6 @@ export const useCheckoutForm = () => {
       carrier: shippingOption === 'nacex_point' && selectedNacexPoint 
         ? `Nacex Point: ${selectedNacexPoint.name} (${selectedNacexPoint.address})` 
         : shippingOption,
-      metadata: shippingOption === 'nacex_point' ? {
-        nacex_shop_id: selectedNacexPoint?.id,
-        nacex_shop_name: selectedNacexPoint?.name,
-        nacex_shop_address: selectedNacexPoint?.address,
-        nacex_shop_city: selectedNacexPoint?.city,
-        nacex_shop_zip: selectedNacexPoint?.zip
-      } : null,
       shipping_address_id: shippingAddressId,
       shipping_city: formData.city,
       shipping_province: formData.province,
@@ -275,6 +265,7 @@ export const useCheckoutForm = () => {
         price: item.price,
         size: item.selectedVariant.size,
         color: item.selectedVariant.color,
+        variant_id: item.selectedVariant.variant_id,
         image_url: item.images?.[0] || ''
       })),
       payment_status: 'pending'
@@ -313,7 +304,11 @@ export const useCheckoutForm = () => {
       
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('Hubo un error al procesar el pago.');
+      openModal({
+        title: 'Error en el pago',
+        message: 'Hubo un error al procesar el pago. Por favor, inténtalo de nuevo.',
+        type: 'warning'
+      });
     } finally {
       setIsSubmitting(false);
     }

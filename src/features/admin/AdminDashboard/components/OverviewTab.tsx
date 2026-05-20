@@ -71,7 +71,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 if (!p.variants || p.variants.length === 0) {
                   return p.stock === 1 ? [{ p, size: 'Única' }] : [];
                 }
-                return p.variants.filter(v => v.stock === 1).map(v => ({ p, size: v.size }));
+                return p.variants.filter(v => v.stock === 1).map(v => ({ p, size: v.size, color: v.color }));
               }) || [];
               
               const displayedAlerts = alerts.slice(-5).reverse();
@@ -81,9 +81,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               }
 
               return displayedAlerts.map((alert, idx) => (
-                <div key={`${alert.p.product_id}-${alert.size}-${idx}`} className="flex justify-between items-center">
+                <div key={`${alert.p.product_id}-${alert.size}-${alert.color || ''}-${idx}`} className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-bold uppercase italic text-(--text-main)">{alert.p.name} - TALLA {alert.size}</p>
+                    <p className="text-sm font-bold uppercase italic text-(--text-main)">
+                      {alert.p.name} - TALLA {alert.size}
+                      {alert.color && alert.color !== 'Único' ? ` · ${alert.color}` : ''}
+                    </p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">{alert.p.category}</p>
                   </div>
                   <div className="flex items-center gap-4">

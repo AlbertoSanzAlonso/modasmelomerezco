@@ -8,6 +8,7 @@ import { ProductsTab } from "@/features/admin/AdminDashboard/components/Products
 import { OrdersTab } from "@/features/admin/AdminDashboard/components/OrdersTab";
 import { NewsletterTab } from "@/features/admin/AdminDashboard/components/NewsletterTab";
 import { CustomersTab } from "@/features/admin/AdminDashboard/components/CustomersTab";
+import { DiscountCodesTab } from "@/features/admin/AdminDashboard/components/DiscountCodesTab";
 import { OrderDetailsModal } from "@/features/admin/AdminDashboard/components/OrderDetailsModal";
 import { useAdminData } from './useAdminData';
 import { api } from "@/lib/api";
@@ -15,7 +16,7 @@ import { useCartStore } from "@/store/useCartStore";
 import type { Product, Order } from "@/types";
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts'>('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -376,6 +377,8 @@ export const AdminDashboard: React.FC = () => {
             onSend={handleSendNewsletter}
           />
         )}
+
+        {activeTab === 'discounts' && <DiscountCodesTab />}
 
         {activeTab === 'customers' && (
           <CustomersTab 

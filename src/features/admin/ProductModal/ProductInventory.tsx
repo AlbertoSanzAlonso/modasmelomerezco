@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import type { Color, ProductVariant } from '@/types';
 import {
-  DEFAULT_COLOR,
-  normalizeColor,
-  isDefaultColor,
   groupVariantsBySize,
   getUnusedColorsForSize,
+  getColoredVariantsForSize,
+  getBaseVariantForSize,
+  getVariantColorName,
   ensureNeutroInCatalog,
 } from '@/lib/productVariants';
 
@@ -25,12 +25,20 @@ const variantMatches = (a: ProductVariant, b: ProductVariant, size: string) =>
     ? a.variant_id === b.variant_id
     : a.id === b.id);
 
-function stockSummary(items: ProductVariant[]): string {
-  const lines = items.map(
-    (v) => `${normalizeColor(v.color)}: ${v.stock ?? 0} uds`
-  );
-  if (lines.length === 0) return '';
-  const total = items.reduce((s, v) => s + (v.stock ?? 0), 0);
+function stockSummary(
+  items: ProductVariant[],
+  catalog: Color[]
+): string {
+  const colored = items.filter((v) => v.color_id != null);
+  if (colored.length === 0) {
+    const base = items.find((v) => v.color_id == null);
+    return base ? `Stock: ${base.stock ?? 0} uds` : '';
+  }
+  const lines = colored.map((v) => {
+    const name = getVariantColorName(v, catalog) ?? 'Color';
+    return `${name}: ${v.stock ?? 0} uds`;
+  });
+  const total = colored.reduce((s, v) => s + (v.stock ?? 0), 0);
   return `${lines.join(' · ')} (total ${total})`;
 }
 
@@ -44,8 +52,10 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   const [newColorHex, setNewColorHex] = useState('#8B4513');
   const [isCreatingColor, setIsCreatingColor] = useState(false);
   const [pendingColorBySize, setPendingColorBySize] = useState<Record<string, string>>({});
-  /** Por defecto todas las tallas vienen plegadas */
   const [expandedSizes, setExpandedSizes] = useState<Record<string, boolean>>({});
+
+  const catalog = ensureNeutroInCatalog(availableColors);
+  const sizeGroups = groupVariantsBySize(variants);
 
   const sizeKey = (size: string) => (size.trim() ? size : '__new__');
   const isExpanded = (size: string) => expandedSizes[sizeKey(size)] === true;
@@ -54,11 +64,6 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     const key = sizeKey(size);
     setExpandedSizes((prev) => ({ ...prev, [key]: !isExpanded(size) }));
   };
-
-  const catalog = ensureNeutroInCatalog(availableColors);
-  const sizeGroups = groupVariantsBySize(
-    variants.map((v) => ({ ...v, color: normalizeColor(v.color) }))
-  );
 
   const updateSizeLabel = (oldSize: string, newSize: string) => {
     onVariantsChange(
@@ -103,40 +108,47 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
       {
         id: `size-${Date.now()}`,
         size: '',
-        color: DEFAULT_COLOR,
+        color_id: null,
         stock: 0,
       },
     ]);
     setExpandedSizes((prev) => ({ ...prev, __new__: true }));
   };
 
-  const updateRow = (
+  const updateRowStock = (row: ProductVariant, size: string, stock: number) => {
+    onVariantsChange(
+      variants.map((v) =>
+        variantMatches(v, row, size) ? { ...v, stock: Math.max(0, stock) } : v
+      )
+    );
+  };
+
+  const updateRowColorId = (
     row: ProductVariant,
     size: string,
-    field: 'color' | 'stock',
-    value: string | number
+    colorId: number
   ) => {
+    const color = catalog.find((c) => c.id === colorId);
     onVariantsChange(
-      variants.map((v) => {
-        if (!variantMatches(v, row, size)) return v;
-        if (field === 'color') {
-          return { ...v, color: normalizeColor(String(value)) };
-        }
-        return { ...v, stock: Math.max(0, Number(value) || 0) };
-      })
+      variants.map((v) =>
+        variantMatches(v, row, size)
+          ? { ...v, color_id: colorId, color: color?.name }
+          : v
+      )
     );
   };
 
   const removeColorRow = (row: ProductVariant, size: string) => {
     const remaining = variants.filter((v) => !variantMatches(v, row, size));
-    const stillHasSize = remaining.some((v) => v.size === size);
-    if (!stillHasSize && size.trim()) {
+    const coloredLeft = getColoredVariantsForSize(remaining, size);
+    if (coloredLeft.length === 0 && size.trim()) {
+      const base = getBaseVariantForSize(remaining, size);
       onVariantsChange([
-        ...remaining,
-        {
-          id: `v-${Date.now()}`,
+        ...remaining.filter((v) => v.size !== size || v.color_id != null),
+        base ?? {
+          id: `base-${size}-${Date.now()}`,
           size,
-          color: DEFAULT_COLOR,
+          color_id: null,
           stock: 0,
         },
       ]);
@@ -145,33 +157,38 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     onVariantsChange(remaining);
   };
 
-  const addColorToSize = (size: string, colorName: string) => {
-    if (!colorName) return;
-    const normalized = normalizeColor(colorName);
+  const addColorToSize = (size: string, colorId: number) => {
+    if (!colorId) return;
     const exists = variants.some(
-      (v) => v.size === size && normalizeColor(v.color) === normalized
+      (v) => v.size === size && v.color_id === colorId
     );
     if (exists) return;
 
-    onVariantsChange([
-      ...variants,
+    const color = catalog.find((c) => c.id === colorId);
+    const base = getBaseVariantForSize(variants, size);
+    const baseStock = base?.stock ?? 0;
+    let next = variants.filter(
+      (v) => !(v.size === size && v.color_id == null)
+    );
+
+    next = [
+      ...next,
       {
-        id: `v-${Date.now()}-${normalized}`,
+        id: `v-${Date.now()}-${colorId}`,
         size,
-        color: normalized,
-        stock: 0,
+        color_id: colorId,
+        color: color?.name,
+        stock: base ? baseStock : 0,
       },
-    ]);
+    ];
+
+    onVariantsChange(next);
     setPendingColorBySize((prev) => ({ ...prev, [size]: '' }));
   };
 
   const handleCreateColor = async () => {
     const trimmedName = newColorName.trim();
     if (!trimmedName) return;
-    if (trimmedName.toLowerCase() === DEFAULT_COLOR.toLowerCase()) {
-      setNewColorName('');
-      return;
-    }
 
     const exists = catalog.find(
       (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
@@ -204,16 +221,16 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
           Inventario por Talla y Color
         </label>
         <p className="text-[10px] text-gray-500 uppercase tracking-wider leading-relaxed">
-          Cada talla muestra sus colores con stock (Neutro, Marrón, Negro…). Los
-          artículos que antes eran &quot;Único&quot; aparecen como Neutro y puedes
-          cambiar color y unidades.
+          Por defecto cada talla solo tiene stock (sin variantes de color). Añade
+          colores si el producto existe en varios tonos; en la tienda solo entonces
+          aparecerá el selector de color.
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row items-end gap-4 bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl">
         <div className="space-y-2 flex-1 w-full">
           <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
-            Otros colores del catálogo
+            Colores del catálogo
           </label>
           <input
             type="text"
@@ -246,18 +263,24 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
 
       {sizeGroups.length === 0 ? (
         <p className="text-xs text-gray-400 italic py-2">
-          Añade una talla; por defecto incluirá la línea Neutro para el stock.
+          Añade una talla e indica las unidades en stock.
         </p>
       ) : (
         <div className="space-y-6">
           {sizeGroups.map((group) => {
-            const colorRows = group.items;
+            const coloredRows = getColoredVariantsForSize(variants, group.size);
+            const baseRow =
+              getBaseVariantForSize(variants, group.size) ??
+              (coloredRows.length === 0
+                ? group.items.find((v) => v.color_id == null)
+                : undefined);
+            const hasColors = coloredRows.length > 0;
             const unusedColors = getUnusedColorsForSize(
-              variants.map((v) => ({ ...v, color: normalizeColor(v.color) })),
+              variants,
               group.size,
               catalog
             );
-            const summary = stockSummary(colorRows);
+            const summary = stockSummary(group.items, catalog);
             const open = isExpanded(group.size);
 
             return (
@@ -275,11 +298,6 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                     onClick={() => toggleSize(group.size)}
                     className="p-2 rounded-lg hover:bg-primary/10 text-(--text-main) transition-colors shrink-0"
                     aria-expanded={open}
-                    aria-label={
-                      open
-                        ? `Ocultar colores de talla ${group.size || ''}`
-                        : `Ver colores de talla ${group.size || ''}`
-                    }
                   >
                     {open ? (
                       <ChevronUp className="w-4 h-4" />
@@ -295,14 +313,15 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                       autoComplete="off"
                       className="w-28 bg-(--bg-main) border border-(--border-main) px-4 py-3 text-sm font-black focus:border-primary outline-none rounded-xl uppercase"
                       value={group.size}
-                      onChange={(e) => updateSizeLabel(group.size, e.target.value)}
+                      onChange={(e) =>
+                        updateSizeLabel(group.size, e.target.value)
+                      }
                       placeholder="S"
                     />
                   </div>
                   {summary && (
                     <p className="flex-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      {open ? 'Stock: ' : ''}
-                      {summary}
+                      {open ? '' : summary}
                     </p>
                   )}
                   {!open && (
@@ -311,7 +330,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                       onClick={() => toggleSize(group.size)}
                       className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
                     >
-                      Ver / editar colores
+                      Ver / editar stock
                     </button>
                   )}
                   <Button
@@ -327,135 +346,151 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                 </div>
 
                 {open && (
-                <div className="p-5 animate-in fade-in slide-in-from-top-1 duration-200">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-(--border-main)">
-                        <th className="pb-3 text-[8px] font-black uppercase tracking-widest text-gray-500 w-[45%]">
-                          Color
-                        </th>
-                        <th className="pb-3 text-[8px] font-black uppercase tracking-widest text-gray-500 w-[35%]">
-                          Unidades en stock
-                        </th>
-                        <th className="pb-3 w-[20%]" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-(--border-main)">
-                      {colorRows.map((row, idx) => {
-                        const colorName = normalizeColor(row.color);
-                        const swatch =
-                          catalog.find(
-                            (c) =>
-                              c.name.toLowerCase() === colorName.toLowerCase()
-                          )?.hex ?? '#C4B8A8';
-                        const canRemove = !(
-                          isDefaultColor(colorName) &&
-                          colorRows.length === 1
-                        );
+                  <div className="p-5 animate-in fade-in slide-in-from-top-1 duration-200">
+                    {!hasColors && baseRow && (
+                      <div className="flex flex-wrap items-end gap-4 mb-6">
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
+                            Unidades en stock (sin color)
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-full max-w-[140px] bg-(--bg-main) border border-(--border-main) px-4 py-3 text-sm font-black focus:border-primary outline-none rounded-xl text-center"
+                            value={baseRow.stock ?? 0}
+                            onChange={(e) =>
+                              updateRowStock(
+                                baseRow,
+                                group.size,
+                                parseInt(e.target.value, 10) || 0
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                        return (
-                          <tr key={row.variant_id ?? row.id ?? idx}>
-                            <td className="py-4">
-                              <div className="flex items-center gap-3">
-                                <span
-                                  className="w-8 h-8 rounded-full border border-black/10 shadow-inner shrink-0"
-                                  style={{ backgroundColor: swatch }}
-                                />
-                                <select
-                                  className="flex-1 bg-(--bg-main) border border-(--border-main) px-3 py-2.5 text-xs font-black uppercase focus:border-primary outline-none rounded-xl cursor-pointer"
-                                  value={colorName}
-                                  onChange={(e) =>
-                                    updateRow(
-                                      row,
-                                      group.size,
-                                      'color',
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  {catalog.map((c) => (
-                                    <option key={c.id} value={c.name}>
-                                      {c.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </td>
-                            <td className="py-4">
-                              <input
-                                type="number"
-                                min={0}
-                                className="w-full max-w-[120px] bg-(--bg-main) border border-(--border-main) px-4 py-3 text-sm font-black focus:border-primary outline-none rounded-xl text-center"
-                                value={row.stock ?? 0}
-                                onChange={(e) =>
-                                  updateRow(
-                                    row,
-                                    group.size,
-                                    'stock',
-                                    parseInt(e.target.value, 10) || 0
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-4 text-right">
-                              {canRemove ? (
-                                <button
-                                  type="button"
-                                  className="text-[10px] font-black uppercase text-gray-400 hover:text-red-500"
-                                  onClick={() => removeColorRow(row, group.size)}
-                                >
-                                  Eliminar
-                                </button>
-                              ) : (
-                                <span className="text-[9px] text-gray-400 uppercase">
-                                  Base
-                                </span>
-                              )}
-                            </td>
+                    {hasColors && (
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b border-(--border-main)">
+                            <th className="pb-3 text-[8px] font-black uppercase tracking-widest text-gray-500 w-[45%]">
+                              Color
+                            </th>
+                            <th className="pb-3 text-[8px] font-black uppercase tracking-widest text-gray-500 w-[35%]">
+                              Unidades
+                            </th>
+                            <th className="pb-3 w-[20%]" />
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-(--border-main)">
+                          {coloredRows.map((row, idx) => {
+                            const swatch =
+                              catalog.find((c) => c.id === row.color_id)?.hex ??
+                              '#C4B8A8';
 
-                  {unusedColors.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-(--border-main)">
-                      <select
-                        className="flex-1 min-w-[180px] max-w-xs bg-(--bg-main) border border-primary/40 px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl cursor-pointer"
-                        value={pendingColorBySize[group.size] ?? ''}
-                        onChange={(e) =>
-                          setPendingColorBySize((prev) => ({
-                            ...prev,
-                            [group.size]: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Añadir otro color a esta talla...</option>
-                        {unusedColors.map((c) => (
-                          <option key={c.id} value={c.name}>
-                            {c.name}
+                            return (
+                              <tr key={row.variant_id ?? row.id ?? idx}>
+                                <td className="py-4">
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className="w-8 h-8 rounded-full border border-black/10 shadow-inner shrink-0"
+                                      style={{ backgroundColor: swatch }}
+                                    />
+                                    <select
+                                      className="flex-1 bg-(--bg-main) border border-(--border-main) px-3 py-2.5 text-xs font-black uppercase focus:border-primary outline-none rounded-xl cursor-pointer"
+                                      value={row.color_id ?? ''}
+                                      onChange={(e) =>
+                                        updateRowColorId(
+                                          row,
+                                          group.size,
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                    >
+                                      {catalog.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                          {c.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </td>
+                                <td className="py-4">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    className="w-full max-w-[120px] bg-(--bg-main) border border-(--border-main) px-4 py-3 text-sm font-black focus:border-primary outline-none rounded-xl text-center"
+                                    value={row.stock ?? 0}
+                                    onChange={(e) =>
+                                      updateRowStock(
+                                        row,
+                                        group.size,
+                                        parseInt(e.target.value, 10) || 0
+                                      )
+                                    }
+                                  />
+                                </td>
+                                <td className="py-4 text-right">
+                                  <button
+                                    type="button"
+                                    className="text-[10px] font-black uppercase text-gray-400 hover:text-red-500"
+                                    onClick={() =>
+                                      removeColorRow(row, group.size)
+                                    }
+                                  >
+                                    Eliminar
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {unusedColors.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-(--border-main)">
+                        <select
+                          className="flex-1 min-w-[180px] max-w-xs bg-(--bg-main) border border-primary/40 px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl cursor-pointer"
+                          value={pendingColorBySize[group.size] ?? ''}
+                          onChange={(e) =>
+                            setPendingColorBySize((prev) => ({
+                              ...prev,
+                              [group.size]: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">
+                            {hasColors
+                              ? 'Añadir otro color a esta talla...'
+                              : 'Añadir variante de color...'}
                           </option>
-                        ))}
-                      </select>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl gap-1"
-                        disabled={!pendingColorBySize[group.size]}
-                        onClick={() =>
-                          addColorToSize(
-                            group.size,
-                            pendingColorBySize[group.size]
-                          )
-                        }
-                      >
-                        <Plus className="w-3 h-3" />
-                        AÑADIR COLOR
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                          {unusedColors.map((c) => (
+                            <option key={c.id} value={String(c.id)}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl gap-1"
+                          disabled={!pendingColorBySize[group.size]}
+                          onClick={() =>
+                            addColorToSize(
+                              group.size,
+                              Number(pendingColorBySize[group.size])
+                            )
+                          }
+                        >
+                          <Plus className="w-3 h-3" />
+                          AÑADIR COLOR
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             );

@@ -49,6 +49,19 @@ export interface Product {
   stock: number;
   colors?: Color[];
   labels?: Label[];
+  discountCodes?: DiscountCode[];
+}
+
+export interface DiscountCodeInput {
+  code: string;
+  discount_type: DiscountType;
+  discount_value: number;
+  is_active?: boolean;
+  starts_at?: string | null;
+  expires_at?: string | null;
+  max_uses?: number | null;
+  /** Subcategorías a las que aplica el código (p. ej. pantalones, bolsos) */
+  subcategory_ids?: number[];
 }
 
 
@@ -57,8 +70,36 @@ export interface ProductVariant {
   variant_id?: number;
   product_id?: string;
   size: string;
-  color: string;
+  /** null = solo talla, sin selector de color en tienda */
+  color_id: number | null;
+  /** Nombre denormalizado para UI y snapshot en pedidos */
+  color?: string | null;
   stock: number;
+}
+
+export type DiscountType = 'percent' | 'fixed';
+
+export interface DiscountCode {
+  id: number;
+  code: string;
+  discount_type: DiscountType;
+  discount_value: number;
+  is_active: boolean;
+  starts_at?: string | null;
+  expires_at?: string | null;
+  max_uses?: number | null;
+  used_count: number;
+  created_at?: string;
+  subcategory_ids?: number[];
+}
+
+/** Descuento aplicado en carrito (tras validar contra Supabase) */
+export interface AppliedDiscount {
+  code: string;
+  discount_code_id: number;
+  discount_type: DiscountType;
+  discount_value: number;
+  eligible_product_ids: string[];
 }
 
 export interface CartItem extends Product {
@@ -70,7 +111,12 @@ export interface OrderItem {
   product_id: string;
   name: string;
   quantity: number;
+  /** Precio unitario final (con descuento aplicado, si lo hay) */
   price: number;
+  /** Precio unitario de catálogo antes del descuento */
+  unit_price_original?: number;
+  /** Descuento total de la línea (cantidad × unidad) */
+  line_discount?: number;
   size?: string;
   color?: string;
   variant_id?: number;
@@ -84,6 +130,10 @@ export interface Order {
   shipped_date?: string;
   delivery_date?: string;
   subtotal: number;
+  /** Importe total descontado en el pedido */
+  discount_amount?: number;
+  /** Código promocional aplicado */
+  discount_code?: string | null;
   tax_amount: number;
   shipping_cost: number;
   total_amount: number;

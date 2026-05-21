@@ -4,6 +4,15 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Order } from '@/types';
+import {
+  getOrderDiscountAmount,
+  getOrderItemLineDiscount,
+  getOrderItemLineFinal,
+  getOrderItemLineOriginal,
+  getOrderItemOriginalUnit,
+  orderHasDiscount,
+  orderItemHasDiscount,
+} from '@/lib/orderPricing';
 
 export const generateInvoicePDF = async (order: Order, user: { name?: string; surname?: string } | null): Promise<jsPDF> => {
   const doc = new jsPDF({
@@ -12,8 +21,6 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
   
   // Header with Logos
   try {
-    // Note: In a real environment, we should use absolute URLs for logo loading if possible
-    // For browser generation, these relative paths work if called from the client
     const coronaUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/logo-corona.png';
     const lettersUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20solo%20letras.png';
     
@@ -47,17 +54,16 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
     console.error('Logos failed to load for PDF', e);
   }
 
-  // Move content down if logos are present
   const startY = 50;
+  const items = order.items ?? [];
+  const hasDiscount = orderHasDiscount(order);
   
-  // Order Info
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(`Pedido: #${order.order_id.split('-')[0].toUpperCase()}`, 20, startY + 25);
   doc.setFont('helvetica', 'normal');
   doc.text(`Fecha: ${format(new Date(order.order_date), "d 'de' MMMM, yyyy", { locale: es })}`, 20, startY + 32);
   
-  // Customer Info
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('INFORMACIÓN DE ENVÍO:', 20, startY + 45);
@@ -67,51 +73,97 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
   doc.text(`${order.shipping_zip || ''} ${order.shipping_city || ''}`, 20, startY + 62);
   doc.text(`${order.shipping_province || ''}`, 20, startY + 67);
   
-  // Table
-  const tableData = order.items.map(item => {
-    const size = (item as any).size || '-';
-    const color = (item as any).color;
+  const tableData = items.map((item) => {
+    const size = item.size || '-';
+    const color = item.color;
     const sizeLabel = color && color !== 'Único' ? `${size} · ${color}` : size;
+
+    if (hasDiscount && orderItemHasDiscount(item)) {
+      return [
+        item.name || `Producto #${item.product_id}`,
+        sizeLabel,
+        String(item.quantity),
+        `${getOrderItemLineOriginal(item).toFixed(2)}€`,
+        `−${getOrderItemLineDiscount(item).toFixed(2)}€`,
+        `${getOrderItemLineFinal(item).toFixed(2)}€`,
+      ];
+    }
+
+    if (hasDiscount) {
+      return [
+        item.name || `Producto #${item.product_id}`,
+        sizeLabel,
+        String(item.quantity),
+        `${getOrderItemLineOriginal(item).toFixed(2)}€`,
+        '—',
+        `${getOrderItemLineFinal(item).toFixed(2)}€`,
+      ];
+    }
+
     return [
       item.name || `Producto #${item.product_id}`,
       sizeLabel,
-      item.quantity,
-      `${item.price.toFixed(2)}€`,
-      `${(item.price * item.quantity).toFixed(2)}€`,
+      String(item.quantity),
+      `${getOrderItemOriginalUnit(item).toFixed(2)}€`,
+      `${getOrderItemLineFinal(item).toFixed(2)}€`,
     ];
   });
+
+  const tableHead = hasDiscount
+    ? [['Artículo', 'Talla', 'Cant.', 'Precio', 'Descuento', 'Total']]
+    : [['Artículo', 'Talla', 'Cant.', 'P. unit.', 'Total']];
   
   autoTable(doc, {
     startY: startY + 80,
-    head: [['Artículo', 'Talla', 'Cant.', 'Precio', 'Subtotal']],
+    head: tableHead,
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: [255, 79, 112], textColor: [255, 255, 255], fontStyle: 'bold' },
     styles: { fontSize: 9, cellPadding: 5 },
-    columnStyles: {
-      0: { cellWidth: 'auto' },
-      1: { cellWidth: 20, halign: 'center' },
-      2: { cellWidth: 20, halign: 'center' },
-      3: { cellWidth: 30, halign: 'right' },
-      4: { cellWidth: 30, halign: 'right' },
-    }
+    columnStyles: hasDiscount
+      ? {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 22, halign: 'center' },
+          2: { cellWidth: 14, halign: 'center' },
+          3: { cellWidth: 24, halign: 'right' },
+          4: { cellWidth: 24, halign: 'right' },
+          5: { cellWidth: 24, halign: 'right' },
+        }
+      : {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 20, halign: 'center' },
+          3: { cellWidth: 30, halign: 'right' },
+          4: { cellWidth: 30, halign: 'right' },
+        },
   });
   
-  // Total
   const finalY = (doc as any).lastAutoTable.finalY + 15;
+  const subtotal = order.subtotal ?? order.total_amount - (order.shipping_cost || 0);
+  const discountAmount = getOrderDiscountAmount(order);
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
-  doc.text(`Subtotal: ${order.subtotal?.toFixed(2) || (order.total_amount - (order.shipping_cost || 0)).toFixed(2)}€`, 190, finalY, { align: 'right' });
-  doc.text(`Gastos de envío: ${order.shipping_cost?.toFixed(2) || '0.00'}€`, 190, finalY + 6, { align: 'right' });
-  doc.text(`Impuestos (IVA incl.): ${order.tax_amount?.toFixed(2) || '0.00'}€`, 190, finalY + 12, { align: 'right' });
+  doc.text(`Subtotal: ${subtotal.toFixed(2)}€`, 190, finalY, { align: 'right' });
+
+  let offset = 6;
+  if (hasDiscount) {
+    const codeLabel = order.discount_code ? ` (${order.discount_code})` : '';
+    doc.setTextColor(255, 79, 112);
+    doc.text(`Descuento${codeLabel}: −${discountAmount.toFixed(2)}€`, 190, finalY + offset, { align: 'right' });
+    offset += 6;
+    doc.setTextColor(100);
+  }
+
+  doc.text(`Gastos de envío: ${order.shipping_cost?.toFixed(2) || '0.00'}€`, 190, finalY + offset, { align: 'right' });
+  doc.text(`Impuestos (IVA incl.): ${order.tax_amount?.toFixed(2) || '0.00'}€`, 190, finalY + offset + 6, { align: 'right' });
   
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0);
-  doc.text(`TOTAL: ${order.total_amount.toFixed(2)}€`, 190, finalY + 25, { align: 'right' });
+  doc.text(`TOTAL: ${order.total_amount.toFixed(2)}€`, 190, finalY + offset + 19, { align: 'right' });
   
-  // Footer
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(150);

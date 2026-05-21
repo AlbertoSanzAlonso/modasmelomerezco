@@ -14,16 +14,14 @@ import {
   hasStockForSize,
   hasStockForColor,
   findVariant,
-  normalizeColor,
-  isDefaultColor,
-  DEFAULT_COLOR,
+  hasColorVariants,
 } from '@/lib/productVariants';
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [activeMobileColorTooltip, setActiveMobileColorTooltip] = useState<string>('');
   const tooltipTimeoutRef = useRef<any>(null);
@@ -39,14 +37,14 @@ const ProductPage = () => {
 
   const handleSizeSelect = (size: string, variants = product?.variants) => {
     setSelectedSize(size);
-    if (product?.colors?.length && selectedColor && variants) {
-      const stillAvailable = hasStockForColor(variants, size, selectedColor);
-      if (!stillAvailable) setSelectedColor('');
+    if (selectedColorId != null && variants) {
+      const stillAvailable = hasStockForColor(variants, size, selectedColorId);
+      if (!stillAvailable) setSelectedColorId(null);
     }
   };
 
-  const handleColorSelect = (colorName: string) => {
-    setSelectedColor(colorName);
+  const handleColorSelect = (colorId: number, colorName: string) => {
+    setSelectedColorId(colorId);
     if (isTouchDevice) {
       setActiveMobileColorTooltip(colorName);
       if (tooltipTimeoutRef.current) {
@@ -169,12 +167,8 @@ const ProductPage = () => {
 
   const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
   const availableSizes = getUniqueSizes(product.variants);
-  const catalogColors = (product.colors || []).filter(
-    (c) => !isDefaultColor(c.name)
-  );
-  const requiresColor =
-    catalogColors.length > 0 ||
-    product.variants.some((v) => !isDefaultColor(v.color));
+  const catalogColors = product.colors || [];
+  const requiresColor = hasColorVariants(product.variants);
 
   return (
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
@@ -343,20 +337,20 @@ const ProductPage = () => {
                     {catalogColors.map((c: Color) => {
                       const colorOutOfStock =
                         !!selectedSize &&
-                        !hasStockForColor(product.variants, selectedSize, c.name);
+                        !hasStockForColor(product.variants, selectedSize, c.id);
                       const colorDisabled = !selectedSize || colorOutOfStock;
                       return (
                       <button
                         key={c.id}
                         type="button"
                         disabled={colorDisabled}
-                        onClick={() => !colorDisabled && handleColorSelect(c.name)}
+                        onClick={() => !colorDisabled && handleColorSelect(c.id, c.name)}
                         className={`relative group transition-all ${colorDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                         title={c.name}
                       >
                         {/* Outer selected ring */}
                         <div className={`absolute inset-0 -m-1.5 rounded-full border-2 transition-all duration-300
-                          ${selectedColor === c.name 
+                          ${selectedColorId === c.id 
                             ? 'border-primary scale-100 opacity-100' 
                             : 'border-transparent scale-75 opacity-0 group-hover:border-secondary/30 group-hover:scale-100 group-hover:opacity-100'
                           }`}
@@ -401,7 +395,7 @@ const ProductPage = () => {
                       });
                       return;
                     }
-                    if (requiresColor && !selectedColor) {
+                    if (requiresColor && selectedColorId == null) {
                       openModal({
                         title: 'Selecciona tu color',
                         message: 'Por favor, elige un color antes de añadir el artículo a la cesta.',
@@ -409,11 +403,9 @@ const ProductPage = () => {
                       });
                       return;
                     }
-                    const variant = findVariant(
-                      product.variants,
-                      selectedSize,
-                      requiresColor ? selectedColor : DEFAULT_COLOR
-                    );
+                    const variant = findVariant(product.variants, selectedSize, {
+                      colorId: requiresColor ? selectedColorId! : undefined,
+                    });
                     if (!variant || variant.stock <= 0) {
                       openModal({
                         title: 'Sin stock',

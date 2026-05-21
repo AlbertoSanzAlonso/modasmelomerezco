@@ -3,6 +3,9 @@ import { X, Truck } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { formatOrderItemDetails } from '@/lib/productVariants';
+import { OrderLinePricing } from '@/components/orders/OrderLinePricing';
+import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
+import { ScrollArea } from '@/components/ui/ScrollArea';
 
 interface OrderDetailsModalProps {
   order: Order;
@@ -19,7 +22,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 }) => {
   return (
     <div className="fixed inset-0 z-110 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
-      <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] min-h-0 rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         <header className="p-8 border-b border-(--border-main) flex justify-between items-center bg-(--bg-main)">
           <div>
             <h2 className="text-2xl font-display font-black uppercase tracking-tighter italic text-(--text-main)">
@@ -32,7 +35,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-10 space-y-12">
+        <ScrollArea className="flex-1 min-h-0" viewportClassName="p-10" trackInset={26}>
+          <div className="space-y-12 pb-2">
           {/* Order Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-6">
@@ -120,11 +124,12 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       {formatOrderItemDetails(item.size, item.color) || 'Sin talla'} • Cantidad: {item.quantity}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-primary">{item.price.toFixed(2)}€</p>
-                  </div>
+                  <OrderLinePricing item={item} showUnitDetail />
                 </div>
               ))}
+            </div>
+            <div className="p-6 border-t border-(--border-main) bg-(--bg-main)/50">
+              <OrderTotalsSummary order={order} />
             </div>
           </div>
 
@@ -155,7 +160,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </ScrollArea>
 
         <footer className="p-8 border-t border-(--border-main) flex justify-end bg-(--bg-main)">
            <Button variant="outline" onClick={onClose} className="px-10 font-black tracking-widest text-[10px] rounded-xl py-4">CERRAR</Button>

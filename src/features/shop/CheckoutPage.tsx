@@ -19,6 +19,8 @@ const CheckoutPage = () => {
   const {
     items,
     cartTotal,
+    cartSubtotal,
+    discountAmount,
     user,
     isAuthenticated,
     formData,
@@ -124,6 +126,8 @@ const CheckoutPage = () => {
           <div className="lg:col-span-5">
             <CheckoutSummary 
               items={items}
+              cartSubtotal={cartSubtotal}
+              discountAmount={discountAmount}
               cartTotal={cartTotal}
               shippingCost={shippingCost}
               finalTotal={finalTotal}

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Package, Clock, MapPin, ExternalLink, ArrowRight, Heart, Loader2, X } from 'lucide-react';
+import { Package, Clock, MapPin, ExternalLink, ArrowRight, Heart, Loader2 } from 'lucide-react';
 import { useAuthStore } from "@/store/useAuthStore";
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from "@/lib/api";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { OrderDetailsModal } from './components/OrderDetailsModal';
 
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -166,93 +167,12 @@ export const CustomerDashboard: React.FC = () => {
         </section>
       </div>
 
-      {/* Order Details Modal */}
       {showDetails && selectedOrder && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-2xl p-10 rounded-[2.5rem] shadow-2xl space-y-8 overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-display font-black uppercase tracking-tighter italic">
-                  Detalles del <span className="text-primary italic font-serif lowercase">pedido</span>
-                </h2>
-                <p className="text-[10px] text-secondary/40 font-black uppercase tracking-widest mt-1">#{selectedOrder.order_id}</p>
-              </div>
-              <button 
-                onClick={() => setShowDetails(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-secondary"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 border-y border-gray-100">
-              <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Información de Envío</h4>
-                <div className="text-sm font-medium text-secondary/70 space-y-1">
-                  <p className="text-secondary font-bold uppercase">{user?.name} {user?.surname}</p>
-                  <p>{selectedOrder.shipping_street}</p>
-                  <p>{selectedOrder.shipping_zip} {selectedOrder.shipping_city}</p>
-                  <p>{selectedOrder.shipping_province}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Resumen de Pago</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold uppercase">
-                    <span className="text-secondary/40">Método:</span>
-                    <span className="text-secondary">{selectedOrder.payment_method}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-bold uppercase">
-                    <span className="text-secondary/40">Estado:</span>
-                    <span className="text-primary">{selectedOrder.order_status}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Artículos del Pedido</h4>
-              <div className="space-y-4">
-                {selectedOrder.items?.map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
-                    <div className="flex gap-4">
-                      <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-[10px] font-bold text-gray-400">
-                        IMG
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-secondary uppercase">{item.name || `Producto #${item.product_id}`}</p>
-                        <p className="text-[10px] text-secondary/40 font-black uppercase tracking-widest">
-                          {item.size
-                            ? item.color && item.color !== 'Único'
-                              ? `Talla ${item.size} · ${item.color}`
-                              : `Talla ${item.size}`
-                            : ''}{' '}
-                          · CANT: {item.quantity}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-sm font-black text-secondary">{item.price.toFixed(2)}€</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-accent/50 p-8 rounded-3xl space-y-3">
-              <div className="flex justify-between text-xs font-bold uppercase text-secondary/60">
-                <span>Subtotal</span>
-                <span>{(selectedOrder.subtotal || selectedOrder.total_amount).toFixed(2)}€</span>
-              </div>
-              <div className="flex justify-between text-xs font-bold uppercase text-secondary/60">
-                <span>Envío</span>
-                <span>{(selectedOrder.shipping_cost || 0).toFixed(2)}€</span>
-              </div>
-              <div className="flex justify-between text-lg font-black uppercase text-secondary pt-3 border-t border-secondary/5">
-                <span>Total</span>
-                <span className="text-primary">{selectedOrder.total_amount.toFixed(2)}€</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <OrderDetailsModal
+          order={selectedOrder}
+          user={user}
+          onClose={() => setShowDetails(false)}
+        />
       )}
     </div>
   );

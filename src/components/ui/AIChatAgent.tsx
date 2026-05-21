@@ -129,7 +129,7 @@ export const AIChatAgent = () => {
       const productsInfo = matchedProducts.length > 0 
         ? matchedProducts.map((p: any) => {
             const stockInfo = p.variants?.map((v: any) => {
-              const label = v.color && v.color !== 'Único' ? `${v.size}/${v.color}` : v.size;
+              const label = v.color ? `${v.size}/${v.color}` : v.size;
               return `${label}: ${v.stock}uds`;
             }).join(', ') || 'Sin info de stock';
             const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';

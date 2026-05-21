@@ -158,6 +158,53 @@ button {
   }
 }
 
+/* ScrollArea — barra fina reutilizable (modales, paneles) */
+.scroll-area-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 50%, #c8c8c8) transparent;
+  scrollbar-gutter: stable;
+}
+
+.scroll-area-viewport::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scroll-area-viewport::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: var(--scroll-track-inset, 22px);
+  border-radius: 999px;
+}
+
+.scroll-area-viewport::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 35%, #d4d4d4),
+    color-mix(in srgb, var(--color-primary) 65%, #a8a8a8)
+  );
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+  min-height: 48px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.scroll-area-viewport::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 55%, #bbb),
+    var(--color-primary)
+  );
+}
+
+.scroll-area-viewport::-webkit-scrollbar-thumb:active {
+  background: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+.scroll-area-viewport::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Custom Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 6px;

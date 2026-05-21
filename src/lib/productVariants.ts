@@ -1,6 +1,6 @@
 import type { Color, ProductVariant } from '@/types';
 
-/** Color por defecto del catálogo (antes se guardaba como "Único"). */
+/** @deprecated Solo pedidos legacy con texto "Único"/"Neutro" */
 export const DEFAULT_COLOR = 'Neutro';
 
 /** @deprecated Usar DEFAULT_COLOR */
@@ -8,18 +8,37 @@ export const UNIQUE_COLOR = DEFAULT_COLOR;
 
 const LEGACY_DEFAULT_COLORS = new Set(['único', 'unico', 'neutro', '']);
 
+/** Normaliza texto de color en pedidos o datos antiguos. */
 export function normalizeColor(color?: string | null): string {
   if (!color?.trim()) return DEFAULT_COLOR;
   if (LEGACY_DEFAULT_COLORS.has(color.trim().toLowerCase())) return DEFAULT_COLOR;
   return color.trim();
 }
 
+/** @deprecated Usar variantHasColor / hasColorVariants */
 export function isDefaultColor(color?: string | null): boolean {
   return normalizeColor(color) === DEFAULT_COLOR;
 }
 
-const variantKey = (size: string, color: string) =>
-  `${size}::${normalizeColor(color)}`;
+export function variantHasColor(v: ProductVariant): boolean {
+  return v.color_id != null;
+}
+
+export function hasColorVariants(variants: ProductVariant[]): boolean {
+  return variants.some(variantHasColor);
+}
+
+export function getVariantColorName(
+  v: ProductVariant,
+  catalog: Color[] = []
+): string | null {
+  if (v.color_id == null) return null;
+  if (v.color?.trim()) return v.color.trim();
+  return catalog.find((c) => c.id === v.color_id)?.name ?? null;
+}
+
+const variantKey = (size: string, colorId: number | null) =>
+  `${size}::${colorId ?? 'null'}`;
 
 export interface SizeVariantGroup {
   size: string;
@@ -42,6 +61,20 @@ export function groupVariantsBySize(variants: ProductVariant[]): SizeVariantGrou
   return order.map((size) => ({ size, items: map.get(size)! }));
 }
 
+export function getBaseVariantForSize(
+  variants: ProductVariant[],
+  size: string
+): ProductVariant | undefined {
+  return variants.find((v) => v.size === size && v.color_id == null);
+}
+
+export function getColoredVariantsForSize(
+  variants: ProductVariant[],
+  size: string
+): ProductVariant[] {
+  return variants.filter((v) => v.size === size && v.color_id != null);
+}
+
 export function getUnusedColorsForSize(
   variants: ProductVariant[],
   size: string,
@@ -49,10 +82,10 @@ export function getUnusedColorsForSize(
 ): Color[] {
   const used = new Set(
     variants
-      .filter((v) => v.size === size && v.color)
-      .map((v) => normalizeColor(v.color).toLowerCase())
+      .filter((v) => v.size === size && v.color_id != null)
+      .map((v) => v.color_id)
   );
-  return catalog.filter((c) => !used.has(c.name.toLowerCase()));
+  return catalog.filter((c) => !used.has(c.id));
 }
 
 export function getUniqueSizes(variants: ProductVariant[]): string[] {
@@ -68,66 +101,20 @@ export function getUniqueSizes(variants: ProductVariant[]): string[] {
   return sizes;
 }
 
-export function getColorNames(colors: Color[]): string[] {
-  return colors.length > 0 ? colors.map((c) => c.name) : [DEFAULT_COLOR];
-}
-
-/** Combina tallas × colores conservando stock e ids de variantes existentes. */
-export function syncVariants(
-  existingVariants: ProductVariant[],
-  sizes: string[],
-  colors: Color[]
-): ProductVariant[] {
-  const validSizes = sizes.map((s) => s.trim()).filter(Boolean);
-  if (validSizes.length === 0) return [];
-
-  const colorNames = getColorNames(colors);
-  const stockMap = new Map<string, number>();
-  const metaMap = new Map<string, { id?: string; variant_id?: number }>();
-
-  for (const v of existingVariants) {
-    const key = variantKey(v.size, v.color);
-    stockMap.set(key, v.stock ?? 0);
-    metaMap.set(key, { id: v.id, variant_id: v.variant_id });
-  }
-
-  const onlyDefault = existingVariants.every((v) => isDefaultColor(v.color));
-  if (onlyDefault && colors.length > 0) {
-    for (const size of validSizes) {
-      const legacyStock = stockMap.get(variantKey(size, DEFAULT_COLOR)) ?? 0;
-      for (const color of colorNames) {
-        const key = variantKey(size, color);
-        if (!stockMap.has(key)) {
-          stockMap.set(key, legacyStock);
-        }
-      }
-    }
-  }
-
-  return validSizes.flatMap((size) =>
-    colorNames.map((color) => {
-      const key = variantKey(size, color);
-      const meta = metaMap.get(key);
-      return {
-        id: meta?.id || `tmp-${size}-${color}`,
-        variant_id: meta?.variant_id,
-        size,
-        color,
-        stock: stockMap.get(key) ?? 0,
-      };
-    })
-  );
-}
-
 export function findVariant(
   variants: ProductVariant[],
   size: string,
-  color?: string
+  options?: { colorId?: number | null; colorName?: string }
 ): ProductVariant | undefined {
-  const normalizedColor = normalizeColor(color);
-  return variants.find(
-    (v) => v.size === size && normalizeColor(v.color) === normalizedColor
-  );
+  const sized = variants.filter((v) => v.size === size);
+  if (options?.colorId != null) {
+    return sized.find((v) => v.color_id === options.colorId);
+  }
+  if (options?.colorName) {
+    const name = options.colorName.trim().toLowerCase();
+    return sized.find((v) => v.color?.trim().toLowerCase() === name);
+  }
+  return sized.find((v) => v.color_id == null);
 }
 
 export function hasStockForSize(variants: ProductVariant[], size: string): boolean {
@@ -137,92 +124,140 @@ export function hasStockForSize(variants: ProductVariant[], size: string): boole
 export function hasStockForColor(
   variants: ProductVariant[],
   size: string,
-  color: string
+  colorId: number
 ): boolean {
-  const v = findVariant(variants, size, color);
+  const v = findVariant(variants, size, { colorId });
   return (v?.stock ?? 0) > 0;
 }
 
-export function formatVariantLabel(size: string, color?: string): string {
-  const c = normalizeColor(color);
-  return isDefaultColor(c) ? `Talla ${size}` : `Talla ${size} · ${c}`;
+export function formatVariantLabel(
+  size: string,
+  color?: string | null
+): string {
+  return color?.trim() ? `Talla ${size} · ${color}` : `Talla ${size}`;
 }
 
-export function formatOrderItemDetails(size?: string, color?: string): string {
+export function formatOrderItemDetails(size?: string, color?: string | null): string {
   if (!size) return '';
-  const c = normalizeColor(color);
-  const colorPart = isDefaultColor(c) ? '' : ` • ${c}`;
+  const c = color?.trim();
+  const colorPart = c && !LEGACY_DEFAULT_COLORS.has(c.toLowerCase()) ? ` • ${c}` : '';
   return `Talla: ${size}${colorPart}`;
 }
 
 export function getCartItemKey(
   productId: string,
-  variant: { id: string; variant_id?: number; color?: string }
+  variant: { id: string; variant_id?: number; color_id?: number | null }
 ): string {
   return variant.variant_id
     ? `${productId}-v${variant.variant_id}`
-    : `${productId}-${variant.id}-${normalizeColor(variant.color)}`;
+    : `${productId}-${variant.id}-${variant.color_id ?? 'n'}`;
 }
 
-/** Colores de catálogo web derivados de las líneas de inventario. */
+/** Colores de catálogo web derivados de variantes con color_id. */
 export function deriveProductColors(
   variants: ProductVariant[],
   catalog: Color[]
 ): Color[] {
-  const names = new Set<string>();
-  for (const v of variants) {
-    const c = v.color?.trim();
-    if (c && !isDefaultColor(c)) names.add(normalizeColor(c));
-  }
-  return [...names]
-    .map((name) => catalog.find((c) => c.name.toLowerCase() === name.toLowerCase()))
+  const ids = new Set(
+    variants
+      .map((v) => v.color_id)
+      .filter((id): id is number => id != null)
+  );
+  return [...ids]
+    .map((id) => catalog.find((c) => c.id === id))
     .filter((c): c is Color => !!c);
+}
+
+/** Al guardar: si una talla tiene colores, quitar filas sin color_id de esa talla. */
+export function consolidateVariantsForSave(
+  variants: ProductVariant[]
+): ProductVariant[] {
+  const bySize = groupVariantsBySize(variants);
+  const out: ProductVariant[] = [];
+
+  for (const { size, items } of bySize) {
+    const colored = items.filter((v) => v.color_id != null);
+    const base = items.filter((v) => v.color_id == null);
+    if (colored.length > 0) {
+      out.push(...colored);
+    } else {
+      const single = base[0] ?? {
+        id: `base-${size}`,
+        size,
+        color_id: null,
+        stock: 0,
+      };
+      out.push({ ...single, color_id: null, color: undefined });
+    }
+  }
+  return out;
 }
 
 export function normalizeVariantsForForm(
   variants: ProductVariant[],
   catalogColors: Color[]
 ): ProductVariant[] {
-  if (variants.length > 0) {
-    const normalized = variants.map((v) => ({
+  if (variants.length === 0) {
+    return [{ id: 'v1', size: '', color_id: null, stock: 0 }];
+  }
+
+  const normalized = variants.map((v) => {
+    let colorId = v.color_id ?? null;
+    if (colorId == null && v.color) {
+      const legacy = normalizeColor(v.color);
+      if (!isDefaultColor(legacy)) {
+        const match = catalogColors.find(
+          (c) => c.name.toLowerCase() === legacy.toLowerCase()
+        );
+        colorId = match?.id ?? null;
+      }
+    }
+    const colorName =
+      colorId != null
+        ? catalogColors.find((c) => c.id === colorId)?.name ?? v.color ?? null
+        : null;
+
+    return {
       ...v,
       id: (v.variant_id || v.id || `v-${Math.random()}`).toString(),
-      color: normalizeColor(v.color),
+      color_id: colorId,
+      color: colorName ?? undefined,
       stock: v.stock ?? 0,
-    }));
-    return ensureNeutroLinePerSize(normalized);
-  }
-  return [{ id: 'v1', size: '', color: DEFAULT_COLOR, stock: 0 }];
+    };
+  });
+
+  return ensureBaseRowPerSize(consolidateVariantsForSave(normalized));
 }
 
-/** Cada talla con stock debe tener al menos la línea Neutro. */
-export function ensureNeutroLinePerSize(
-  variants: ProductVariant[]
-): ProductVariant[] {
+/** Cada talla debe tener al menos una fila (solo talla o con colores). */
+export function ensureBaseRowPerSize(variants: ProductVariant[]): ProductVariant[] {
   const groups = groupVariantsBySize(variants);
   const out: ProductVariant[] = [];
 
   for (const { size, items } of groups) {
-    out.push(...items);
-    if (size.trim() && !items.some((v) => isDefaultColor(v.color))) {
-      out.push({
-        id: `neutro-${size}-${Date.now()}`,
-        size,
-        color: DEFAULT_COLOR,
-        stock: 0,
-      });
+    const colored = items.filter((v) => v.color_id != null);
+    if (colored.length > 0) {
+      out.push(...colored);
+    } else if (size.trim()) {
+      const base = items.find((v) => v.color_id == null);
+      out.push(
+        base ?? {
+          id: `base-${size}-${Date.now()}`,
+          size,
+          color_id: null,
+          stock: 0,
+        }
+      );
+    } else {
+      out.push(...items);
     }
   }
   return out;
 }
 
-const NEUTRO_SWATCH = '#C4B8A8';
-
-/** Asegura que "Neutro" exista en el listado del admin (catálogo o sintético). */
+/** @deprecated Ya no se usa Neutro sintético en inventario */
 export function ensureNeutroInCatalog(catalog: Color[]): Color[] {
-  const hasNeutro = catalog.some(
-    (c) => c.name.toLowerCase() === DEFAULT_COLOR.toLowerCase()
+  return catalog.filter(
+    (c) => c.name.toLowerCase() !== DEFAULT_COLOR.toLowerCase()
   );
-  if (hasNeutro) return catalog;
-  return [{ id: 0, name: DEFAULT_COLOR, hex: NEUTRO_SWATCH }, ...catalog];
 }

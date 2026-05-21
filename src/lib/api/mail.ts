@@ -1,5 +1,10 @@
 import { generateInvoicePDF } from "@/utils/pdfGenerator";
 import { useAuthStore } from "@/store/useAuthStore";
+import {
+  buildOrderItemsEmailRows,
+  buildOrderItemsEmailTableHead,
+  buildOrderTotalsEmailHtml,
+} from '@/lib/orderEmailHtml';
 
 export interface SendEmailParams {
   to: string;
@@ -49,13 +54,10 @@ export const mailApi = {
     const pdfBase64 = doc.output('datauristring').split(',')[1];
     console.log(`Factura generada. Tamaño Base64: ${(pdfBase64.length / 1024).toFixed(2)} KB`);
 
-    const itemsHtml = order.items.map((item: any) => `
-      <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 10px 0; font-size: 12px;">${item.name || `Producto #${item.product_id}`} ${item.size ? `<span style="color: #ff3366;">(Talla: ${item.size}${item.color && item.color !== 'Único' ? ` · ${item.color}` : ''})</span>` : ''}</td>
-        <td style="padding: 10px 0; text-align: center; font-size: 12px;">${item.quantity}</td>
-        <td style="padding: 10px 0; text-align: right; font-size: 12px;">${item.price.toFixed(2)}€</td>
-      </tr>
-    `).join('');
+    const orderItems = order.items || [];
+    const itemsHtml = buildOrderItemsEmailRows(orderItems);
+    const tableHead = buildOrderItemsEmailTableHead(orderItems);
+    const totalsHtml = buildOrderTotalsEmailHtml(order);
 
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px;">
@@ -72,11 +74,7 @@ export const mailApi = {
           <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; text-transform: uppercase; font-size: 12px; color: #888;">Detalles de tu compra</h3>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
-              <tr style="border-bottom: 2px solid #eee; text-align: left; color: #888; text-transform: uppercase; font-size: 10px;">
-                <th style="padding-bottom: 10px;">Artículo</th>
-                <th style="padding-bottom: 10px; text-align: center;">Cant.</th>
-                <th style="padding-bottom: 10px; text-align: right;">Precio</th>
-              </tr>
+              ${tableHead}
             </thead>
             <tbody>
               ${itemsHtml}
@@ -84,9 +82,7 @@ export const mailApi = {
           </table>
           
           <div style="margin-top: 20px; text-align: right; font-weight: bold;">
-            <p style="margin: 5px 0; font-size: 12px; color: #888; font-weight: normal;">Subtotal: ${(order.total_amount - (order.shipping_cost || 0)).toFixed(2)}€</p>
-            <p style="margin: 5px 0; font-size: 12px; color: #888; font-weight: normal;">Envío: ${order.shipping_cost?.toFixed(2) || '0.00'}€</p>
-            <p style="margin: 10px 0; font-size: 18px; color: #000;">TOTAL: ${order.total_amount.toFixed(2)}€</p>
+            ${totalsHtml}
           </div>
         </div>
 

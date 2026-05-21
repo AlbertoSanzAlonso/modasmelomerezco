@@ -46,6 +46,7 @@ export const AddToCartModal: React.FC = () => {
 
               <div className="space-y-3">
                 {modalConfig.type === 'success' ? (
+                  modalConfig.actionLabel || modalConfig.onAction ? (
                   <>
                     <Button 
                       className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] italic"
@@ -56,6 +57,7 @@ export const AddToCartModal: React.FC = () => {
                           closeModal();
                           useCartStore.getState().setIsCartOpen(true);
                         }
+                        closeModal();
                       }}
                     >
                       {modalConfig.actionLabel || 'Ir a la cesta'}
@@ -65,9 +67,28 @@ export const AddToCartModal: React.FC = () => {
                       onClick={closeModal}
                       className="w-full py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary/40 hover:text-secondary transition-colors"
                     >
-                      {modalConfig.actionLabel ? 'Cerrar' : 'Seguir comprando'}
+                      Cerrar
                     </button>
                   </>
+                  ) : (
+                  <>
+                    <Button 
+                      className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] italic"
+                      onClick={() => {
+                        closeModal();
+                        useCartStore.getState().setIsCartOpen(true);
+                      }}
+                    >
+                      Ir a la cesta
+                    </Button>
+                    <button 
+                      onClick={closeModal}
+                      className="w-full py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary/40 hover:text-secondary transition-colors"
+                    >
+                      Seguir comprando
+                    </button>
+                  </>
+                  )
                 ) : modalConfig.type === 'favorites' ? (
                   <>
                     <Button 

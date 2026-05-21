@@ -1,12 +1,45 @@
 
 import { supabase } from '../supabase';
 import type { Product } from '@/types';
-import { normalizeColor } from '../productVariants';
+import {
+  deriveProductColors,
+  hasColorVariants,
+  normalizeColor,
+} from '../productVariants';
+import type { Color, ProductVariant } from '@/types';
 
 const PRODUCT_SELECT_BASE =
-  '*, product_variants(*), product_images(*), categories(name), subcategories(name), product_colors(colors(*))';
+  '*, product_variants(*, colors(*)), product_images(*), categories(name), subcategories(name), product_colors(colors(*))';
+
+export function mapProductVariant(v: any): ProductVariant {
+  const colorId = v.color_id ?? null;
+  const legacyName =
+    v.color != null && String(v.color).trim() !== ''
+      ? normalizeColor(v.color)
+      : null;
+  const joinedName = v.colors?.name?.trim() || null;
+  const colorName =
+    colorId != null
+      ? joinedName ||
+        (legacyName && legacyName !== 'Neutro' ? legacyName : null)
+      : null;
+
+  return {
+    ...v,
+    id: (v.variant_id || v.id || Math.random().toString()).toString(),
+    variant_id: v.variant_id,
+    size: v.size ?? '',
+    color_id: colorId,
+    color: colorName,
+    stock: v.stock ?? 0,
+  };
+}
 
 const PRODUCT_SELECT_WITH_LABELS = `${PRODUCT_SELECT_BASE}, product_labels(labels(*))`;
+
+const PRODUCT_SELECT_WITH_DISCOUNTS = `${PRODUCT_SELECT_BASE}, product_discount_codes(discount_codes(*))`;
+
+const PRODUCT_SELECT_FULL = `${PRODUCT_SELECT_BASE}, product_labels(labels(*)), product_discount_codes(discount_codes(*))`;
 
 const PRODUCT_SELECT_FILTER_BY_LABEL = `${PRODUCT_SELECT_BASE}, product_labels!inner(labels(*))`;
 
@@ -42,6 +75,24 @@ async function syncProductLabels(
   }
 }
 
+async function syncProductDiscountCodes(
+  productId: string,
+  discountCodes?: { id: number }[]
+): Promise<void> {
+  if (!discountCodes) return;
+  try {
+    await supabase.from('product_discount_codes').delete().eq('product_id', productId);
+    if (discountCodes.length > 0) {
+      const { error } = await supabase.from('product_discount_codes').insert(
+        discountCodes.map((d) => ({ product_id: productId, discount_code_id: d.id }))
+      );
+      if (error) throw error;
+    }
+  } catch (err) {
+    console.warn('[product_discount_codes] No se pudieron guardar códigos:', err);
+  }
+}
+
 // Helper para normalizar los datos de Supabase al tipo Product de nuestra app
 const normalise = (p: any): Product => ({
   ...p,
@@ -56,19 +107,26 @@ const normalise = (p: any): Product => ({
     return p.images || [];
   })(),
   variants: (() => {
-    const rawVariants = (p.product_variants && p.product_variants.length > 0) 
-      ? p.product_variants 
-      : (p.variants || []);
-    return rawVariants.map((v: any) => ({
-      ...v,
-      id: (v.variant_id || v.id || Math.random().toString()).toString(),
-      variant_id: v.variant_id,
-      color: normalizeColor(v.color),
-    }));
+    const rawVariants =
+      p.product_variants?.length > 0 ? p.product_variants : p.variants || [];
+    return rawVariants.map(mapProductVariant);
   })(),
-  // Mapear colores de la tabla intermedia muchos a muchos
-  colors: p.product_colors?.map((pc: any) => pc.colors).filter(Boolean) || [],
+  colors: (() => {
+    const fromBridge: Color[] =
+      p.product_colors?.map((pc: any) => pc.colors).filter(Boolean) || [];
+    if (fromBridge.length > 0) return fromBridge;
+    const raw = p.product_variants || [];
+    const mapped = raw.map(mapProductVariant);
+    if (!hasColorVariants(mapped)) return [];
+    const catalogById = new Map<number, Color>();
+    for (const row of raw) {
+      if (row.colors?.id) catalogById.set(row.colors.id, row.colors);
+    }
+    return deriveProductColors(mapped, [...catalogById.values()]);
+  })(),
   labels: p.product_labels?.map((pl: any) => pl.labels).filter(Boolean) || [],
+  discountCodes:
+    p.product_discount_codes?.map((pdc: any) => pdc.discount_codes).filter(Boolean) || [],
   // Mapear categorías si vienen de un join
   category: p.categories?.name || p.category,
   subcategory: p.subcategories?.name || p.subcategory,
@@ -156,7 +214,15 @@ export const products = {
   },
 
   getById: async (product_id: string): Promise<Product> => {
-    for (const select of [PRODUCT_SELECT_WITH_LABELS, PRODUCT_SELECT_BASE]) {
+    const selects = [
+      PRODUCT_SELECT_FULL,
+      PRODUCT_SELECT_WITH_LABELS,
+      PRODUCT_SELECT_WITH_DISCOUNTS,
+      PRODUCT_SELECT_BASE,
+    ];
+    let lastError: { code?: string; message?: string } | null = null;
+
+    for (const select of selects) {
       const { data, error } = await supabase
         .from('products')
         .select(select)
@@ -164,8 +230,15 @@ export const products = {
         .maybeSingle();
 
       if (!error) return normalise(data);
-      if (!isMissingRelation(error, 'product_labels')) throw error;
+      lastError = error;
+      if (
+        !isMissingRelation(error, 'product_labels') &&
+        !isMissingRelation(error, 'product_discount_codes')
+      ) {
+        throw error;
+      }
     }
+    if (lastError) throw lastError;
     throw new Error('Producto no encontrado');
   },
 
@@ -252,7 +325,7 @@ export const products = {
   },
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
-    const { variants, images, colors, labels, ...pData } = productData as any;
+    const { variants, images, colors, labels, discountCodes, ...pData } = productData as any;
     
     // 1. Create product
     const { data: product, error } = await supabase
@@ -268,8 +341,8 @@ export const products = {
       const cleanVariants = variants.map((v: any) => ({
         product_id: product.product_id,
         size: v.size,
-        color: normalizeColor(v.color),
-        stock: v.stock || 0
+        color_id: v.color_id ?? null,
+        stock: v.stock || 0,
       }));
       await supabase.from('product_variants').insert(cleanVariants);
     }
@@ -295,6 +368,7 @@ export const products = {
     }
 
     await syncProductLabels(product.product_id, labels);
+    await syncProductDiscountCodes(product.product_id, discountCodes);
 
     // 6. Sync Embedding (Background)
     products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
@@ -303,7 +377,7 @@ export const products = {
   },
 
   update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
-    const { variants, images, colors, labels, ...pUpdates } = updates as any;
+    const { variants, images, colors, labels, discountCodes, ...pUpdates } = updates as any;
 
     // 1. Update product table
     const validColumns = [
@@ -330,8 +404,8 @@ export const products = {
         const cleanVariants = variants.map((v: any) => ({
           product_id,
           size: v.size,
-          color: normalizeColor(v.color),
-          stock: v.stock || 0
+          color_id: v.color_id ?? null,
+          stock: v.stock || 0,
         }));
         await supabase.from('product_variants').insert(cleanVariants);
       }
@@ -364,6 +438,7 @@ export const products = {
     }
 
     await syncProductLabels(product_id, labels);
+    await syncProductDiscountCodes(product_id, discountCodes);
 
     // 6. Sync Embedding (Background) - Solo si cambió nombre, descripción o categoría
     if (updates.name || updates.description || updates.category_id) {

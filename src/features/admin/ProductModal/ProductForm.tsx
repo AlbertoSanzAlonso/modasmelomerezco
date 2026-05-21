@@ -5,9 +5,10 @@ import { ProductGeneralInfo } from './ProductGeneralInfo';
 import { ProductCategories } from './ProductCategories';
 import { ProductInventory } from './ProductInventory';
 import { ProductLabels } from './ProductLabels';
+import { ProductDiscountCodes } from './ProductDiscountCodes';
 import { ProductPublishOptions } from './ProductPublishOptions';
 import { ProductFooter } from './ProductFooter';
-import type { Category, Subcategory, Color, Label } from '@/types/index';
+import type { Category, Subcategory, Color, Label, DiscountCode } from '@/types/index';
 
 interface ProductFormProps {
   formData: any;
@@ -18,6 +19,7 @@ interface ProductFormProps {
   setAvailableColors: React.Dispatch<React.SetStateAction<Color[]>>;
   availableLabels: Label[];
   setAvailableLabels: React.Dispatch<React.SetStateAction<Label[]>>;
+  availableDiscountCodes: DiscountCode[];
   isUploading: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -37,6 +39,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   setAvailableColors,
   availableLabels,
   setAvailableLabels,
+  availableDiscountCodes,
   isUploading,
   fileInputRef,
   handleFileChange,
@@ -87,6 +90,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         availableLabels={availableLabels}
         onLabelsChange={(labels) => setFormData({ ...formData, labels })}
         onLabelCreated={(label) => setAvailableLabels((prev) => [...prev, label])}
+      />
+
+      <ProductDiscountCodes
+        selectedCodes={formData.discountCodes || []}
+        availableCodes={availableDiscountCodes}
+        onCodesChange={(discountCodes) => setFormData({ ...formData, discountCodes })}
       />
 
       <ProductPublishOptions 

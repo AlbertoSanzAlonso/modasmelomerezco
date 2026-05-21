@@ -3,12 +3,10 @@ import { api } from "@/lib/api";
 import { useCartStore } from "@/store/useCartStore";
 import type { Product, Category, Subcategory } from "@/types/index";
 import {
+  consolidateVariantsForSave,
   deriveProductColors,
   normalizeVariantsForForm,
-  normalizeColor,
-  isDefaultColor,
-  DEFAULT_COLOR,
-  ensureNeutroInCatalog,
+  variantHasColor,
 } from '@/lib/productVariants';
 
 export const useProductForm = (product: Product | null | undefined, onSave: (product: Partial<Product>) => void) => {
@@ -22,15 +20,17 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     stock: 0,
     is_new: false,
     is_published: false,
-    variants: [{ id: 'v1', size: '', color: DEFAULT_COLOR, stock: 0 }],
+    variants: [{ id: 'v1', size: '', color_id: null, stock: 0 }],
     colors: [],
     labels: [],
+    discountCodes: [],
   });
 
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [subcategoriesList, setSubcategoriesList] = useState<Subcategory[]>([]);
   const [availableColors, setAvailableColors] = useState<any[]>([]);
   const [availableLabels, setAvailableLabels] = useState<any[]>([]);
+  const [availableDiscountCodes, setAvailableDiscountCodes] = useState<any[]>([]);
 
   const [isUploading, setIsUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -39,28 +39,9 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
   useEffect(() => {
     api.categories.getAll().then(setCategoriesList);
-    api.colors
-      .getAll()
-      .then(async (colors) => {
-        const hasNeutro = colors.some(
-          (c) => c.name.toLowerCase() === DEFAULT_COLOR.toLowerCase()
-        );
-        if (!hasNeutro) {
-          try {
-            const created = await api.colors.create({
-              name: DEFAULT_COLOR,
-              hex: '#C4B8A8',
-            });
-            setAvailableColors(ensureNeutroInCatalog([...colors, created]));
-            return;
-          } catch {
-            /* usar Neutro sintético en UI */
-          }
-        }
-        setAvailableColors(ensureNeutroInCatalog(colors));
-      })
-      .catch(console.error);
+    api.colors.getAll().then(setAvailableColors).catch(console.error);
     api.labels.getAll().then(setAvailableLabels).catch(() => setAvailableLabels([]));
+    api.discountCodes.getAll().then(setAvailableDiscountCodes).catch(() => setAvailableDiscountCodes([]));
   }, []);
 
   useEffect(() => {
@@ -75,7 +56,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     if (product) {
       const variants = normalizeVariantsForForm(
         product.variants || [],
-        product.colors || []
+        product.colors || availableColors
       );
       setFormData({ ...product, variants });
     }
@@ -171,7 +152,6 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validaciones básicas
     const openError = (msg: string) => {
       useCartStore.getState().openModal({
         title: 'Información incompleta',
@@ -197,59 +177,55 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
       return;
     }
 
-    const validVariants = (formData.variants || [])
-      .filter((v) => v.size?.trim())
-      .map((v) => ({
-        ...v,
-        color: normalizeColor(v.color),
-        stock: Math.max(0, v.stock ?? 0),
-      }));
+    const validVariants = consolidateVariantsForSave(
+      (formData.variants || [])
+        .filter((v) => v.size?.trim())
+        .map((v) => ({
+          ...v,
+          color_id: v.color_id ?? null,
+          stock: Math.max(0, v.stock ?? 0),
+        }))
+    );
 
     const withStock = validVariants.filter((v) => (v.stock ?? 0) > 0);
     if (withStock.length === 0) {
-      openError('Indica stock mayor que 0 en al menos una talla (y color).');
+      openError('Indica stock mayor que 0 en al menos una talla.');
       return;
     }
-
-    const onlyPlaceholders = validVariants.every((v) => (v.stock ?? 0) === 0);
-    if (onlyPlaceholders) {
-      openError('Indica stock en al menos una talla y color.');
-      return;
-    }
-
-    const toSave = validVariants;
 
     const seen = new Set<string>();
-    for (const v of toSave) {
-      const key = `${v.size.trim().toLowerCase()}::${normalizeColor(v.color).toLowerCase()}`;
+    for (const v of validVariants) {
+      const key = `${v.size.trim().toLowerCase()}::${v.color_id ?? 'null'}`;
       if (seen.has(key)) {
+        const label = variantHasColor(v)
+          ? availableColors.find((c) => c.id === v.color_id)?.name ?? 'color'
+          : 'solo talla';
         openError(
-          `Hay combinaciones duplicadas (${v.size} · ${normalizeColor(v.color)}). Deja una sola línea por talla y color.`
+          `Hay combinaciones duplicadas (${v.size} · ${label}). Deja una sola línea por talla y color.`
         );
         return;
       }
       seen.add(key);
     }
 
-    const colors = deriveProductColors(toSave, availableColors);
-    const missingColor = toSave.find(
-      (v) =>
-        v.color &&
-        !isDefaultColor(v.color) &&
-        !colors.some((c) => c.name.toLowerCase() === v.color!.toLowerCase())
+    const missingCatalog = validVariants.find(
+      (v) => v.color_id != null && !availableColors.some((c) => c.id === v.color_id)
     );
-    if (missingColor) {
+    if (missingCatalog) {
       openError(
-        `El color "${missingColor.color}" no está en el catálogo. Créalo con "+ CREAR COLOR" antes de guardar.`
+        'Hay un color que ya no está en el catálogo. Recarga el formulario o elige otro color.'
       );
       return;
     }
 
+    const colors = deriveProductColors(validVariants, availableColors);
+
     onSave({
       ...formData,
-      variants: toSave,
+      variants: validVariants,
       colors,
       labels: formData.labels || [],
+      discountCodes: formData.discountCodes || [],
     });
   };
 
@@ -262,6 +238,8 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     setAvailableColors,
     availableLabels,
     setAvailableLabels,
+    availableDiscountCodes,
+    setAvailableDiscountCodes,
     isUploading,
     cropSrc,
     setCropSrc,

@@ -71,7 +71,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 if (!p.variants || p.variants.length === 0) {
                   return p.stock === 1 ? [{ p, size: 'Única' }] : [];
                 }
-                return p.variants.filter(v => v.stock === 1).map(v => ({ p, size: v.size, color: v.color }));
+                return p.variants.filter(v => v.stock === 1).map(v => ({ p, size: v.size, color: v.color ?? null }));
               }) || [];
               
               const displayedAlerts = alerts.slice(-5).reverse();
@@ -85,7 +85,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <div>
                     <p className="text-sm font-bold uppercase italic text-(--text-main)">
                       {alert.p.name} - TALLA {alert.size}
-                      {alert.color && alert.color !== 'Único' ? ` · ${alert.color}` : ''}
+                      {alert.color ? ` · ${alert.color}` : ''}
                     </p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">{alert.p.category}</p>
                   </div>

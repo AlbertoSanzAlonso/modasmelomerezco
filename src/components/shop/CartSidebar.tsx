@@ -4,6 +4,8 @@ import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from "@/store/useCartStore";
 import { getCartItemKey, formatOrderItemDetails } from '@/lib/productVariants';
+import { getDiscountedLineTotal } from '@/lib/cartDiscount';
+import { CartDiscountField } from '@/components/shop/CartDiscountField';
 import { Button } from "@/components/ui/Button";
 
 interface CartSidebarProps {
@@ -12,7 +14,15 @@ interface CartSidebarProps {
 }
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { items, removeItem, updateQuantity, total } = useCartStore();
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    subtotal,
+    discountAmount,
+    total,
+    appliedDiscount,
+  } = useCartStore();
 
   return (
     <AnimatePresence>
@@ -60,6 +70,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               ) : (
                 items.map((item) => {
                   const cartItemId = getCartItemKey(item.product_id, item.selectedVariant);
+                  const line = getDiscountedLineTotal(item, appliedDiscount);
                   return (
                     <div key={cartItemId} className="flex gap-6 group">
                       <div className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg">
@@ -96,7 +107,18 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
-                          <p className="font-bold text-sm text-secondary">{(item.price * item.quantity).toFixed(2)}€</p>
+                          <p className="font-bold text-sm text-secondary">
+                            {line.hasDiscount ? (
+                              <>
+                                <span className="text-secondary/40 line-through text-xs mr-1">
+                                  {line.original.toFixed(2)}€
+                                </span>
+                                {line.discounted.toFixed(2)}€
+                              </>
+                            ) : (
+                              <>{line.discounted.toFixed(2)}€</>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -106,10 +128,25 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             </div>
 
             {items.length > 0 && (
-              <div className="p-8 border-t border-secondary/5 bg-accent-dark">
-                <div className="flex justify-between items-center mb-8 text-secondary">
-                  <p className="text-secondary/40 text-xs uppercase tracking-widest">Total Estimado</p>
-                  <p className="text-2xl font-bold">{total.toFixed(2)}€</p>
+              <div className="p-8 border-t border-secondary/5 bg-accent-dark space-y-6">
+                <CartDiscountField />
+                <div className="space-y-2 text-secondary">
+                  {discountAmount > 0 && (
+                    <>
+                      <div className="flex justify-between text-xs text-secondary/40 uppercase tracking-widest">
+                        <span>Subtotal</span>
+                        <span>{subtotal.toFixed(2)}€</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-primary uppercase tracking-widest">
+                        <span>Descuento</span>
+                        <span>−{discountAmount.toFixed(2)}€</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <p className="text-secondary/40 text-xs uppercase tracking-widest">Total Estimado</p>
+                    <p className="text-2xl font-bold">{total.toFixed(2)}€</p>
+                  </div>
                 </div>
                 <Link to="/checkout" onClick={onClose}>
                   <Button className="w-full py-5 text-base font-black italic tracking-widest bg-primary hover:bg-primary-dark text-white shadow-xl shadow-primary/20" size="lg">Finalizar Compra</Button>

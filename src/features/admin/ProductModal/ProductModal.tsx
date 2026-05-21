@@ -2,6 +2,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { ImageCropModal } from "@/components/ui/ImageCropModal";
+import { ScrollArea } from '@/components/ui/ScrollArea';
 import { useProductForm } from './useProductForm';
 import { ProductForm } from './ProductForm';
 import type { ProductModalProps } from './types';
@@ -16,6 +17,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     setAvailableColors,
     availableLabels,
     setAvailableLabels,
+    availableDiscountCodes,
     isUploading,
     cropSrc,
     setCropSrc,
@@ -45,7 +47,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
         />
       )}
       <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
-        <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden">
+        <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] min-h-0 rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden">
           <header className="p-8 border-b border-(--border-main) flex justify-between items-center bg-(--bg-main) z-10">
             <h2 className="text-2xl font-display font-black uppercase tracking-tighter italic text-(--text-main)">
               {product ? 'Editar Pieza' : 'Nueva Pieza Luxury'}
@@ -55,7 +57,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
             </button>
           </header>
 
-          <div className="flex-1 overflow-y-auto py-6">
+          <ScrollArea className="flex-1 min-h-0" viewportClassName="py-6" trackInset={26}>
             <ProductForm 
               formData={formData}
               setFormData={setFormData}
@@ -65,6 +67,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               setAvailableColors={setAvailableColors}
               availableLabels={availableLabels}
               setAvailableLabels={setAvailableLabels}
+              availableDiscountCodes={availableDiscountCodes}
               isUploading={isUploading}
               fileInputRef={fileInputRef}
               handleFileChange={handleFileChange}
@@ -74,7 +77,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               onSubmit={handleSubmit}
               onCancel={onClose}
             />
-          </div>
+          </ScrollArea>
         </div>
       </div>
     </>

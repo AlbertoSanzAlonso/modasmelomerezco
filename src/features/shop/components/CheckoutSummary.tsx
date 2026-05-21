@@ -2,9 +2,14 @@ import React from 'react';
 import { Truck, ShieldCheck } from 'lucide-react';
 import type { CartItem } from '@/types';
 import { getCartItemKey, formatOrderItemDetails } from '@/lib/productVariants';
+import { getDiscountedLineTotal } from '@/lib/cartDiscount';
+import { useCartStore } from '@/store/useCartStore';
+import { CartDiscountField } from '@/components/shop/CartDiscountField';
 
 interface CheckoutSummaryProps {
   items: CartItem[];
+  cartSubtotal: number;
+  discountAmount: number;
   cartTotal: number;
   shippingCost: number;
   finalTotal: number;
@@ -12,16 +17,22 @@ interface CheckoutSummaryProps {
 
 export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   items,
+  cartSubtotal,
+  discountAmount,
   cartTotal,
   shippingCost,
   finalTotal
 }) => {
+  const appliedDiscount = useCartStore((s) => s.appliedDiscount);
+
   return (
     <div className="sticky top-32 space-y-8">
       <div className="bg-accent-dark p-8 border border-secondary/10 rounded-2xl shadow-xl">
         <h3 className="text-xs font-black tracking-[0.4em] uppercase mb-8 border-b border-secondary/5 pb-4 text-secondary">Resumen</h3>
         <div className="space-y-6 max-h-[400px] overflow-y-auto mb-8 pr-4">
-          {items.map(item => (
+          {items.map(item => {
+            const line = getDiscountedLineTotal(item, appliedDiscount);
+            return (
             <div key={getCartItemKey(item.product_id, item.selectedVariant)} className="flex gap-4">
               <div className="w-16 aspect-3/4 bg-secondary/10 rounded-lg overflow-hidden">
                 <img src={item.images && item.images.length > 0 ? item.images[0] : undefined} alt="" className="w-full h-full object-cover" />
@@ -30,16 +41,36 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
                 <p className="text-[10px] font-black uppercase tracking-tight">{item.name}</p>
                 <p className="text-[9px] text-secondary/40 uppercase tracking-widest mt-1">{formatOrderItemDetails(item.selectedVariant.size, item.selectedVariant.color)} • Cantidad {item.quantity}</p>
               </div>
-              <p className="text-xs font-bold self-center text-secondary">{(item.price * item.quantity).toFixed(2)}€</p>
+              <p className="text-xs font-bold self-center text-secondary">
+                {line.hasDiscount ? (
+                  <>
+                    <span className="text-secondary/40 line-through text-[10px] mr-1">{line.original.toFixed(2)}€</span>
+                    {line.discounted.toFixed(2)}€
+                  </>
+                ) : (
+                  <>{line.discounted.toFixed(2)}€</>
+                )}
+              </p>
             </div>
-          ))}
+          );
+          })}
+        </div>
+
+        <div className="mb-6 pb-6 border-b border-secondary/5">
+          <CartDiscountField compact />
         </div>
         
         <div className="space-y-4 border-t border-secondary/5 pt-6">
           <div className="flex justify-between text-xs text-secondary/40 uppercase tracking-widest">
             <span>Subtotal</span>
-            <span>{cartTotal.toFixed(2)}€</span>
+            <span>{cartSubtotal.toFixed(2)}€</span>
           </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-xs text-primary uppercase tracking-widest">
+              <span>Descuento</span>
+              <span>−{discountAmount.toFixed(2)}€</span>
+            </div>
+          )}
           <div className="flex justify-between text-xs text-secondary/40 uppercase tracking-widest">
             <span>Envío</span>
             <span className={shippingCost === 0 ? "text-primary font-bold" : "text-secondary font-bold"}>
@@ -50,6 +81,11 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
             <span>Total</span>
             <span>{finalTotal.toFixed(2)}€</span>
           </div>
+          {discountAmount > 0 && (
+            <p className="text-[9px] text-secondary/40 text-right">
+              Productos: {cartTotal.toFixed(2)}€ + envío
+            </p>
+          )}
         </div>
       </div>
 

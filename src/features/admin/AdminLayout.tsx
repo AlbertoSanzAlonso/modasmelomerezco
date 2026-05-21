@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Users, ExternalLink, Menu, X, Mail } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Users, ExternalLink, Menu, X, Mail, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useAdminStore } from "@/store/useAdminStore";
@@ -9,8 +9,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  activeTab: 'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter';
-  onTabChange: (tab: 'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter') => void;
+  activeTab: 'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts';
+  onTabChange: (tab: 'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts') => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabChange }) => {
@@ -64,6 +64,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
               { id: 'orders', icon: ShoppingCart, label: 'Pedidos' },
               { id: 'customers', icon: Users, label: 'Clientes' },
               { id: 'newsletter', icon: Mail, label: 'Newsletter' },
+              { id: 'discounts', icon: Tag, label: 'Descuentos' },
             ].map((item) => (
               <button 
                 key={item.id}

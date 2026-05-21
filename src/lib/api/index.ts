@@ -16,6 +16,7 @@ import { subscriptions } from './subscriptions';
 import { categories } from './categories';
 import { colors } from './colors';
 import { labels } from './labels';
+import { discountCodes } from './discountCodes';
 
 export const api = {
   products,
@@ -35,6 +36,7 @@ export const api = {
   categories,
   colors,
   labels,
+  discountCodes,
 };
 
 

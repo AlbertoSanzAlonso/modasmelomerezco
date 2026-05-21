@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from "@/store/useCartStore";
+import { getDiscountedLineTotal } from '@/lib/cartDiscount';
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { CITIES_BY_PROVINCE } from "@/constants/locations";
@@ -8,7 +9,37 @@ import { fetchRedsysParameters, REDSYS_URL_TEST, REDSYS_URL_PROD } from "@/lib/r
 import type { Address } from '@/types';
 
 export const useCheckoutForm = () => {
-  const { items, total: cartTotal, clearCart, openModal } = useCartStore();
+  const {
+    items,
+    subtotal: cartSubtotal,
+    discountAmount,
+    total: cartTotal,
+    appliedDiscount,
+    clearCart,
+    openModal,
+  } = useCartStore();
+
+  const mapOrderItems = () =>
+    items.map((item) => {
+      const line = getDiscountedLineTotal(item, appliedDiscount);
+      const unitOriginal = item.price;
+      const lineDiscount = line.hasDiscount
+        ? Math.round((line.original - line.discounted) * 100) / 100
+        : 0;
+      const unitFinal = Math.round((line.discounted / item.quantity) * 100) / 100;
+      return {
+        product_id: item.product_id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price_original: unitOriginal,
+        price: unitFinal,
+        line_discount: lineDiscount,
+        size: item.selectedVariant.size,
+        color: item.selectedVariant.color ?? null,
+        variant_id: item.selectedVariant.variant_id,
+        image_url: item.images?.[0] || '',
+      };
+    });
   const { user, isAuthenticated, updateUser } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -135,7 +166,9 @@ export const useCheckoutForm = () => {
     const finalTotal = cartTotal + getShippingCost();
     const orderData: any = {
       customer_id: user?.customer_id,
-      subtotal: cartTotal,
+      subtotal: cartSubtotal,
+      discount_amount: discountAmount,
+      discount_code: appliedDiscount?.code ?? null,
       total_amount: finalTotal,
       order_status: 'Paid',
       payment_method: 'TEST_MODE', // Marcador para la API de Nacex
@@ -149,16 +182,7 @@ export const useCheckoutForm = () => {
       customer_email: user?.email || formData.email,
       tax_amount: 0,
       shipping_cost: 0,
-      items: items.map(item => ({ 
-        product_id: item.product_id, 
-        name: item.name, 
-        quantity: item.quantity, 
-        price: item.price,
-        size: item.selectedVariant.size,
-        color: item.selectedVariant.color,
-        variant_id: item.selectedVariant.variant_id,
-        image_url: item.images?.[0] || ''
-      })),
+      items: mapOrderItems(),
       payment_status: 'Paid',
       carrier: shippingOption === 'nacex_point' && selectedNacexPoint 
         ? `Nacex Point: ${selectedNacexPoint.name} (${selectedNacexPoint.address})` 
@@ -240,7 +264,9 @@ export const useCheckoutForm = () => {
 
     const orderData: any = {
       customer_id: user?.customer_id,
-      subtotal: cartTotal,
+      subtotal: cartSubtotal,
+      discount_amount: discountAmount,
+      discount_code: appliedDiscount?.code ?? null,
       total_amount: finalTotal,
       order_status: 'Pending',
       payment_method: paymentMethod === 'card' ? 'Redsys (Tarjeta)' : 'Redsys (Bizum)',
@@ -258,17 +284,8 @@ export const useCheckoutForm = () => {
       customer_email: user?.email || formData.email,
       tax_amount: 0,
       shipping_cost: shippingCost,
-      items: items.map(item => ({ 
-        product_id: item.product_id, 
-        name: item.name, 
-        quantity: item.quantity, 
-        price: item.price,
-        size: item.selectedVariant.size,
-        color: item.selectedVariant.color,
-        variant_id: item.selectedVariant.variant_id,
-        image_url: item.images?.[0] || ''
-      })),
-      payment_status: 'pending'
+      items: mapOrderItems(),
+      payment_status: 'pending',
     };
 
     try {
@@ -317,6 +334,9 @@ export const useCheckoutForm = () => {
   return {
     items,
     cartTotal,
+    cartSubtotal,
+    discountAmount,
+    appliedDiscount,
     user,
     isAuthenticated,
     formData,

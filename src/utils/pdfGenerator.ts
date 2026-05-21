@@ -6,12 +6,9 @@ import { es } from 'date-fns/locale';
 import type { Order } from '@/types';
 import {
   getOrderDiscountAmount,
-  getOrderItemLineDiscount,
   getOrderItemLineFinal,
-  getOrderItemLineOriginal,
   getOrderItemOriginalUnit,
   orderHasDiscount,
-  orderItemHasDiscount,
 } from '@/lib/orderPricing';
 
 export const generateInvoicePDF = async (order: Order, user: { name?: string; surname?: string } | null): Promise<jsPDF> => {
@@ -19,7 +16,6 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
     compress: true
   });
   
-  // Header with Logos
   try {
     const coronaUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/logo-corona.png';
     const lettersUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20solo%20letras.png';
@@ -78,28 +74,6 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
     const color = item.color;
     const sizeLabel = color && color !== 'Único' ? `${size} · ${color}` : size;
 
-    if (hasDiscount && orderItemHasDiscount(item)) {
-      return [
-        item.name || `Producto #${item.product_id}`,
-        sizeLabel,
-        String(item.quantity),
-        `${getOrderItemLineOriginal(item).toFixed(2)}€`,
-        `−${getOrderItemLineDiscount(item).toFixed(2)}€`,
-        `${getOrderItemLineFinal(item).toFixed(2)}€`,
-      ];
-    }
-
-    if (hasDiscount) {
-      return [
-        item.name || `Producto #${item.product_id}`,
-        sizeLabel,
-        String(item.quantity),
-        `${getOrderItemLineOriginal(item).toFixed(2)}€`,
-        '—',
-        `${getOrderItemLineFinal(item).toFixed(2)}€`,
-      ];
-    }
-
     return [
       item.name || `Producto #${item.product_id}`,
       sizeLabel,
@@ -108,61 +82,53 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
       `${getOrderItemLineFinal(item).toFixed(2)}€`,
     ];
   });
-
-  const tableHead = hasDiscount
-    ? [['Artículo', 'Talla', 'Cant.', 'Precio', 'Descuento', 'Total']]
-    : [['Artículo', 'Talla', 'Cant.', 'P. unit.', 'Total']];
   
   autoTable(doc, {
     startY: startY + 80,
-    head: tableHead,
+    head: [['Artículo', 'Talla', 'Cant.', 'P. unit.', 'Total']],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: [255, 79, 112], textColor: [255, 255, 255], fontStyle: 'bold' },
     styles: { fontSize: 9, cellPadding: 5 },
-    columnStyles: hasDiscount
-      ? {
-          0: { cellWidth: 'auto' },
-          1: { cellWidth: 22, halign: 'center' },
-          2: { cellWidth: 14, halign: 'center' },
-          3: { cellWidth: 24, halign: 'right' },
-          4: { cellWidth: 24, halign: 'right' },
-          5: { cellWidth: 24, halign: 'right' },
-        }
-      : {
-          0: { cellWidth: 'auto' },
-          1: { cellWidth: 20, halign: 'center' },
-          2: { cellWidth: 20, halign: 'center' },
-          3: { cellWidth: 30, halign: 'right' },
-          4: { cellWidth: 30, halign: 'right' },
-        },
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { cellWidth: 22, halign: 'center' },
+      2: { cellWidth: 16, halign: 'center' },
+      3: { cellWidth: 28, halign: 'right' },
+      4: { cellWidth: 28, halign: 'right' },
+    },
   });
   
   const finalY = (doc as any).lastAutoTable.finalY + 15;
   const subtotal = order.subtotal ?? order.total_amount - (order.shipping_cost || 0);
   const discountAmount = getOrderDiscountAmount(order);
+  const totalsX = 190;
+  const totalsMaxWidth = 75;
+  const lineHeight = 5;
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100);
-  doc.text(`Subtotal: ${subtotal.toFixed(2)}€`, 190, finalY, { align: 'right' });
+  const drawTotalsLine = (text: string, y: number, opts?: { bold?: boolean; size?: number }) => {
+    doc.setFontSize(opts?.size ?? 10);
+    doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
+    doc.setTextColor(opts?.bold ? 0 : 100);
+    const lines = doc.splitTextToSize(text, totalsMaxWidth);
+    lines.forEach((line: string, i: number) => {
+      doc.text(line, totalsX, y + i * lineHeight, { align: 'right' });
+    });
+    return y + lines.length * lineHeight;
+  };
 
-  let offset = 6;
+  let y = drawTotalsLine(`Subtotal: ${subtotal.toFixed(2)}€`, finalY);
+
   if (hasDiscount) {
-    const codeLabel = order.discount_code ? ` (${order.discount_code})` : '';
-    doc.setTextColor(255, 79, 112);
-    doc.text(`Descuento${codeLabel}: −${discountAmount.toFixed(2)}€`, 190, finalY + offset, { align: 'right' });
-    offset += 6;
-    doc.setTextColor(100);
+    y = drawTotalsLine(`Descuento: −${discountAmount.toFixed(2)}€`, y + 1);
+    if (order.discount_code) {
+      y = drawTotalsLine(`Código: ${order.discount_code}`, y, { size: 9 });
+    }
   }
 
-  doc.text(`Gastos de envío: ${order.shipping_cost?.toFixed(2) || '0.00'}€`, 190, finalY + offset, { align: 'right' });
-  doc.text(`Impuestos (IVA incl.): ${order.tax_amount?.toFixed(2) || '0.00'}€`, 190, finalY + offset + 6, { align: 'right' });
-  
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0);
-  doc.text(`TOTAL: ${order.total_amount.toFixed(2)}€`, 190, finalY + offset + 19, { align: 'right' });
+  y = drawTotalsLine(`Gastos de envío: ${order.shipping_cost?.toFixed(2) || '0.00'}€`, y + 1);
+  y = drawTotalsLine(`Impuestos (IVA incl.): ${order.tax_amount?.toFixed(2) || '0.00'}€`, y + 1);
+  drawTotalsLine(`TOTAL: ${order.total_amount.toFixed(2)}€`, y + 4, { bold: true, size: 14 });
   
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');

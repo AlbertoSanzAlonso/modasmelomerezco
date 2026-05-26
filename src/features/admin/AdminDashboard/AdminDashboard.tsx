@@ -219,8 +219,8 @@ export const AdminDashboard: React.FC = () => {
         type: 'success',
         actionLabel: 'Ver Etiqueta',
         onAction: () => {
-          if (res.labelUrl && res.labelUrl !== '#') {
-            window.open(res.labelUrl, '_blank');
+          if (res.trackingNumber) {
+            api.shipping.openNacexLabel(res.labelUrl, res.trackingNumber);
           } else {
             alert('URL de etiqueta no disponible en este momento.');
           }

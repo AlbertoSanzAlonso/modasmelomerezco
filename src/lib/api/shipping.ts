@@ -7,7 +7,21 @@ interface NacexResponse {
   labelUrl: string;
 }
 
+/** Abre la etiqueta Nacex en una pestaña (URL relativa o absoluta). */
+export function openNacexLabel(labelUrl: string | undefined, trackingNumber: string): void {
+  let url = labelUrl?.trim() || '';
+  if (!url || url.startsWith('data:')) {
+    url = `/api/nacex?method=get_etiqueta&codExp=${encodeURIComponent(trackingNumber)}`;
+  }
+  if (url.startsWith('/')) {
+    url = `${window.location.origin}${url}`;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 export const shipping = {
+  openNacexLabel,
+
   createNacexExpedition: async (orderId: string, orderDetails?: any): Promise<NacexResponse> => {
     try {
       const response = await fetch(`/api/nacex?method=crear_envio`, {

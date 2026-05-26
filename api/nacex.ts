@@ -2,7 +2,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 /** Versión del handler (comprobar en Network → respuesta JSON tras redeploy). */
-const NACEX_API_VERSION = '2026-05-recogida-v3';
+const NACEX_API_VERSION = '2026-05-recogida-v4';
+const NACEX_WS_URL = 'https://pda.nacex.com/nacex_ws/ws';
 
 /** Evita romper el formato pipe-separated de Nacex. */
 function nacexField(value: string): string {
@@ -97,6 +98,25 @@ function formatNacexError(raw: string): string {
   return message;
 }
 
+function nacexLabelPath(codExp: string): string {
+  return `/api/nacex?method=get_etiqueta&codExp=${encodeURIComponent(codExp)}`;
+}
+
+/** Descarga etiqueta PNG desde Nacex (respuesta en base64). */
+async function fetchNacexLabelPng(user: string, pass: string, codExp: string): Promise<Buffer | null> {
+  const labelData = encodeNacexData([`codExp=${codExp}`, 'modelo=IMAGEN']);
+  const labelRes = await fetch(
+    `${NACEX_WS_URL}?method=getEtiqueta&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}&data=${labelData}`,
+  );
+  const labelRaw = (await decodeNacexResponse(labelRes)).trim().replace(/\s+/g, '');
+  if (!labelRaw || labelRaw.toUpperCase().startsWith('ERROR')) return null;
+  try {
+    return Buffer.from(labelRaw, 'base64');
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Nacex API Handler (Proxy para evitar CORS y ocultar credenciales)
  */
@@ -110,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  const { method, cp, tracking } = req.query;
+  const { method, cp, tracking, codExp } = req.query;
 
   // CREDENCIALES (Prioridad a Variables de Entorno)
   const NACEX_USER = process.env.NACEX_USER || 'INFOBENALUMOX@GMAIL.COM';
@@ -123,9 +143,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const NACEX_POBLACION_RECOGIDA = process.env.NACEX_POBLACION_RECOGIDA || 'Benalmadena';
   const NACEX_TEL_RECOGIDA = (process.env.NACEX_TEL_RECOGIDA || '951000000').replace(/\D/g, '').slice(0, 15);
 
-  const NACEX_WS_URL = 'https://pda.nacex.com/nacex_ws/ws';
-
   const canUseRealAPI = NACEX_PASS && NACEX_PASS !== 'tu_password' && NACEX_PASS !== 'PON_AQUI_TU_CLAVE_MD5';
+
+  // --- ETIQUETA PNG (abrir en pestaña / imprimir) ---
+  if (method === 'get_etiqueta' || method === 'get_label') {
+    const expeditionCode = String(codExp || tracking || '').trim();
+    if (!expeditionCode) {
+      return res.status(400).json({ error: 'Falta codExp (código de expedición Nacex).' });
+    }
+
+    if (!canUseRealAPI) {
+      return res.redirect(302, 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+    }
+
+    try {
+      const png = await fetchNacexLabelPng(NACEX_USER, NACEX_PASS, expeditionCode);
+      if (!png?.length) {
+        return res.status(404).json({ error: 'No se pudo obtener la etiqueta de Nacex.' });
+      }
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', `inline; filename="nacex-${expeditionCode}.png"`);
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      return res.status(200).send(png);
+    } catch {
+      return res.status(500).json({ error: 'Error al descargar la etiqueta.' });
+    }
+  }
 
   // --- 4. SEGUIMIENTO ---
   if (method === 'get_tracking' || method === 'estado_envio') {
@@ -311,22 +354,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const created = parsePutExpedicionResponse(rawData);
 
       if (created) {
-        let label_url = created.labelUrl || '';
-
-        if (!label_url) {
-          try {
-            const labelData = encodeNacexData([`codExp=${created.tracking}`, 'modelo=IMAGEN']);
-            const labelRes = await fetch(
-              `${NACEX_WS_URL}?method=getEtiqueta&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${labelData}`,
-            );
-            const labelRaw = (await decodeNacexResponse(labelRes)).trim();
-            if (labelRaw && !labelRaw.toUpperCase().startsWith('ERROR')) {
-              label_url = `data:image/png;base64,${labelRaw.replace(/\s+/g, '')}`;
-            }
-          } catch (labelErr) {
-            console.warn('No se pudo obtener etiqueta Nacex:', labelErr);
-          }
-        }
+        const label_url =
+          created.labelUrl && !created.labelUrl.startsWith('data:')
+            ? created.labelUrl
+            : nacexLabelPath(created.tracking);
 
         return res.status(200).json({
           success: true,

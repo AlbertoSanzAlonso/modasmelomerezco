@@ -1,6 +1,11 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
+/** Evita romper el formato pipe-separated de Nacex. */
+function nacexField(value: string): string {
+  return value.replace(/\|/g, ' ').trim();
+}
+
 /** Nacex responde en ISO-8859-1; response.text() asume UTF-8 y rompe tildes (Parmetros). */
 async function decodeNacexResponse(response: Response): Promise<string> {
   const buffer = await response.arrayBuffer();
@@ -41,6 +46,11 @@ function formatNacexError(raw: string): string {
   if (/del_cli/i.test(mainMessage)) {
     hints.push('Delegación: revisa NACEX_AGENCIA en la configuración.');
   }
+  if (/recogida|nom_rec|dir_rec|cp_rec|pob_rec|5610/i.test(mainMessage) || code === '5610') {
+    hints.push(
+      'Dirección de recogida (tienda): añade en Vercel NACEX_NOMBRE_RECOGIDA, NACEX_DIR_RECOGIDA, NACEX_POBLACION_RECOGIDA, NACEX_CP_RECOGIDA y NACEX_TEL_RECOGIDA, y redeploy.',
+    );
+  }
 
   let message = mainMessage.trim();
   if (hints.length > 0) {
@@ -73,6 +83,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const NACEX_AGENCY = process.env.NACEX_AGENCIA || '2924';
   const NACEX_CLIENT = process.env.NACEX_CLIENTE || '00472';
   const NACEX_CP_RECOGIDA = process.env.NACEX_CP_RECOGIDA || '29631';
+  const NACEX_NOMBRE_RECOGIDA = process.env.NACEX_NOMBRE_RECOGIDA || 'Modas Me lo Merezco';
+  const NACEX_DIR_RECOGIDA = (process.env.NACEX_DIR_RECOGIDA || 'C/ Aragon, 2, L2').slice(0, 45);
+  const NACEX_POBLACION_RECOGIDA = process.env.NACEX_POBLACION_RECOGIDA || 'Benalmadena';
+  const NACEX_TEL_RECOGIDA = (process.env.NACEX_TEL_RECOGIDA || '951000000').replace(/\D/g, '').slice(0, 15);
 
   const NACEX_WS_URL = 'https://pda.nacex.com/nacex_ws/ws';
 
@@ -209,23 +223,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    if (!city) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ciudad de entrega obligatoria. El pedido debe tener población/ciudad en la dirección de envío.',
+      });
+    }
+
+    if (!NACEX_CP_RECOGIDA || !NACEX_DIR_RECOGIDA || !NACEX_NOMBRE_RECOGIDA) {
+      return res.status(400).json({
+        success: false,
+        error: 'Faltan datos de recogida de la tienda. Configura NACEX_DIR_RECOGIDA, NACEX_CP_RECOGIDA y NACEX_NOMBRE_RECOGIDA.',
+      });
+    }
+
     try {
       // Solo construimos los datos reales si NO es modo test
+      const isNacexShop = Boolean(body.isNacexShop);
       const nacexData = [
         `del_cli=${NACEX_AGENCY}`,
         `num_cli=${cleanCliente}`,
-        `tip_ser=${body.isNacexShop ? '31' : '08'}`, // 31 para NacexShop, 08 para domicilio
+        `tip_ser=${isNacexShop ? '31' : '08'}`,
         `tip_cob=O`,
         `ref_cli=${(orderId || 'ORD').split('-')[0]}`,
-        `tip_env=1`,
-        `bul=1`,
-        `kil=1.0`,
-        `nom_ent=${customerName}`,
-        `dir_ent=${address}`,
+        `tip_env=${isNacexShop ? '1' : '2'}`,
+        `bul=001`,
+        `kil=00001.000`,
+        // Recogida (remitente / tienda) — obligatorio
+        `nom_rec=${nacexField(NACEX_NOMBRE_RECOGIDA)}`,
+        `dir_rec=${nacexField(NACEX_DIR_RECOGIDA)}`,
+        `pais_rec=ES`,
+        `cp_rec=${nacexField(NACEX_CP_RECOGIDA)}`,
+        `pob_rec=${nacexField(NACEX_POBLACION_RECOGIDA)}`,
+        `tel_rec=${NACEX_TEL_RECOGIDA}`,
+        // Entrega (destinatario / cliente)
+        `nom_ent=${nacexField(customerName)}`,
+        `dir_ent=${nacexField(address)}`,
         `pais_ent=ES`,
-        `cp_ent=${zip}`,
-        `pob_ent=${city}`,
-        `tel_ent=${phone}`,
+        `cp_ent=${nacexField(zip)}`,
+        `pob_ent=${nacexField(city)}`,
+        `tel_ent=${phone.replace(/\D/g, '').slice(0, 15) || '600000000'}`,
       ].join('|');
 
       console.log('Nacex Data Payload:', nacexData);

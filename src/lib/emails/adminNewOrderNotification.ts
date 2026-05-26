@@ -22,7 +22,7 @@ export function getSiteUrl(): string {
   const url =
     process.env.SITE_URL ||
     process.env.VITE_SITE_URL ||
-    'https://modasmelomerezco.vercel.app';
+    'https://modasmelomerezco.com';
   return url.replace(/\/$/, '');
 }
 

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
+import { api } from '@/lib/api';
 
 interface OrdersTabProps {
   orders?: Order[];
@@ -58,17 +59,31 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="text-[9px] font-black tracking-widest px-4 border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onGenerateLabel(order.order_id);
-                      }}
-                    >
-                      GENERAR NACEX
-                    </Button>
+                    {order.tracking_number ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-[9px] font-black tracking-widest px-4 border-green-500/40 text-green-600 hover:bg-green-500 hover:text-white rounded-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          api.shipping.openNacexLabel(undefined, order.tracking_number!);
+                        }}
+                      >
+                        VER ETIQUETA
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-[9px] font-black tracking-widest px-4 border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onGenerateLabel(order.order_id);
+                        }}
+                      >
+                        GENERAR NACEX
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

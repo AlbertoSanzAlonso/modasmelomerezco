@@ -1,7 +1,8 @@
 import React from 'react';
-import { X, Truck } from 'lucide-react';
+import { X, Truck, FileImage } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
+import { api } from '@/lib/api';
 import { OrderLinePricing } from '@/components/orders/OrderLinePricing';
 import { OrderItemVariantInfo } from '@/components/orders/OrderItemVariantInfo';
 import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
@@ -151,14 +152,23 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </div>
               )}
               <div className="flex gap-4 pt-2">
-                <Button 
-                  className="flex-1 py-4 text-[10px] font-black tracking-widest italic" 
-                  onClick={() => onGenerateLabel(order.order_id)}
-                  disabled={!!order.tracking_number}
-                >
-                   <Truck className="w-4 h-4 mr-2" /> 
-                   {order.tracking_number ? 'ETIQUETA YA GENERADA' : 'GENERAR ETIQUETA NACEX'}
-                </Button>
+                {order.tracking_number ? (
+                  <Button
+                    className="flex-1 py-4 text-[10px] font-black tracking-widest italic"
+                    onClick={() => api.shipping.openNacexLabel(undefined, order.tracking_number!)}
+                  >
+                    <FileImage className="w-4 h-4 mr-2" />
+                    VER ETIQUETA NACEX
+                  </Button>
+                ) : (
+                  <Button
+                    className="flex-1 py-4 text-[10px] font-black tracking-widest italic"
+                    onClick={() => onGenerateLabel(order.order_id)}
+                  >
+                    <Truck className="w-4 h-4 mr-2" />
+                    GENERAR ETIQUETA NACEX
+                  </Button>
+                )}
               </div>
             </div>
           </div>

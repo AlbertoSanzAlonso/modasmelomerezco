@@ -1,9 +1,25 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
+/** Versión del handler (comprobar en Network → respuesta JSON tras redeploy). */
+const NACEX_API_VERSION = '2026-05-recogida-v2';
+
 /** Evita romper el formato pipe-separated de Nacex. */
 function nacexField(value: string): string {
   return value.replace(/\|/g, ' ').trim();
+}
+
+/** Codifica cada valor como la librería PHP oficial (clave=urlencode(valor)). */
+function encodeNacexData(pairs: string[]): string {
+  return pairs
+    .map((pair) => {
+      const eq = pair.indexOf('=');
+      if (eq === -1) return pair;
+      const key = pair.slice(0, eq);
+      const value = pair.slice(eq + 1);
+      return `${key}=${encodeURIComponent(value)}`;
+    })
+    .join('|');
 }
 
 /** Nacex responde en ISO-8859-1; response.text() asume UTF-8 y rompe tildes (Parmetros). */
@@ -265,16 +281,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `tel_ent=${phone.replace(/\D/g, '').slice(0, 15) || '600000000'}`,
       ].join('|');
 
+      const nacexDataEncoded = encodeNacexData(nacexData.split('|'));
       console.log('Nacex Data Payload:', nacexData);
+      console.log('Nacex API version:', NACEX_API_VERSION);
 
-      const response = await fetch(`${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${encodeURIComponent(nacexData)}`);
+      const response = await fetch(
+        `${NACEX_WS_URL}?method=putExpedicion&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${nacexDataEncoded}`,
+      );
       const rawData = await decodeNacexResponse(response);
       const parts = rawData.split('|');
 
       if (parts[0] === 'OK') {
-        return res.status(200).json({ success: true, tracking: parts[1], label_url: parts[2], mode: 'real' });
+        return res.status(200).json({
+          success: true,
+          tracking: parts[1],
+          label_url: parts[2],
+          mode: 'real',
+          apiVersion: NACEX_API_VERSION,
+        });
       }
-      return res.status(400).json({ success: false, error: formatNacexError(rawData) });
+      return res.status(400).json({
+        success: false,
+        error: formatNacexError(rawData),
+        apiVersion: NACEX_API_VERSION,
+        hasRecogidaFields: nacexData.includes('nom_rec='),
+      });
     } catch (err) {
       return res.status(500).json({ success: false, error: 'Error interno' });
     }

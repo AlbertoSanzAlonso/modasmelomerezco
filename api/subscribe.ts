@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Add CORS headers
   const allowedOrigins = [
-    'https://modasmelomerezco.com',
+    'https://modasmelomerezco.es',
     'https://modasmelomerezco.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000'

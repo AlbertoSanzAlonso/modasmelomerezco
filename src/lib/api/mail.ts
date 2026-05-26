@@ -181,7 +181,7 @@ export const mailApi = {
         ` : ''}
         
         <div style="margin-top: 30px; text-align: center;">
-          <a href="https://modasmelomerezco.com/cuenta/pedidos" style="background: #000; color: #fff; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">
+          <a href="https://modasmelomerezco.es/cuenta/pedidos" style="background: #000; color: #fff; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">
             Ver mis pedidos
           </a>
         </div>
@@ -197,7 +197,7 @@ export const mailApi = {
     });
   },
 
-  sendNewsletter: async (to: string, subject: string, content: string, origin: string = 'https://modasmelomerezco.com') => {
+  sendNewsletter: async (to: string, subject: string, content: string, origin: string = 'https://modasmelomerezco.es') => {
     const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const unsubscribeUrl = `${origin}/desuscribir?email=${encodeURIComponent(to)}`;
     const html = `
@@ -234,7 +234,7 @@ export const mailApi = {
     });
   },
 
-  sendConfirmationEmail: async (to: string, token: string, origin: string = 'https://modasmelomerezco.com') => {
+  sendConfirmationEmail: async (to: string, token: string, origin: string = 'https://modasmelomerezco.es') => {
     const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const confirmUrl = `${origin}/confirmar-suscripcion?token=${token}`;
     const html = `

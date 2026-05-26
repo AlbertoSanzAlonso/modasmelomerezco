@@ -164,7 +164,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         await transporter.sendMail({
-          from: '"Modas Me lo Merezco" <info@modasmelomerezco.com>',
+          from: '"Modas Me lo Merezco" <info@modasmelomerezco.es>',
           to: order.customer_email,
           subject: `Confirmación de pedido #${orderId} - Modas Me lo Merezco`,
           html

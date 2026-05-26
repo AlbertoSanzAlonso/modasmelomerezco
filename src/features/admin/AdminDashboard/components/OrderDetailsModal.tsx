@@ -3,6 +3,7 @@ import { X, Truck, FileImage } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { api } from '@/lib/api';
+import { getOrderContact } from '@/lib/orderContact';
 import { OrderLinePricing } from '@/components/orders/OrderLinePricing';
 import { OrderItemVariantInfo } from '@/components/orders/OrderItemVariantInfo';
 import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
@@ -21,6 +22,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onClose,
   onGenerateLabel
 }) => {
+  const contact = getOrderContact(order);
+
   return (
     <div className="fixed inset-0 z-110 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
       <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] min-h-0 rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
@@ -43,9 +46,20 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <div className="space-y-6">
               <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Información del Cliente</h4>
               <div className="bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl space-y-3">
-                <p className="text-sm font-bold text-(--text-main) uppercase italic">{order.customer?.name} {order.customer?.surname}</p>
-                <p className="text-xs text-gray-500 font-bold">{order.customer?.email}</p>
-                <p className="text-xs text-gray-500 font-bold">{order.customer?.phone || 'No especificado'}</p>
+                <p className="text-sm font-bold text-(--text-main) uppercase italic">
+                  {contact.name || 'Sin nombre'}
+                </p>
+                <p className="text-xs text-gray-500 font-bold">
+                  {contact.email || 'Sin email'}
+                </p>
+                <p className="text-xs text-gray-500 font-bold">
+                  {contact.phone || 'Sin teléfono'}
+                </p>
+                {!order.customer_id && (
+                  <p className="text-[9px] text-primary/80 font-black uppercase tracking-widest mt-2">
+                    Compra como invitado
+                  </p>
+                )}
               </div>
             </div>
 

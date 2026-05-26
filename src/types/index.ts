@@ -153,6 +153,10 @@ export interface Order {
   shipping_stair?: string;
   tracking_number?: string;
   carrier?: string;
+  customer_email?: string;
+  guest_name?: string;
+  guest_surname?: string;
+  guest_phone?: string;
   items: OrderItem[];
   customer?: {
     name: string;

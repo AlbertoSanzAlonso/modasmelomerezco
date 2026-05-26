@@ -104,6 +104,7 @@ const CheckoutPage = () => {
                   saveToAccount={saveToAccount}
                   setSaveToAccount={setSaveToAccount}
                   hasAddresses={!!user?.addresses?.length}
+                  requireGuestContact={!isAuthenticated}
                 />
               )}
 

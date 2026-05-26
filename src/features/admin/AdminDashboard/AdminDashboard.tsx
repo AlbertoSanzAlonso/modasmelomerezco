@@ -12,6 +12,7 @@ import { DiscountCodesTab } from "@/features/admin/AdminDashboard/components/Dis
 import { OrderDetailsModal } from "@/features/admin/AdminDashboard/components/OrderDetailsModal";
 import { useAdminData } from './useAdminData';
 import { api } from "@/lib/api";
+import { getOrderContact } from '@/lib/orderContact';
 import { useCartStore } from "@/store/useCartStore";
 import type { Product, Order } from "@/types";
 
@@ -174,12 +175,13 @@ export const AdminDashboard: React.FC = () => {
     try {
       // Buscamos los detalles del pedido para pasarlos a la API de Nacex
       const order = orders?.find(o => o.order_id === orderId);
+      const contact = order ? getOrderContact(order) : null;
       const orderDetails = order ? {
-        nombre: `${order.customer?.name || ''} ${order.customer?.surname || ''}`.trim(),
+        nombre: contact?.name || 'Cliente',
         direccion: order.shipping_street,
         poblacion: order.shipping_city,
         cp: order.shipping_zip,
-        telefono: order.customer?.phone,
+        telefono: contact?.phone,
         orderId: order.order_id,
         isTest: order.payment_method === 'TEST_MODE',
         isNacexShop: order.carrier?.includes('Nacex Point'), // Detectar si es envío a punto

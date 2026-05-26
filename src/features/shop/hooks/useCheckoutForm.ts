@@ -56,6 +56,7 @@ export const useCheckoutForm = () => {
 
   const [formData, setFormData] = useState({
     email: '',
+    phone: '',
     name: '',
     surname: '',
     address: '',
@@ -98,13 +99,20 @@ export const useCheckoutForm = () => {
   // Sync with Auth User
   useEffect(() => {
     if (isAuthenticated && user) {
-      setFormData(prev => ({ ...prev, email: user.email, name: user.name, surname: user.surname || '' }));
+      setFormData(prev => ({
+        ...prev,
+        email: user.email,
+        phone: user.phone || prev.phone,
+        name: user.name,
+        surname: user.surname || '',
+      }));
       
       if (selectedAddressId !== 'new' && user.addresses) {
         const addr = user.addresses.find(a => a.shipping_address_id === selectedAddressId);
         if (addr) {
           setFormData({
             email: user.email,
+            phone: user.phone || '',
             name: user.name,
             surname: user.surname || '',
             address: addr.street,
@@ -161,7 +169,44 @@ export const useCheckoutForm = () => {
     });
   };
 
+  const validateCheckoutContact = (): boolean => {
+    if (!isAuthenticated) {
+      if (!formData.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        openModal({
+          title: 'Email obligatorio',
+          message: 'Indica un email válido para confirmar el pedido y el envío.',
+          type: 'warning',
+        });
+        return false;
+      }
+      if (!formData.name?.trim()) {
+        openModal({ title: 'Nombre obligatorio', message: 'Indica tu nombre.', type: 'warning' });
+        return false;
+      }
+      const phoneDigits = (formData.phone || '').replace(/\D/g, '');
+      if (phoneDigits.length < 9) {
+        openModal({
+          title: 'Teléfono obligatorio',
+          message: 'Indica un teléfono de contacto (mínimo 9 dígitos) para el envío.',
+          type: 'warning',
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const guestContactFields = () =>
+    !isAuthenticated
+      ? {
+          guest_name: formData.name.trim(),
+          guest_surname: formData.surname.trim(),
+          guest_phone: formData.phone.replace(/\D/g, ''),
+        }
+      : {};
+
   const handleTestOrder = async () => {
+    if (!validateCheckoutContact()) return;
     setIsSubmitting(true);
     const finalTotal = cartTotal + getShippingCost();
     const orderData: any = {
@@ -179,7 +224,8 @@ export const useCheckoutForm = () => {
       shipping_floor: formData.floor,
       shipping_door: formData.door,
       shipping_stair: formData.stair,
-      customer_email: user?.email || formData.email,
+      customer_email: user?.email || formData.email.trim(),
+      ...guestContactFields(),
       tax_amount: 0,
       shipping_cost: 0,
       items: mapOrderItems(),
@@ -219,6 +265,7 @@ export const useCheckoutForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateCheckoutContact()) return;
     setIsSubmitting(true);
     if (shippingOption === 'nacex_point' && !selectedNacexPoint) {
       openModal({
@@ -281,7 +328,8 @@ export const useCheckoutForm = () => {
       shipping_floor: formData.floor,
       shipping_door: formData.door,
       shipping_stair: formData.stair,
-      customer_email: user?.email || formData.email,
+      customer_email: user?.email || formData.email.trim(),
+      ...guestContactFields(),
       tax_amount: 0,
       shipping_cost: shippingCost,
       items: mapOrderItems(),

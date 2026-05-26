@@ -4,6 +4,8 @@ import { PROVINCES, CITIES_BY_PROVINCE } from "@/constants/locations";
 
 interface CheckoutAddressFormProps {
   formData: {
+    email?: string;
+    phone?: string;
     name: string;
     surname: string;
     zip: string;
@@ -22,6 +24,7 @@ interface CheckoutAddressFormProps {
   saveToAccount: boolean;
   setSaveToAccount: (save: boolean) => void;
   hasAddresses: boolean;
+  requireGuestContact?: boolean;
 }
 
 export const CheckoutAddressForm: React.FC<CheckoutAddressFormProps> = ({
@@ -33,21 +36,46 @@ export const CheckoutAddressForm: React.FC<CheckoutAddressFormProps> = ({
   isAuthenticated,
   saveToAccount,
   setSaveToAccount,
-  hasAddresses
+  hasAddresses,
+  requireGuestContact = false,
 }) => {
   return (
     <section>
-      <h3 className="text-xs font-black tracking-[0.4em] uppercase text-primary mb-8">Dirección de Envío</h3>
+      <h3 className="text-xs font-black tracking-[0.4em] uppercase text-primary mb-8">
+        {requireGuestContact ? 'Tus datos de contacto y envío' : 'Dirección de Envío'}
+      </h3>
       <div className="grid grid-cols-2 gap-6">
+        {requireGuestContact && (
+          <>
+            <input
+              type="email"
+              placeholder="EMAIL *"
+              required
+              autoComplete="email"
+              className="col-span-2 bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary"
+              value={formData.email || ''}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+            <input
+              type="tel"
+              placeholder="TELÉFONO *"
+              required
+              autoComplete="tel"
+              className="col-span-2 bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary"
+              value={formData.phone || ''}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/[^\d+\s]/g, '') })}
+            />
+          </>
+        )}
         <input 
-          placeholder="NOMBRE" 
+          placeholder="NOMBRE *" 
           required
           className="bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary"
           value={formData.name}
           onChange={(e) => setFormData({...formData, name: e.target.value})}
         />
         <input 
-          placeholder="APELLIDOS" 
+          placeholder="APELLIDOS *" 
           required
           className="bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary"
           value={formData.surname}

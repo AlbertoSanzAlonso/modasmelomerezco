@@ -38,6 +38,7 @@ const CheckoutPage = () => {
     setPaymentMethod,
     isSubmitting,
     isLocating,
+    zipMunicipalities,
     saveToAccount,
     setSaveToAccount,
     showSuccessModal,
@@ -46,7 +47,6 @@ const CheckoutPage = () => {
     handleProvinceChange,
     handleCityChange,
     handleSubmit,
-    handleTestOrder,
     openModal
   } = useCheckoutForm();
 
@@ -98,6 +98,7 @@ const CheckoutPage = () => {
                   formData={formData}
                   setFormData={setFormData}
                   isLocating={isLocating}
+                  zipMunicipalities={zipMunicipalities}
                   onProvinceChange={handleProvinceChange}
                   onCityChange={handleCityChange}
                   isAuthenticated={isAuthenticated}
@@ -113,14 +114,9 @@ const CheckoutPage = () => {
                 onSelect={setPaymentMethod} 
               />
 
-              <div className="space-y-4">
-                <Button type="submit" size="lg" disabled={isSubmitting} className="w-full py-6 text-base font-black tracking-[0.2em] uppercase italic">
-                  {isSubmitting ? 'Procesando...' : `PAGAR ${finalTotal.toFixed(2)}€`}
-                </Button>
-                <button type="button" onClick={handleTestOrder} disabled={isSubmitting} className="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-primary transition-colors border border-dashed border-gray-300 rounded-2xl">
-                  TEST: FINALIZAR PEDIDO (SIN PAGO)
-                </button>
-              </div>
+              <Button type="submit" size="lg" disabled={isSubmitting} className="w-full py-6 text-base font-black tracking-[0.2em] uppercase italic">
+                {isSubmitting ? 'Procesando...' : `PAGAR ${finalTotal.toFixed(2)}€`}
+              </Button>
             </form>
           </div>
 

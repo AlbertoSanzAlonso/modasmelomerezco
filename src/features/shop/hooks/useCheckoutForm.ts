@@ -15,7 +15,6 @@ export const useCheckoutForm = () => {
     discountAmount,
     total: cartTotal,
     appliedDiscount,
-    clearCart,
     openModal,
   } = useCartStore();
 
@@ -70,27 +69,45 @@ export const useCheckoutForm = () => {
   });
 
   const [isLocating, setIsLocating] = useState(false);
+  const [zipMunicipalities, setZipMunicipalities] = useState<string[]>([]);
 
   // Zip Code Autocomplete Logic
   useEffect(() => {
     const fetchLocation = async () => {
-      if (formData.zip.length === 5) {
-        setIsLocating(true);
-        try {
-          const result = await api.locations.getByZip(formData.zip);
-          if (result) {
-            setFormData(prev => ({
-              ...prev,
-              city: result.city,
-              province: result.province,
-              location_id: (result as any).id
-            }));
-          }
-        } catch (error) {
-          console.error('Location fetch error:', error);
-        } finally {
-          setIsLocating(false);
+      if (formData.zip.length !== 5) {
+        setZipMunicipalities([]);
+        return;
+      }
+      setIsLocating(true);
+      try {
+        const result = await api.locations.getByZip(formData.zip);
+        if (result) {
+          const municipalities =
+            result.municipalities?.length
+              ? result.municipalities
+              : result.city
+                ? [result.city]
+                : [];
+          setZipMunicipalities(municipalities);
+          setFormData((prev) => ({
+            ...prev,
+            province: result.province || prev.province,
+            location_id: result.id,
+            city:
+              municipalities.length === 1
+                ? municipalities[0]
+                : municipalities.includes(prev.city)
+                  ? prev.city
+                  : '',
+          }));
+        } else {
+          setZipMunicipalities([]);
         }
+      } catch (error) {
+        console.error('Location fetch error:', error);
+        setZipMunicipalities([]);
+      } finally {
+        setIsLocating(false);
       }
     };
     fetchLocation();
@@ -137,6 +154,7 @@ export const useCheckoutForm = () => {
   };
 
   const handleProvinceChange = (newProv: string) => {
+    setZipMunicipalities([]);
     setFormData({
       ...formData,
       province: newProv,
@@ -147,11 +165,6 @@ export const useCheckoutForm = () => {
   };
 
   const handleCityChange = (newCity: string) => {
-    if (newCity === 'otra') {
-      setFormData({ ...formData, city: '' });
-      return;
-    }
-
     let detectedProv = formData.province;
     if (!detectedProv) {
       for (const [prov, cities] of Object.entries(CITIES_BY_PROVINCE)) {
@@ -204,74 +217,6 @@ export const useCheckoutForm = () => {
           guest_phone: formData.phone.replace(/\D/g, ''),
         }
       : {};
-
-  const handleTestOrder = async () => {
-    if (!validateCheckoutContact()) return;
-    setIsSubmitting(true);
-    const finalTotal = cartTotal + getShippingCost();
-    const orderData: any = {
-      customer_id: user?.customer_id,
-      subtotal: cartSubtotal,
-      discount_amount: discountAmount,
-      discount_code: appliedDiscount?.code ?? null,
-      total_amount: finalTotal,
-      order_status: 'Paid',
-      payment_method: 'TEST_MODE', // Marcador para la API de Nacex
-      shipping_city: formData.city,
-      shipping_province: formData.province,
-      shipping_zip: formData.zip,
-      shipping_street: formData.address,
-      shipping_floor: formData.floor,
-      shipping_door: formData.door,
-      shipping_stair: formData.stair,
-      customer_email: user?.email || formData.email.trim(),
-      ...guestContactFields(),
-      tax_amount: 0,
-      shipping_cost: 0,
-      items: mapOrderItems(),
-      payment_status: 'Paid',
-      carrier: shippingOption === 'nacex_point' && selectedNacexPoint 
-        ? `Nacex Point: ${selectedNacexPoint.name} (${selectedNacexPoint.address})` 
-        : shippingOption
-    };
-
-    try {
-      const createdOrder = await api.orders.create(orderData);
-      
-      try {
-        const targetEmail = user?.email || formData.email;
-        if (targetEmail) {
-          await api.mail.sendOrderConfirmation({ ...createdOrder, items: orderData.items }, targetEmail);
-        }
-      } catch (mailError) {
-        console.error('Failed to send confirmation email:', mailError);
-      }
-
-      try {
-        await fetch('/api/notify-admin-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: createdOrder.order_id }),
-        });
-      } catch (adminNotifyErr) {
-        console.error('Failed to notify admin of new order:', adminNotifyErr);
-      }
-      
-      for (const item of items) {
-        if (item.selectedVariant.variant_id) {
-          await api.products.decrementStock(item.selectedVariant.variant_id.toString(), item.quantity);
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['orders', user?.email] });
-      setShowSuccessModal(true);
-      clearCart();
-    } catch (error) {
-      console.error('Error creating test order:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,6 +357,7 @@ export const useCheckoutForm = () => {
     setPaymentMethod,
     isSubmitting,
     isLocating,
+    zipMunicipalities,
     saveToAccount,
     setSaveToAccount,
     showSuccessModal,
@@ -421,7 +367,6 @@ export const useCheckoutForm = () => {
     handleProvinceChange,
     handleCityChange,
     handleSubmit,
-    handleTestOrder,
     openModal
   };
 };

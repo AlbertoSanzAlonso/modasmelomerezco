@@ -25,6 +25,8 @@ interface CheckoutAddressFormProps {
   setSaveToAccount: (save: boolean) => void;
   hasAddresses: boolean;
   requireGuestContact?: boolean;
+  /** Localidades sugeridas para el CP actual (si hay varias). */
+  zipMunicipalities?: string[];
 }
 
 export const CheckoutAddressForm: React.FC<CheckoutAddressFormProps> = ({
@@ -38,7 +40,15 @@ export const CheckoutAddressForm: React.FC<CheckoutAddressFormProps> = ({
   setSaveToAccount,
   hasAddresses,
   requireGuestContact = false,
+  zipMunicipalities = [],
 }) => {
+  const citySuggestions =
+    zipMunicipalities.length > 0
+      ? zipMunicipalities
+      : formData.province && CITIES_BY_PROVINCE[formData.province]
+        ? CITIES_BY_PROVINCE[formData.province]
+        : [];
+
   return (
     <section>
       <h3 className="text-xs font-black tracking-[0.4em] uppercase text-primary mb-8">
@@ -108,28 +118,26 @@ export const CheckoutAddressForm: React.FC<CheckoutAddressFormProps> = ({
           </select>
         </div>
 
-        <div className="relative">
-          {formData.province && CITIES_BY_PROVINCE[formData.province] ? (
-            <select
-              required
-              className="w-full bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary appearance-none"
-              value={formData.city}
-              onChange={(e) => onCityChange(e.target.value)}
-            >
-              <option value="" disabled>CIUDAD</option>
-              {CITIES_BY_PROVINCE[formData.province].map(city => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-              <option value="otra">OTRA...</option>
-            </select>
-          ) : (
-            <input 
-              placeholder="CIUDAD" 
-              required
-              className="w-full bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary"
-              value={formData.city}
-              onChange={(e) => onCityChange(e.target.value)}
-            />
+        <div className="relative space-y-1">
+          <input
+            type="text"
+            list="checkout-cities"
+            placeholder="CIUDAD / LOCALIDAD"
+            required
+            autoComplete="address-level2"
+            className="w-full bg-gray-50 border border-gray-200 px-6 py-4 text-sm font-bold focus:border-primary outline-none text-secondary"
+            value={formData.city}
+            onChange={(e) => onCityChange(e.target.value)}
+          />
+          <datalist id="checkout-cities">
+            {citySuggestions.map((city) => (
+              <option key={city} value={city} />
+            ))}
+          </datalist>
+          {zipMunicipalities.length > 1 && (
+            <p className="text-[10px] text-secondary/60 font-bold uppercase tracking-wide px-1">
+              Este código postal tiene varias localidades: escribe o elige la correcta.
+            </p>
           )}
         </div>
 

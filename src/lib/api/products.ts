@@ -43,6 +43,14 @@ const PRODUCT_SELECT_FULL = `${PRODUCT_SELECT_BASE}, product_labels(labels(*)), 
 
 const PRODUCT_SELECT_FILTER_BY_LABEL = `${PRODUCT_SELECT_BASE}, product_labels!inner(labels(*))`;
 
+function assertNoSupabaseError(
+  error: { message?: string; code?: string } | null,
+  context: string
+): void {
+  if (!error) return;
+  throw new Error(`[${context}] ${error.message || 'Error de Supabase'}`);
+}
+
 function isMissingRelation(
   error: { code?: string; message?: string } | null,
   relation: string
@@ -344,7 +352,10 @@ export const products = {
         color_id: v.color_id ?? null,
         stock: v.stock || 0,
       }));
-      await supabase.from('product_variants').insert(cleanVariants);
+      const { error: variantsError } = await supabase
+        .from('product_variants')
+        .insert(cleanVariants);
+      assertNoSupabaseError(variantsError, 'product_variants insert');
     }
 
     // 3. Create images if any
@@ -355,7 +366,10 @@ export const products = {
         orden: index,
         is_main: index === 0
       }));
-      await supabase.from('product_images').insert(imageRecords);
+      const { error: imagesError } = await supabase
+        .from('product_images')
+        .insert(imageRecords);
+      assertNoSupabaseError(imagesError, 'product_images insert');
     }
 
     // 4. Create color associations if any
@@ -364,7 +378,10 @@ export const products = {
         product_id: product.product_id,
         color_id: c.id
       }));
-      await supabase.from('product_colors').insert(colorRecords);
+      const { error: colorsError } = await supabase
+        .from('product_colors')
+        .insert(colorRecords);
+      assertNoSupabaseError(colorsError, 'product_colors insert');
     }
 
     await syncProductLabels(product.product_id, labels);
@@ -399,7 +416,11 @@ export const products = {
 
     // 2. Update variants if provided
     if (variants) {
-      await supabase.from('product_variants').delete().eq('product_id', product_id);
+      const { error: deleteVariantsError } = await supabase
+        .from('product_variants')
+        .delete()
+        .eq('product_id', product_id);
+      assertNoSupabaseError(deleteVariantsError, 'product_variants delete');
       if (variants.length > 0) {
         const cleanVariants = variants.map((v: any) => ({
           product_id,
@@ -407,13 +428,20 @@ export const products = {
           color_id: v.color_id ?? null,
           stock: v.stock || 0,
         }));
-        await supabase.from('product_variants').insert(cleanVariants);
+        const { error: insertVariantsError } = await supabase
+          .from('product_variants')
+          .insert(cleanVariants);
+        assertNoSupabaseError(insertVariantsError, 'product_variants insert');
       }
     }
 
     // 3. Update images if provided
     if (images) {
-      await supabase.from('product_images').delete().eq('product_id', product_id);
+      const { error: deleteImagesError } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('product_id', product_id);
+      assertNoSupabaseError(deleteImagesError, 'product_images delete');
       if (images.length > 0) {
         const imageRecords = images.map((url: string, index: number) => ({
           product_id,
@@ -421,19 +449,29 @@ export const products = {
           orden: index,
           is_main: index === 0
         }));
-        await supabase.from('product_images').insert(imageRecords);
+        const { error: insertImagesError } = await supabase
+          .from('product_images')
+          .insert(imageRecords);
+        assertNoSupabaseError(insertImagesError, 'product_images insert');
       }
     }
 
     // 4. Update colors if provided
     if (colors) {
-      await supabase.from('product_colors').delete().eq('product_id', product_id);
+      const { error: deleteColorsError } = await supabase
+        .from('product_colors')
+        .delete()
+        .eq('product_id', product_id);
+      assertNoSupabaseError(deleteColorsError, 'product_colors delete');
       if (colors.length > 0) {
         const colorRecords = colors.map((c: any) => ({
           product_id,
           color_id: c.id
         }));
-        await supabase.from('product_colors').insert(colorRecords);
+        const { error: insertColorsError } = await supabase
+          .from('product_colors')
+          .insert(colorRecords);
+        assertNoSupabaseError(insertColorsError, 'product_colors insert');
       }
     }
 

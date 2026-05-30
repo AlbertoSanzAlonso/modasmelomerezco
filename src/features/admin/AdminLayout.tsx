@@ -109,14 +109,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
       </aside>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto bg-(--bg-main) pt-24 min-[1350px]:pt-0 w-full relative transition-colors duration-300">
+      <main className="flex-1 overflow-y-auto bg-(--bg-main) pt-24 min-[1350px]:pt-0 w-full min-w-0 relative transition-colors duration-300">
         <header className="h-auto min-[1350px]:h-24 py-6 min-[1350px]:py-0 border-b border-(--border-main) flex flex-col-reverse min-[1350px]:flex-row items-center justify-between px-6 min-[1350px]:px-16 bg-(--bg-main) gap-4 min-[1350px]:gap-0 transition-colors duration-300">
           <div className="hidden min-[1350px]:flex items-center gap-6 ml-auto">
             <ThemeToggle />
           </div>
         </header>
         
-        <div className="p-6 md:p-16 w-full max-w-full overflow-x-hidden">
+        <div className="p-6 md:p-8 min-[1780px]:p-16 w-full max-w-full min-w-0">
           {children}
         </div>
       </main>

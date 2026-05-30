@@ -184,8 +184,8 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         </div>
       )}
 
-      {/* Desktop View */}
-      <div className="hidden md:block bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-[2.5rem] shadow-sm relative">
+      {/* Desktop View (tablet ancho y desktop) */}
+      <div className="hidden md:block bg-(--bg-card) border border-(--border-main) rounded-[2.5rem] shadow-sm relative min-w-0">
         {isLoading && !products && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
             <motion.div
@@ -197,10 +197,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
           </div>
         )}
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[800px]">
+          <table className="w-full text-left min-w-[960px]">
             <thead>
               <tr className="border-b border-(--border-main) bg-(--bg-main)/50">
-                <th className="px-8 py-6 w-10">
+                <th className="px-4 py-5 xl:px-8 xl:py-6 w-10">
                   <input 
                     type="checkbox" 
                     className="accent-primary w-4 h-4 rounded"
@@ -208,12 +208,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                     onChange={onToggleSelectAll}
                   />
                 </th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Producto</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Categoría</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Precio</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Stock</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Estado</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary text-right">Acciones</th>
+                <th className="px-4 py-5 xl:px-8 xl:py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary whitespace-nowrap min-w-[220px]">Producto</th>
+                <th className="px-4 py-5 xl:px-8 xl:py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary whitespace-nowrap hidden lg:table-cell">Categoría</th>
+                <th className="px-4 py-5 xl:px-8 xl:py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary whitespace-nowrap">Precio</th>
+                <th className="px-4 py-5 xl:px-8 xl:py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary whitespace-nowrap">Stock</th>
+                <th className="px-4 py-5 xl:px-8 xl:py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary whitespace-nowrap">Estado</th>
+                <th className="px-4 py-5 xl:px-8 xl:py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary text-right whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-(--border-main)">
@@ -223,7 +223,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   onClick={(e) => handleRowClick(e, product)}
                   className={`hover:bg-primary/5 transition-colors group cursor-pointer ${selectedIds.includes(product.product_id) ? 'bg-primary/5' : ''}`}
                 >
-                  <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-4 py-5 xl:px-8 xl:py-6" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
                       className="accent-primary w-4 h-4 rounded cursor-pointer"
@@ -231,27 +231,27 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                       onChange={() => onToggleSelect(product.product_id)}
                     />
                   </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
+                  <td className="px-4 py-5 xl:px-8 xl:py-6 max-w-[280px]">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div 
-                        className="w-12 h-16 bg-black overflow-hidden border border-(--border-main) rounded-xl shadow-sm group-hover:scale-105 transition-transform"
+                        className="w-12 h-16 shrink-0 bg-black overflow-hidden border border-(--border-main) rounded-xl shadow-sm group-hover:scale-105 transition-transform"
                       >
                         <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover transition-all" />
                       </div>
-                      <p className="text-sm font-bold uppercase italic text-(--text-main)">{product.name}</p>
+                      <p className="text-sm font-bold uppercase italic text-(--text-main) truncate min-w-0" title={product.name}>{product.name}</p>
                     </div>
                   </td>
-                  <td className="px-8 py-6 text-xs text-gray-500 uppercase tracking-widest font-bold">
+                  <td className="px-4 py-5 xl:px-8 xl:py-6 text-xs text-gray-500 uppercase tracking-widest font-bold whitespace-nowrap hidden lg:table-cell">
                     {product.category} {product.subcategory && `• ${product.subcategory}`}
                   </td>
-                  <td className="px-8 py-6 text-sm font-black italic text-(--text-main)">{product.price.toFixed(2)}€</td>
-                  <td className="px-8 py-6">
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${calculateStock(product) < 10 ? 'border-red-500 bg-red-500/5 text-red-500' : 'border-green-500/30 bg-green-500/5 text-green-500'}`}>
-                      {calculateStock(product)} UNI
+                  <td className="px-4 py-5 xl:px-8 xl:py-6 text-sm font-black italic text-(--text-main) whitespace-nowrap">{product.price.toFixed(2)}€</td>
+                  <td className="px-4 py-5 xl:px-8 xl:py-6 whitespace-nowrap">
+                    <span className={`inline-flex items-center text-[10px] font-black uppercase px-3 py-1 border rounded-lg whitespace-nowrap ${calculateStock(product) < 10 ? 'border-red-500 bg-red-500/5 text-red-500' : 'border-green-500/30 bg-green-500/5 text-green-500'}`}>
+                      {calculateStock(product)}&nbsp;UNI
                     </span>
                   </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-2">
+                  <td className="px-4 py-5 xl:px-8 xl:py-6 whitespace-nowrap">
+                    <div className="flex items-center gap-2 flex-nowrap">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -261,18 +261,18 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                         className="transition-transform active:scale-95"
                       >
                         {product.is_published ? (
-                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full cursor-pointer hover:bg-green-500/20">Publicado</span>
+                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full cursor-pointer hover:bg-green-500/20 whitespace-nowrap">Publicado</span>
                         ) : (
-                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200">Borrador</span>
+                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200 whitespace-nowrap">Borrador</span>
                         )}
                       </button>
                       {product.is_new && (
-                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full">Novedad</span>
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full whitespace-nowrap">Novedad</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-8 py-6 text-right">
-                    <div className="flex justify-end gap-2">
+                  <td className="px-4 py-5 xl:px-8 xl:py-6 text-right whitespace-nowrap">
+                    <div className="flex justify-end gap-1 xl:gap-2 flex-nowrap">
                       <button 
                         className="p-3 text-gray-400 hover:text-primary transition-colors bg-transparent rounded-full hover:bg-primary/10"
                         title="Descargar Fotos"

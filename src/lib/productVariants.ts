@@ -161,6 +161,18 @@ export function getCartItemKey(
     : `${productId}-${variant.id}-${variant.color_id ?? 'n'}`;
 }
 
+/** URL de ficha con talla y color preseleccionados (p. ej. desde el carrito). */
+export function getProductUrlWithVariant(
+  productId: string,
+  variant: Pick<ProductVariant, 'size' | 'color_id'>,
+): string {
+  const params = new URLSearchParams();
+  if (variant.size) params.set('talla', variant.size);
+  if (variant.color_id != null) params.set('color', String(variant.color_id));
+  const qs = params.toString();
+  return `/producto/${productId}${qs ? `?${qs}` : ''}`;
+}
+
 /** Colores de catálogo web derivados de variantes con color_id. */
 export function deriveProductColors(
   variants: ProductVariant[],

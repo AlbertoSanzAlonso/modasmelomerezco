@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from "@/store/useCartStore";
-import { getCartItemKey, formatOrderItemDetails } from '@/lib/productVariants';
+import { getCartItemKey, formatOrderItemDetails, getProductUrlWithVariant } from '@/lib/productVariants';
 import { getDiscountedLineTotal } from '@/lib/cartDiscount';
 import { CartDiscountField } from '@/components/shop/CartDiscountField';
 import { Button } from "@/components/ui/Button";
@@ -73,9 +73,14 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   const line = getDiscountedLineTotal(item, appliedDiscount);
                   return (
                     <div key={cartItemId} className="flex gap-6 group">
-                      <div className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg">
-                        <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
+                      <Link
+                        to={getProductUrlWithVariant(item.product_id, item.selectedVariant)}
+                        onClick={onClose}
+                        className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                        aria-label={`Ver detalle de ${item.name}`}
+                      >
+                        <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
+                      </Link>
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start mb-1">

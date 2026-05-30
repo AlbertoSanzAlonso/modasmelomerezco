@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, ChevronLeft, Share2, Heart, ShoppingBag, X } from 'lucide-react';
 import { api } from "@/lib/api";
@@ -27,6 +27,7 @@ import {
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -134,6 +135,38 @@ const ProductPage = () => {
     queryFn: () => api.products.getSiblings(id!, product?.category_id?.toString(), product?.subcategory_id?.toString()),
     enabled: !!product
   });
+
+  useEffect(() => {
+    setSelectedSize('');
+    setSelectedColorId(null);
+  }, [id]);
+
+  useEffect(() => {
+    if (!product) return;
+
+    const sizeParam = searchParams.get('talla')?.trim();
+    const colorParam = searchParams.get('color')?.trim();
+    if (!sizeParam && !colorParam) return;
+
+    const sizes = getUniqueSizes(product.variants);
+
+    let nextSize = '';
+    let nextColorId: number | null = null;
+
+    if (sizeParam && sizes.includes(sizeParam)) {
+      nextSize = sizeParam;
+    }
+
+    if (colorParam && nextSize) {
+      const colorId = Number(colorParam);
+      if (Number.isInteger(colorId) && hasStockForColor(product.variants, nextSize, colorId)) {
+        nextColorId = colorId;
+      }
+    }
+
+    if (nextSize) setSelectedSize(nextSize);
+    if (nextColorId != null) setSelectedColorId(nextColorId);
+  }, [product, searchParams]);
 
   // Save the last viewed product ID for scroll restoration
   useEffect(() => {

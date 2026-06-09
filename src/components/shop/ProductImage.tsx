@@ -10,6 +10,9 @@ interface ProductImageProps {
   containerClassName?: string;
   aspectRatio?: string;
   onLoad?: () => void;
+  loading?: 'lazy' | 'eager';
+  width?: number;
+  height?: number;
 }
 
 export const ProductImage: React.FC<ProductImageProps> = ({ 
@@ -18,7 +21,10 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   className = "", 
   containerClassName = "",
   aspectRatio = "aspect-auto",
-  onLoad
+  onLoad,
+  loading = 'lazy',
+  width = 600,
+  height = 800,
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -67,6 +73,9 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         key={imageSrc}
         src={imageSrc}
         alt={alt}
+        loading={loading}
+        width={width}
+        height={height}
         onLoad={handleLoad}
         onError={() => {
           console.error(`Error loading image: ${imageSrc}`);

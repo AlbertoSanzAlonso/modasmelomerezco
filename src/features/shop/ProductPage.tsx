@@ -226,6 +226,9 @@ const ProductPage = () => {
       `${product.name}. Precio ${product.price.toFixed(2)} €. Compra online en Modas Me lo Merezco.`,
   );
 
+  const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+  const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+
   return (
     <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
       <SeoHelmet
@@ -250,7 +253,7 @@ const ProductPage = () => {
             '@type': 'Offer',
             priceCurrency: 'EUR',
             price: product.price,
-            availability: 'https://schema.org/InStock',
+            availability: availabilitySchema,
             url: absoluteUrl(`/producto/${product.product_id}`),
             shippingDetails: OFFER_SHIPPING_DETAILS,
             hasMerchantReturnPolicy: MERCHANT_RETURN_POLICY,
@@ -364,7 +367,7 @@ const ProductPage = () => {
                   onClick={() => setActiveImage(idx)}
                   className={`shrink-0 w-20 h-24 cursor-pointer overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-75'}`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" loading="lazy" width={80} height={96} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
@@ -613,7 +616,7 @@ const ProductPage = () => {
                   onClick={(e) => { e.stopPropagation(); setActiveImage(idx); }}
                   className={`w-12 h-16 rounded-lg overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary scale-110 shadow-lg' : 'border-transparent opacity-40 hover:opacity-100'}`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" loading="lazy" width={48} height={64} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

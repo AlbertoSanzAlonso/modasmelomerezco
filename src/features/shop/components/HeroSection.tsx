@@ -27,6 +27,9 @@ export const HeroSection: React.FC = () => {
 
       {/* Hero Content */}
       <div className="relative z-20 w-full max-w-[1800px] px-6 mx-auto flex flex-col items-center">
+        <h1 className="sr-only">
+          Tienda online de moda para mujer | Modas Me lo Merezco
+        </h1>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

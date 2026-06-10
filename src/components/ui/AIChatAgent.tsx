@@ -162,13 +162,13 @@ INVENTARIO REAL (Usa esta info para recomendar):
 ${productsInfo}
 
 REGLAS CRÍTICAS DE RESPUESTA:
-1. SOLO recomienda artículos que estén en el "INVENTARIO REAL" arriba indicado.
+1. SOLO recomienda artículos que estén en el "INVENTARIO REAL" arriba indicado. NUNCA inventes un producto que no aparezca en la lista.
 2. Si la clienta pide una categoría (ej: Pantalón) y no hay ninguno en el inventario real, NO inventes ni recomiendes otra cosa de distinta categoría. Di amablemente que no tienes stock de eso ahora mismo y ofrece mirar las "Novedades" o contactar por WhatsApp.
-3. Genera el enlace al producto usando ESTE FORMATO EXACTO: ${window.location.origin}/producto/[product_id].
+3. Los enlaces a producto DEBEN ser copiados EXACTAMENTE del inventario real. No modifiques ni inventes URLs.
 4. Sé persuasiva pero muy concisa.
 5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.`
         : `
-NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y anímala a visitar las secciones de Ropa y Complementos en la web, o a contactar por WhatsApp para preguntas específicas de stock.`;
+NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. NO inventes productos ni generes URLs de producto bajo ninguna circunstancia. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y anímala a visitar las secciones de Ropa y Complementos en la web (${window.location.origin}/categoria/ropa), o a contactar por WhatsApp. NUNCA escribas enlaces que no existan.`;
 
       const systemPrompt = baseInfo + inventoryBlock;
 

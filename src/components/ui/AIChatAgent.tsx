@@ -108,35 +108,41 @@ export const AIChatAgent = () => {
     setIsLoading(true);
 
     try {
-      let matchedProducts = [];
-      const embedding = await getQueryEmbedding(userMsg);
-
-      const { data, error: rpcError } = await supabase.rpc('match_products', {
-        query_embedding: embedding,
-        match_threshold: 0.35,
-        match_count: 12
-      });
-
-      if (rpcError) throw rpcError;
-      matchedProducts = data || [];
-
-      const productsInfo = matchedProducts.length > 0 
-        ? matchedProducts.map((p: any) => {
-            const stockInfo = p.variants?.map((v: any) => {
-              const label = v.color ? `${v.size}/${v.color}` : v.size;
-              return `${label}: ${v.stock}uds`;
-            }).join(', ') || 'Sin info de stock';
-            const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
-            return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${window.location.origin}/producto/${p.product_id}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
-          }).join('\n---\n')
-        : 'No hay artículos específicos en el catálogo que coincidan.';
-
       const conversationHistory = messages.map(m => ({
         role: m.isBot ? 'assistant' : 'user',
         content: m.text
       }));
 
-      const systemPrompt = `
+      let productsInfo = '';
+      let useProductSearch = true;
+
+      try {
+        const embedding = await getQueryEmbedding(userMsg);
+        const { data, error: rpcError } = await supabase.rpc('match_products', {
+          query_embedding: embedding,
+          match_threshold: 0.35,
+          match_count: 12
+        });
+
+        if (rpcError) throw rpcError;
+
+        const matchedProducts = data || [];
+        productsInfo = matchedProducts.length > 0
+          ? matchedProducts.map((p: any) => {
+              const stockInfo = p.variants?.map((v: any) => {
+                const label = v.color ? `${v.size}/${v.color}` : v.size;
+                return `${label}: ${v.stock}uds`;
+              }).join(', ') || 'Sin info de stock';
+              const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
+              return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${window.location.origin}/producto/${p.product_id}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
+            }).join('\n---\n')
+          : 'No hay artículos específicos en el catálogo que coincidan.';
+      } catch {
+        useProductSearch = false;
+        productsInfo = '';
+      }
+
+      const baseInfo = `
 Eres MeloMe, la asistente virtual experta de la boutique "Modas Me lo Merezco". Tu objetivo es asesorar a las clientas con amabilidad, elegancia y un toque cercano.
 
 INFORMACIÓN DE LA TIENDA:
@@ -147,7 +153,10 @@ INFORMACIÓN DE LA TIENDA:
 - Devoluciones: 14 días naturales desde la recepción. El producto debe estar impecable y con etiquetas. Los gastos de envío de devolución corren a cargo de la clienta.
 - Pagos: Aceptamos Tarjeta y Bizum (pasarela segura Redsys).
 - Sobre nosotros: Boutique dedicada a celebrar la feminidad y exclusividad. "Donde la elegancia y el estilo se encuentran a la orilla del mar".
+`;
 
+      const inventoryBlock = useProductSearch
+        ? `
 INVENTARIO REAL (Usa esta info para recomendar):
 ${productsInfo}
 
@@ -156,8 +165,11 @@ REGLAS CRÍTICAS DE RESPUESTA:
 2. Si la clienta pide una categoría (ej: Pantalón) y no hay ninguno en el inventario real, NO inventes ni recomiendes otra cosa de distinta categoría. Di amablemente que no tienes stock de eso ahora mismo y ofrece mirar las "Novedades" o contactar por WhatsApp.
 3. Genera el enlace al producto usando ESTE FORMATO EXACTO: ${window.location.origin}/producto/[product_id].
 4. Sé persuasiva pero muy concisa.
-5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
-`;
+5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.`
+        : `
+NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y anímala a visitar las secciones de Ropa y Complementos en la web, o a contactar por WhatsApp para preguntas específicas de stock.`;
+
+      const systemPrompt = baseInfo + inventoryBlock;
 
       const response = await fetch('/api/chat', {
         method: 'POST',

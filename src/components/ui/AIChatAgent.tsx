@@ -21,12 +21,13 @@ const formatMessage = (text: string) => {
 
   return parts.map((part, index) => {
     if (part.match(/^https?:\/\//)) {
+      const cleanUrl = part.replace(/[.,;:!?)\]}>]+$/, '');
       // Caso 1: WhatsApp
       if (part.includes('wa.me') || part.includes('whatsapp')) {
         return (
           <a
             key={index}
-            href={part}
+            href={cleanUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 mt-3 px-5 py-2.5 bg-[#25D366] text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-[#20BD5A] transition-all hover:scale-105 shadow-md shadow-green-500/20 active:scale-95"
@@ -41,7 +42,7 @@ const formatMessage = (text: string) => {
         return (
           <a
             key={index}
-            href={part}
+            href={cleanUrl}
             className="flex items-center justify-between mt-4 px-6 py-4 bg-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] italic rounded-2xl hover:bg-primary transition-all group shadow-xl shadow-secondary/10 active:scale-[0.98]"
           >
             <span>Ver Producto</span>
@@ -56,12 +57,12 @@ const formatMessage = (text: string) => {
       return (
         <a
           key={index}
-          href={part}
+          href={cleanUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary font-bold underline hover:text-primary/80 break-all"
         >
-          {part}
+          {cleanUrl}
         </a>
       );
     }

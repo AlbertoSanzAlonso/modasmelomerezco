@@ -15,6 +15,7 @@ export type SeoPageMeta = {
   ogImage: string;
   noindex: boolean;
   type: 'website' | 'product';
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 };
 
 const STATIC_PAGES: Record<string, { title?: string; description: string }> = {
@@ -132,14 +133,78 @@ async function getProductMeta(productId: string): Promise<SeoPageMeta | null> {
   );
 
   const path = `/producto/${product.product_id}`;
+  const canonical = absoluteUrl(path);
+  const productName = product.name || 'Producto';
+  const price = Number(product.price);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: productName,
+    description: description || `${productName}. Compra online en ${SITE_NAME}.`,
+    image: firstImage
+      ? firstImage.startsWith('http')
+        ? firstImage
+        : absoluteUrl(firstImage)
+      : undefined,
+    sku: product.product_id,
+    url: canonical,
+    offers: {
+      '@type': 'Offer',
+      price: price.toFixed(2),
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+      url: canonical,
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: 5.5,
+          currency: 'EUR',
+        },
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'ES',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 0,
+            maxValue: 1,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'ES',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 14,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/ReturnShippingFees',
+      },
+    },
+    brand: {
+      '@type': 'Brand',
+      name: SITE_NAME,
+    },
+  };
 
   return {
     title: buildTitle(product.name),
     description,
-    canonical: absoluteUrl(path),
+    canonical,
     ogImage,
     noindex: false,
     type: 'product',
+    jsonLd,
   };
 }
 
@@ -148,13 +213,36 @@ async function getCategoryMeta(slug: string): Promise<SeoPageMeta | null> {
   const page = STATIC_PAGES[path];
   if (!page) return null;
 
+  const canonical = absoluteUrl(path);
+  const categoryTitle = page.title || slug;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Inicio',
+        item: SITE_URL,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: categoryTitle,
+        item: canonical,
+      },
+    ],
+  };
+
   return {
     title: buildTitle(page.title),
     description: page.description,
-    canonical: absoluteUrl(path),
+    canonical,
     ogImage: DEFAULT_OG_IMAGE,
     noindex: false,
     type: 'website',
+    jsonLd,
   };
 }
 
@@ -185,13 +273,40 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
 
   const staticPage = STATIC_PAGES[path];
   if (staticPage) {
+    const canonical = absoluteUrl(path);
+    let jsonLd: Record<string, unknown> | undefined;
+
+    if (path === '/') {
+      jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ClothingStore',
+        name: SITE_NAME,
+        url: SITE_URL,
+        logo: `${SITE_URL}/logo.png`,
+        image: DEFAULT_OG_IMAGE,
+        description: staticPage.description,
+        priceRange: '€€',
+        telephone: '+34 685 011 494',
+        email: 'info@modasmelomerezco.es',
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'Calle Aragón, 2, Local 2',
+          addressLocality: 'Benalmádena',
+          addressRegion: 'Málaga',
+          postalCode: '29631',
+          addressCountry: 'ES',
+        },
+      };
+    }
+
     return {
       title: buildTitle(staticPage.title),
       description: staticPage.description,
-      canonical: absoluteUrl(path),
+      canonical,
       ogImage: DEFAULT_OG_IMAGE,
       noindex: false,
       type: 'website',
+      jsonLd,
     };
   }
 

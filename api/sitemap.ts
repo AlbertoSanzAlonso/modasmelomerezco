@@ -12,17 +12,17 @@ type SitemapEntry = {
 };
 
 const STATIC_PAGES: SitemapEntry[] = [
-  { loc: '/', changefreq: 'daily', priority: '1.0' },
-  { loc: '/categoria/ropa', changefreq: 'daily', priority: '0.9' },
-  { loc: '/categoria/complementos', changefreq: 'daily', priority: '0.9' },
-  { loc: '/categoria/bolsos', changefreq: 'daily', priority: '0.9' },
-  { loc: '/conocenos', changefreq: 'monthly', priority: '0.6' },
-  { loc: '/envios', changefreq: 'monthly', priority: '0.5' },
-  { loc: '/devoluciones', changefreq: 'monthly', priority: '0.5' },
-  { loc: '/condiciones-venta', changefreq: 'yearly', priority: '0.3' },
-  { loc: '/aviso-legal', changefreq: 'yearly', priority: '0.3' },
-  { loc: '/politica-de-privacidad', changefreq: 'yearly', priority: '0.3' },
-  { loc: '/cookies', changefreq: 'yearly', priority: '0.3' },
+  { loc: '/', changefreq: 'daily', priority: '1.0', lastmod: '2026-06-10' },
+  { loc: '/categoria/ropa', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
+  { loc: '/categoria/complementos', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
+  { loc: '/categoria/bolsos', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
+  { loc: '/conocenos', changefreq: 'monthly', priority: '0.6', lastmod: '2026-06-10' },
+  { loc: '/envios', changefreq: 'monthly', priority: '0.5', lastmod: '2026-06-10' },
+  { loc: '/devoluciones', changefreq: 'monthly', priority: '0.5', lastmod: '2026-06-10' },
+  { loc: '/condiciones-venta', changefreq: 'yearly', priority: '0.3', lastmod: '2026-06-10' },
+  { loc: '/aviso-legal', changefreq: 'yearly', priority: '0.3', lastmod: '2026-06-10' },
+  { loc: '/politica-de-privacidad', changefreq: 'yearly', priority: '0.3', lastmod: '2026-06-10' },
+  { loc: '/cookies', changefreq: 'yearly', priority: '0.3', lastmod: '2026-06-10' },
 ];
 
 function escapeXml(value: string): string {

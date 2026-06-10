@@ -55,12 +55,19 @@ export function injectSeoIntoHtml(html: string, meta: SeoPageMeta): string {
   result = replacePropertyMeta(result, 'og:title', meta.title);
   result = replacePropertyMeta(result, 'og:description', meta.description);
   result = replacePropertyMeta(result, 'og:image', meta.ogImage);
+  result = replacePropertyMeta(result, 'og:image:secure_url', meta.ogImage);
   result = replacePropertyMeta(result, 'og:image:alt', SITE_NAME);
 
   result = replaceMetaTag(result, 'twitter:card', 'summary_large_image');
   result = replaceMetaTag(result, 'twitter:title', meta.title);
   result = replaceMetaTag(result, 'twitter:description', meta.description);
   result = replaceMetaTag(result, 'twitter:image', meta.ogImage);
+
+  if (meta.jsonLd) {
+    const jsonLdArray = Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd];
+    const scriptTag = `<script type="application/ld+json">${JSON.stringify(jsonLdArray.length === 1 ? jsonLdArray[0] : jsonLdArray)}</script>`;
+    result = result.replace('</head>', `    ${scriptTag}\n  </head>`);
+  }
 
   return result;
 }

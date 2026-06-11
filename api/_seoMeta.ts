@@ -277,26 +277,35 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
     let jsonLd: Record<string, unknown> | undefined;
 
     if (path === '/') {
-      jsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'ClothingStore',
-        name: SITE_NAME,
-        url: SITE_URL,
-        logo: `${SITE_URL}/logo.png`,
-        image: DEFAULT_OG_IMAGE,
-        description: staticPage.description,
-        priceRange: '€€',
-        telephone: '+34 685 011 494',
-        email: 'info@modasmelomerezco.es',
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: 'Calle Aragón, 2, Local 2',
-          addressLocality: 'Benalmádena',
-          addressRegion: 'Málaga',
-          postalCode: '29631',
-          addressCountry: 'ES',
+      jsonLd = [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: SITE_NAME,
+          alternateName: 'Me lo Merezco',
+          url: SITE_URL,
         },
-      };
+        {
+          '@context': 'https://schema.org',
+          '@type': 'ClothingStore',
+          name: SITE_NAME,
+          url: SITE_URL,
+          logo: `${SITE_URL}/logo.png`,
+          image: DEFAULT_OG_IMAGE,
+          description: staticPage.description,
+          priceRange: '€€',
+          telephone: '+34 685 011 494',
+          email: 'info@modasmelomerezco.es',
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: 'Calle Aragón, 2, Local 2',
+            addressLocality: 'Benalmádena',
+            addressRegion: 'Málaga',
+            postalCode: '29631',
+            addressCountry: 'ES',
+          },
+        },
+      ];
     }
 
     return {

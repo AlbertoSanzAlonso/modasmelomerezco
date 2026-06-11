@@ -70,36 +70,45 @@ const NOINDEX_PATHS = [
   '/favoritos',
 ];
 
-const HOME_JSON_LD = {
-  '@context': 'https://schema.org',
-  '@type': 'ClothingStore',
-  name: SITE_NAME,
-  url: SITE_URL,
-  logo: SITE_LOGO,
-  image: DEFAULT_OG_IMAGE,
-  description: DEFAULT_DESCRIPTION,
-  priceRange: '€€',
-  telephone: '+34 685 011 494',
-  email: 'info@modasmelomerezco.es',
-  sameAs: [
-    'https://www.instagram.com/modasmelomerezco',
-    'https://www.tiktok.com/@modasmelomerezco',
-    'https://www.facebook.com/profile.php?id=61555721379464',
-  ],
-  address: {
-    '@type': 'PostalAddress',
-    streetAddress: 'Calle Aragón, 2, Local 2',
-    addressLocality: 'Benalmádena',
-    addressRegion: 'Málaga',
-    postalCode: '29631',
-    addressCountry: 'ES',
+const HOME_JSON_LD = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    alternateName: 'Me lo Merezco',
+    url: SITE_URL,
   },
-  geo: {
-    '@type': 'GeoCoordinates',
-    latitude: 36.5961,
-    longitude: -4.5708,
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ClothingStore',
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: SITE_LOGO,
+    image: DEFAULT_OG_IMAGE,
+    description: DEFAULT_DESCRIPTION,
+    priceRange: '€€',
+    telephone: '+34 685 011 494',
+    email: 'info@modasmelomerezco.es',
+    sameAs: [
+      'https://www.instagram.com/modasmelomerezco',
+      'https://www.tiktok.com/@modasmelomerezco',
+      'https://www.facebook.com/profile.php?id=61555721379464',
+    ],
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Calle Aragón, 2, Local 2',
+      addressLocality: 'Benalmádena',
+      addressRegion: 'Málaga',
+      postalCode: '29631',
+      addressCountry: 'ES',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: 36.5961,
+      longitude: -4.5708,
+    },
   },
-};
+];
 
 /** SEO por ruta para páginas estáticas de la tienda (producto y categoría lo gestionan sus páginas). */
 export function RouteSeo() {

@@ -123,7 +123,7 @@ export const LoginPage: React.FC = () => {
           >
             <img 
               src="/assets/logo/LOGO MELOMEREZCO corona.svg" 
-              alt="Logo" 
+              alt="Modas Me lo Merezco" 
               className="w-28 h-28 object-contain"
             />
           </motion.div>

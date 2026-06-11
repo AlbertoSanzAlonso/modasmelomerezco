@@ -129,7 +129,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       <img src={item.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="flex flex-col items-center justify-center p-1 text-center">
-                        <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="Logo" className="w-6 h-6 opacity-20" />
+                        <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="" className="w-6 h-6 opacity-20" />
                         <span className="text-[6px] font-black opacity-30 mt-1 uppercase tracking-tighter">Sin Foto</span>
                       </div>
                     )}

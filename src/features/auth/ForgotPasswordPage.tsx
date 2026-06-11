@@ -111,7 +111,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ isAdmin 
               <Link to="/" className="inline-block mb-8">
                 <img 
                   src="/assets/logo/LOGO MELOMEREZCO corona.svg" 
-                  alt="Logo" 
+                  alt="Modas Me lo Merezco" 
                   className="w-20 h-20 object-contain mx-auto"
                 />
               </Link>

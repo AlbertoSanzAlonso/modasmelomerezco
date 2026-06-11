@@ -210,7 +210,7 @@ export const SignupPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="flex justify-center mb-8"
           >
-            <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="Logo" className="w-24 h-24 object-contain" />
+            <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="Modas Me lo Merezco" className="w-24 h-24 object-contain" />
           </motion.div>
           
           <h1 className="text-4xl font-display font-black text-(--text-main) uppercase tracking-tighter mb-2 transition-colors duration-300">

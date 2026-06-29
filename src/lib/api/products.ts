@@ -44,6 +44,7 @@ const PRODUCT_SELECT_FULL = `${PRODUCT_SELECT_BASE}, product_labels(labels(*)), 
 const PRODUCT_SELECT_FILTER_BY_LABEL = `${PRODUCT_SELECT_BASE}, product_labels!inner(labels(*))`;
 
 const PRODUCT_TABLE_COLUMNS = new Set([
+  'product_id',
   'name',
   'description',
   'price',
@@ -59,6 +60,13 @@ function cleanProductTablePayload(input: Record<string, unknown>): Record<string
       ([key, value]) => PRODUCT_TABLE_COLUMNS.has(key) && value !== undefined
     )
   );
+}
+
+function createProductId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function assertNoSupabaseError(
@@ -354,7 +362,10 @@ export const products = {
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
     const { variants, images, colors, labels, discountCodes, ...pData } = productData as any;
-    const productPayload = cleanProductTablePayload(pData);
+    const productPayload = cleanProductTablePayload({
+      product_id: createProductId(),
+      ...pData,
+    });
     
     // 1. Create product
     const { data: product, error } = await supabase

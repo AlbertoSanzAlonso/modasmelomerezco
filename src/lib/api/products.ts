@@ -43,6 +43,24 @@ const PRODUCT_SELECT_FULL = `${PRODUCT_SELECT_BASE}, product_labels(labels(*)), 
 
 const PRODUCT_SELECT_FILTER_BY_LABEL = `${PRODUCT_SELECT_BASE}, product_labels!inner(labels(*))`;
 
+const PRODUCT_TABLE_COLUMNS = new Set([
+  'name',
+  'description',
+  'price',
+  'is_published',
+  'is_new',
+  'category_id',
+  'subcategory_id',
+]);
+
+function cleanProductTablePayload(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input).filter(
+      ([key, value]) => PRODUCT_TABLE_COLUMNS.has(key) && value !== undefined
+    )
+  );
+}
+
 function assertNoSupabaseError(
   error: { message?: string; code?: string } | null,
   context: string
@@ -105,6 +123,17 @@ async function syncProductDiscountCodes(
 const normalise = (p: any): Product => ({
   ...p,
   is_published: p.is_published ?? true,
+  stock: (() => {
+    const rawVariants =
+      p.product_variants?.length > 0 ? p.product_variants : p.variants || [];
+    if (rawVariants.length > 0) {
+      return rawVariants.reduce(
+        (sum: number, v: { stock?: number | null }) => sum + (v.stock ?? 0),
+        0
+      );
+    }
+    return p.stock ?? 0;
+  })(),
   // Priorizar tabla relacional sobre columna JSON
   images: (() => {
     if (p.product_images && p.product_images.length > 0) {
@@ -325,11 +354,12 @@ export const products = {
 
   create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
     const { variants, images, colors, labels, discountCodes, ...pData } = productData as any;
+    const productPayload = cleanProductTablePayload(pData);
     
     // 1. Create product
     const { data: product, error } = await supabase
       .from('products')
-      .insert([pData])
+      .insert([productPayload])
       .select()
       .maybeSingle();
 
@@ -388,13 +418,7 @@ export const products = {
     const { variants, images, colors, labels, discountCodes, ...pUpdates } = updates as any;
 
     // 1. Update product table
-    const validColumns = [
-      'name', 'description', 'price', 'is_published', 'is_new', 'stock',
-      'category_id', 'subcategory_id'
-    ];
-    const filteredUpdates = Object.fromEntries(
-      Object.entries(pUpdates).filter(([key]) => validColumns.includes(key))
-    );
+    const filteredUpdates = cleanProductTablePayload(pUpdates);
     
     const { data: product, error } = await supabase
       .from('products')

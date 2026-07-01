@@ -78,6 +78,11 @@ function assertNoSupabaseError(
 ): void {
   if (!error) return;
   if (error.code === '23505') {
+    if (isVariantIdConflict(error)) {
+      throw new Error(
+        `[${context}] Error interno al crear variantes (contador de IDs desincronizado). Inténtalo de nuevo; si persiste, ejecuta supabase/migrations/fix_product_variants_sequence.sql en Supabase.`
+      );
+    }
     throw new Error(
       `[${context}] Ya existe esa combinación de talla y color. Revisa el inventario y guarda de nuevo.`
     );
@@ -135,6 +140,24 @@ function toVariantDbRows(product_id: string, variants: any[]): VariantDbRow[] {
     }));
 }
 
+function isVariantIdConflict(error: { message?: string; details?: string } | null): boolean {
+  if (!error) return false;
+  const text = `${error.message ?? ''} ${error.details ?? ''}`.toLowerCase();
+  return text.includes('product_variants_pkey') && text.includes('variant_id');
+}
+
+async function getNextVariantId(): Promise<number> {
+  const { data, error } = await supabase
+    .from('product_variants')
+    .select('variant_id')
+    .order('variant_id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  assertNoSupabaseError(error, 'product_variants max id');
+  return (data?.variant_id ?? 0) + 1;
+}
+
 async function updateVariantRow(
   variantId: number,
   row: VariantDbRow
@@ -176,6 +199,17 @@ async function insertVariantRow(row: VariantDbRow): Promise<void> {
   if (!error) return;
 
   if (error.code === '23505') {
+    if (isVariantIdConflict(error)) {
+      let nextId = await getNextVariantId();
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const { error: retryError } = await supabase
+          .from('product_variants')
+          .insert([{ ...row, variant_id: nextId + attempt }]);
+        if (!retryError) return;
+        if (!isVariantIdConflict(retryError)) break;
+      }
+    }
+
     const updated = await updateVariantByNaturalKey(row);
     if (updated) return;
   }

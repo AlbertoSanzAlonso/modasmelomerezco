@@ -92,12 +92,37 @@ type VariantDbRow = {
   stock: number;
 };
 
+type ExistingVariantRow = {
+  variant_id: number;
+  size: string;
+  color_id: number | null;
+};
+
+function normalizeColorId(colorId: unknown): number | null {
+  if (colorId == null || colorId === '') return null;
+  const parsed = Number(colorId);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function groupExistingVariantsByKey(
+  rows: ExistingVariantRow[]
+): Map<string, ExistingVariantRow[]> {
+  const map = new Map<string, ExistingVariantRow[]>();
+  for (const row of rows) {
+    const key = variantSizeColorKey(row.size, row.color_id ?? null);
+    const bucket = map.get(key);
+    if (bucket) bucket.push(row);
+    else map.set(key, [row]);
+  }
+  return map;
+}
+
 function toVariantDbRows(product_id: string, variants: any[]): VariantDbRow[] {
   return dedupeVariantsBySizeAndColor(
     variants.map((v) => ({
       ...v,
       size: normalizeSize(v.size),
-      color_id: v.color_id ?? null,
+      color_id: normalizeColorId(v.color_id),
       stock: Math.max(0, v.stock ?? 0),
     }))
   )
@@ -105,9 +130,74 @@ function toVariantDbRows(product_id: string, variants: any[]): VariantDbRow[] {
     .map((v) => ({
       product_id,
       size: v.size,
-      color_id: v.color_id ?? null,
+      color_id: normalizeColorId(v.color_id),
       stock: v.stock ?? 0,
     }));
+}
+
+async function updateVariantRow(
+  variantId: number,
+  row: VariantDbRow
+): Promise<void> {
+  const { error } = await supabase
+    .from('product_variants')
+    .update({
+      stock: row.stock,
+      size: row.size,
+      color_id: row.color_id,
+    })
+    .eq('variant_id', variantId);
+  assertNoSupabaseError(error, 'product_variants update');
+}
+
+async function updateVariantByNaturalKey(row: VariantDbRow): Promise<boolean> {
+  const { data, error: fetchError } = await supabase
+    .from('product_variants')
+    .select('variant_id, size, color_id')
+    .eq('product_id', row.product_id);
+
+  assertNoSupabaseError(fetchError, 'product_variants select');
+
+  const key = variantSizeColorKey(row.size, row.color_id);
+  const match = (data ?? []).find(
+    (existing) =>
+      variantSizeColorKey(existing.size, existing.color_id ?? null) === key
+  );
+
+  if (!match) return false;
+
+  await updateVariantRow(match.variant_id, row);
+  return true;
+}
+
+async function insertVariantRow(row: VariantDbRow): Promise<void> {
+  const { error } = await supabase.from('product_variants').insert([row]);
+
+  if (!error) return;
+
+  if (error.code === '23505') {
+    const updated = await updateVariantByNaturalKey(row);
+    if (updated) return;
+  }
+
+  assertNoSupabaseError(error, 'product_variants insert');
+}
+
+async function deleteVariantRow(variantId: number): Promise<void> {
+  const { error } = await supabase
+    .from('product_variants')
+    .delete()
+    .eq('variant_id', variantId);
+
+  if (error?.code === '23503') {
+    console.warn(
+      '[product_variants delete] Variante en pedidos, no se elimina:',
+      variantId
+    );
+    return;
+  }
+
+  assertNoSupabaseError(error, 'product_variants delete');
 }
 
 async function syncProductVariants(
@@ -128,46 +218,43 @@ async function syncProductVariants(
 
   const existingRows = existing ?? [];
   const existingColoredCount = existingRows.filter((r) => r.color_id != null).length;
-
-  const existingByKey = new Map<
-    string,
-    { variant_id: number; size: string; color_id: number | null }
-  >();
-  for (const row of existingRows) {
-    existingByKey.set(
-      variantSizeColorKey(row.size, row.color_id ?? null),
-      row
-    );
-  }
+  const groupedExisting = groupExistingVariantsByKey(existingRows);
 
   const desiredKeys = new Set(
     rows.map((r) => variantSizeColorKey(r.size, r.color_id))
   );
 
+  const consumedVariantIds = new Set<number>();
+
   for (const row of rows) {
     const key = variantSizeColorKey(row.size, row.color_id);
-    const match = existingByKey.get(key);
-    if (match) {
-      const { error } = await supabase
-        .from('product_variants')
-        .update({
-          stock: row.stock,
-          size: row.size,
-          color_id: row.color_id,
-        })
-        .eq('variant_id', match.variant_id);
-      assertNoSupabaseError(error, 'product_variants update');
-    } else {
-      const { error } = await supabase
-        .from('product_variants')
-        .insert([row]);
-      assertNoSupabaseError(error, 'product_variants insert');
+    const matches = groupedExisting.get(key) ?? [];
+    const available = matches.filter((m) => !consumedVariantIds.has(m.variant_id));
+
+    if (available.length > 0) {
+      const [primary, ...duplicates] = available;
+      await updateVariantRow(primary.variant_id, row);
+      consumedVariantIds.add(primary.variant_id);
+
+      for (const duplicate of duplicates) {
+        await deleteVariantRow(duplicate.variant_id);
+        consumedVariantIds.add(duplicate.variant_id);
+      }
+      continue;
     }
+
+    await insertVariantRow(row);
   }
 
   for (const row of existingRows) {
+    if (consumedVariantIds.has(row.variant_id)) continue;
+
     const key = variantSizeColorKey(row.size, row.color_id ?? null);
-    if (desiredKeys.has(key)) continue;
+
+    if (desiredKeys.has(key)) {
+      await deleteVariantRow(row.variant_id);
+      continue;
+    }
 
     if (
       row.color_id != null &&
@@ -182,19 +269,7 @@ async function syncProductVariants(
       continue;
     }
 
-    const { error } = await supabase
-      .from('product_variants')
-      .delete()
-      .eq('variant_id', row.variant_id);
-
-    if (error?.code === '23503') {
-      console.warn(
-        '[product_variants delete] Variante en pedidos, no se elimina:',
-        row.variant_id
-      );
-      continue;
-    }
-    assertNoSupabaseError(error, 'product_variants delete');
+    await deleteVariantRow(row.variant_id);
   }
 }
 
@@ -499,11 +574,7 @@ export const products = {
 
     // 2. Create variants if any
     if (variants && variants.length > 0) {
-      const cleanVariants = toVariantDbRows(product.product_id, variants);
-      const { error: variantsError } = await supabase
-        .from('product_variants')
-        .insert(cleanVariants);
-      assertNoSupabaseError(variantsError, 'product_variants insert');
+      await syncProductVariants(product.product_id, variants);
     }
 
     // 3. Create images if any

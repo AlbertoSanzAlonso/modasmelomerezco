@@ -128,6 +128,14 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     size: string,
     colorId: number
   ) => {
+    const duplicate = variants.some(
+      (v) =>
+        v.size === size &&
+        v.color_id === colorId &&
+        !variantMatches(v, row, size)
+    );
+    if (duplicate) return;
+
     const color = catalog.find((c) => c.id === colorId);
     onVariantsChange(
       variants.map((v) =>

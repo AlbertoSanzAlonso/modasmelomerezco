@@ -100,6 +100,31 @@ export function getVariantColorName(
 const variantKey = (size: string, colorId: number | null) =>
   `${size}::${colorId ?? 'null'}`;
 
+export function variantSizeColorKey(
+  size: string,
+  colorId?: number | null
+): string {
+  return variantKey(normalizeSize(size), colorId ?? null);
+}
+
+/** Una sola fila por talla + color_id (la última del array gana). */
+export function dedupeVariantsBySizeAndColor(
+  variants: ProductVariant[]
+): ProductVariant[] {
+  const map = new Map<string, ProductVariant>();
+  for (const v of variants) {
+    const size = normalizeSize(v.size);
+    if (!size) continue;
+    const colorId = v.color_id ?? null;
+    map.set(variantSizeColorKey(size, colorId), {
+      ...v,
+      size,
+      color_id: colorId,
+    });
+  }
+  return Array.from(map.values()).sort((a, b) => compareSizes(a.size, b.size));
+}
+
 export interface SizeVariantGroup {
   size: string;
   items: ProductVariant[];
@@ -265,7 +290,11 @@ export function consolidateVariantsForSave(
     const colored = items.filter((v) => v.color_id != null);
     const base = items.filter((v) => v.color_id == null);
     if (colored.length > 0) {
-      out.push(...colored);
+      const byColor = new Map<number, ProductVariant>();
+      for (const v of colored) {
+        if (v.color_id != null) byColor.set(v.color_id, v);
+      }
+      out.push(...byColor.values());
     } else {
       const single = base[0] ?? {
         id: `base-${size}`,
@@ -276,7 +305,7 @@ export function consolidateVariantsForSave(
       out.push({ ...single, color_id: null, color: undefined });
     }
   }
-  return out;
+  return dedupeVariantsBySizeAndColor(out);
 }
 
 export function normalizeVariantsForForm(

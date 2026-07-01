@@ -6,6 +6,8 @@ import {
   hasColorVariants,
   normalizeColor,
   normalizeSize,
+  dedupeVariantsBySizeAndColor,
+  variantSizeColorKey,
 } from '../productVariants';
 import type { Color, ProductVariant } from '@/types';
 
@@ -75,7 +77,106 @@ function assertNoSupabaseError(
   context: string
 ): void {
   if (!error) return;
+  if (error.code === '23505') {
+    throw new Error(
+      `[${context}] Ya existe esa combinación de talla y color. Revisa el inventario y guarda de nuevo.`
+    );
+  }
   throw new Error(`[${context}] ${error.message || 'Error de Supabase'}`);
+}
+
+type VariantDbRow = {
+  product_id: string;
+  size: string;
+  color_id: number | null;
+  stock: number;
+};
+
+function toVariantDbRows(product_id: string, variants: any[]): VariantDbRow[] {
+  return dedupeVariantsBySizeAndColor(
+    variants.map((v) => ({
+      ...v,
+      size: normalizeSize(v.size),
+      color_id: v.color_id ?? null,
+      stock: Math.max(0, v.stock ?? 0),
+    }))
+  )
+    .filter((v) => v.size)
+    .map((v) => ({
+      product_id,
+      size: v.size,
+      color_id: v.color_id ?? null,
+      stock: v.stock ?? 0,
+    }));
+}
+
+async function syncProductVariants(
+  product_id: string,
+  variants: any[]
+): Promise<void> {
+  const rows = toVariantDbRows(product_id, variants);
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('product_variants')
+    .select('variant_id, size, color_id')
+    .eq('product_id', product_id);
+
+  assertNoSupabaseError(fetchError, 'product_variants select');
+
+  const existingByKey = new Map<
+    string,
+    { variant_id: number; size: string; color_id: number | null }
+  >();
+  for (const row of existing ?? []) {
+    existingByKey.set(
+      variantSizeColorKey(row.size, row.color_id ?? null),
+      row
+    );
+  }
+
+  const desiredKeys = new Set(
+    rows.map((r) => variantSizeColorKey(r.size, r.color_id))
+  );
+
+  for (const row of rows) {
+    const key = variantSizeColorKey(row.size, row.color_id);
+    const match = existingByKey.get(key);
+    if (match) {
+      const { error } = await supabase
+        .from('product_variants')
+        .update({
+          stock: row.stock,
+          size: row.size,
+          color_id: row.color_id,
+        })
+        .eq('variant_id', match.variant_id);
+      assertNoSupabaseError(error, 'product_variants update');
+    } else {
+      const { error } = await supabase
+        .from('product_variants')
+        .insert([row]);
+      assertNoSupabaseError(error, 'product_variants insert');
+    }
+  }
+
+  for (const row of existing ?? []) {
+    const key = variantSizeColorKey(row.size, row.color_id ?? null);
+    if (desiredKeys.has(key)) continue;
+
+    const { error } = await supabase
+      .from('product_variants')
+      .delete()
+      .eq('variant_id', row.variant_id);
+
+    if (error?.code === '23503') {
+      console.warn(
+        '[product_variants delete] Variante en pedidos, no se elimina:',
+        row.variant_id
+      );
+      continue;
+    }
+    assertNoSupabaseError(error, 'product_variants delete');
+  }
 }
 
 function isMissingRelation(
@@ -379,12 +480,7 @@ export const products = {
 
     // 2. Create variants if any
     if (variants && variants.length > 0) {
-      const cleanVariants = variants.map((v: any) => ({
-        product_id: product.product_id,
-        size: v.size,
-        color_id: v.color_id ?? null,
-        stock: v.stock || 0,
-      }));
+      const cleanVariants = toVariantDbRows(product.product_id, variants);
       const { error: variantsError } = await supabase
         .from('product_variants')
         .insert(cleanVariants);
@@ -443,23 +539,7 @@ export const products = {
 
     // 2. Update variants if provided
     if (variants) {
-      const { error: deleteVariantsError } = await supabase
-        .from('product_variants')
-        .delete()
-        .eq('product_id', product_id);
-      assertNoSupabaseError(deleteVariantsError, 'product_variants delete');
-      if (variants.length > 0) {
-        const cleanVariants = variants.map((v: any) => ({
-          product_id,
-          size: v.size,
-          color_id: v.color_id ?? null,
-          stock: v.stock || 0,
-        }));
-        const { error: insertVariantsError } = await supabase
-          .from('product_variants')
-          .insert(cleanVariants);
-        assertNoSupabaseError(insertVariantsError, 'product_variants insert');
-      }
+      await syncProductVariants(product_id, variants);
     }
 
     // 3. Update images if provided

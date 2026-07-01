@@ -5,6 +5,7 @@ import {
   deriveProductColors,
   hasColorVariants,
   normalizeColor,
+  normalizeSize,
 } from '../productVariants';
 import type { Color, ProductVariant } from '@/types';
 
@@ -28,7 +29,7 @@ export function mapProductVariant(v: any): ProductVariant {
     ...v,
     id: (v.variant_id || v.id || Math.random().toString()).toString(),
     variant_id: v.variant_id,
-    size: v.size ?? '',
+    size: normalizeSize(v.size),
     color_id: colorId,
     color: colorName,
     stock: v.stock ?? 0,

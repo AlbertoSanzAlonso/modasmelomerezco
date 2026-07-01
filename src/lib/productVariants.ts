@@ -8,6 +8,11 @@ export const UNIQUE_COLOR = DEFAULT_COLOR;
 
 const LEGACY_DEFAULT_COLORS = new Set(['único', 'unico', 'neutro', '']);
 
+/** Talla en mayúsculas para tienda, pedidos y persistencia (p. ej. "Xl" → "XL"). */
+export function normalizeSize(size?: string | null): string {
+  return size?.trim().toUpperCase() ?? '';
+}
+
 /** Normaliza texto de color en pedidos o datos antiguos. */
 export function normalizeColor(color?: string | null): string {
   if (!color?.trim()) return DEFAULT_COLOR;
@@ -134,7 +139,8 @@ export function formatVariantLabel(
   size: string,
   color?: string | null
 ): string {
-  return color?.trim() ? `Talla ${size} · ${color}` : `Talla ${size}`;
+  const sizeLabel = normalizeSize(size);
+  return color?.trim() ? `Talla ${sizeLabel} · ${color}` : `Talla ${sizeLabel}`;
 }
 
 /** Color visible en pedidos/factura (null = mostrar "-"). */
@@ -146,10 +152,11 @@ export function formatOrderItemColorLabel(color?: string | null): string | null 
 }
 
 export function formatOrderItemDetails(size?: string, color?: string | null): string {
-  if (!size) return '';
+  const sizeLabel = normalizeSize(size);
+  if (!sizeLabel) return '';
   const colorLabel = formatOrderItemColorLabel(color);
   const colorPart = colorLabel ? ` • ${colorLabel}` : '';
-  return `Talla: ${size}${colorPart}`;
+  return `Talla: ${sizeLabel}${colorPart}`;
 }
 
 export function getCartItemKey(
@@ -192,7 +199,11 @@ export function deriveProductColors(
 export function consolidateVariantsForSave(
   variants: ProductVariant[]
 ): ProductVariant[] {
-  const bySize = groupVariantsBySize(variants);
+  const normalized = variants.map((v) => ({
+    ...v,
+    size: normalizeSize(v.size),
+  }));
+  const bySize = groupVariantsBySize(normalized);
   const out: ProductVariant[] = [];
 
   for (const { size, items } of bySize) {

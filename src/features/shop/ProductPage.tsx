@@ -15,6 +15,7 @@ import {
   hasStockForColor,
   findVariant,
   hasColorVariants,
+  normalizeSize,
 } from '@/lib/productVariants';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import {
@@ -153,8 +154,9 @@ const ProductPage = () => {
     let nextSize = '';
     let nextColorId: number | null = null;
 
-    if (sizeParam && sizes.includes(sizeParam)) {
-      nextSize = sizeParam;
+    const sizeParamNorm = normalizeSize(sizeParam);
+    if (sizeParamNorm && sizes.includes(sizeParamNorm)) {
+      nextSize = sizeParamNorm;
     }
 
     if (colorParam && nextSize) {
@@ -449,7 +451,7 @@ const ProductPage = () => {
                               : 'bg-transparent text-secondary border-secondary/10 hover:border-secondary'
                           }`}
                       >
-                        {size}
+                        {normalizeSize(size)}
                         {isOutOfStock && (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-[120%] h-px bg-secondary/30 -rotate-45" />

@@ -1,4 +1,5 @@
 import type { Order, OrderItem } from '../types/index.js';
+import { normalizeSize } from './productVariants.js';
 import {
   getOrderDiscountAmount,
   getOrderItemLineDiscount,
@@ -10,10 +11,11 @@ import {
 } from './orderPricing.js';
 
 function formatItemSize(item: OrderItem): string {
-  if (!item.size) return '';
+  const sizeLabel = normalizeSize(item.size);
+  if (!sizeLabel) return '';
   const color =
     item.color && item.color !== 'Único' ? ` · ${item.color}` : '';
-  return `<span style="color: #ff3366;">(Talla: ${item.size}${color})</span>`;
+  return `<span style="color: #ff3366;">(Talla: ${sizeLabel}${color})</span>`;
 }
 
 export function buildOrderItemsEmailRows(items: OrderItem[]): string {

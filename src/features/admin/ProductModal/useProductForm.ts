@@ -4,6 +4,7 @@ import { useCartStore } from "@/store/useCartStore";
 import type { Product, Category, Subcategory } from "@/types/index";
 import {
   consolidateVariantsForSave,
+  countColorVariants,
   deriveProductColors,
   normalizeVariantsForForm,
   variantHasColor,
@@ -33,6 +34,8 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
   const [availableDiscountCodes, setAvailableDiscountCodes] = useState<any[]>([]);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isProductLoading, setIsProductLoading] = useState(false);
+  const loadedColorVariantCount = useRef(0);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,14 +56,47 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
   }, [formData.category_id]);
 
   useEffect(() => {
-    if (product) {
-      const variants = normalizeVariantsForForm(
-        product.variants || [],
-        product.colors || availableColors
-      );
-      setFormData({ ...product, variants });
+    if (!product?.product_id) {
+      setIsProductLoading(false);
+      loadedColorVariantCount.current = 0;
+      return;
     }
-  }, [product]);
+
+    let cancelled = false;
+    setIsProductLoading(true);
+
+    api.products
+      .getById(product.product_id)
+      .then((fresh) => {
+        if (cancelled) return;
+        const colorCatalog =
+          fresh.colors && fresh.colors.length > 0 ? fresh.colors : availableColors;
+        const variants = normalizeVariantsForForm(
+          fresh.variants || [],
+          colorCatalog
+        );
+        loadedColorVariantCount.current = countColorVariants(variants);
+        setFormData({ ...fresh, variants });
+      })
+      .catch((error) => {
+        console.error('Error loading product for edit:', error);
+        if (!cancelled) {
+          useCartStore.getState().openModal({
+            title: 'Error al cargar',
+            message:
+              'No se pudo cargar el inventario del producto. Cierra el modal e inténtalo de nuevo.',
+            type: 'error',
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsProductLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.product_id, availableColors]);
 
   useEffect(() => {
     const totalStock = formData.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
@@ -149,7 +185,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     api.storage.delete(imageUrl).catch(console.warn);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const openError = (msg: string) => {
@@ -159,6 +195,11 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
         type: 'warning'
       });
     };
+
+    if (product?.product_id && isProductLoading) {
+      openError('Espera a que cargue el inventario del producto.');
+      return;
+    }
 
     if (!formData.name?.trim()) {
       openError('Por favor, indica un nombre para el producto.');
@@ -220,13 +261,56 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
     const colors = deriveProductColors(validVariants, availableColors);
 
-    onSave({
-      ...formData,
-      variants: validVariants,
-      colors,
-      labels: formData.labels || [],
-      discountCodes: formData.discountCodes || [],
-    });
+    const persistForm = (allowColorRemoval = false) => {
+      onSave({
+        ...formData,
+        variants: validVariants,
+        colors,
+        labels: formData.labels || [],
+        discountCodes: formData.discountCodes || [],
+        ...(allowColorRemoval
+          ? { _syncOptions: { allowColorRemoval: true } }
+          : {}),
+      } as Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } });
+    };
+
+    if (product?.product_id) {
+      try {
+        const fresh = await api.products.getById(product.product_id);
+        const dbColorCount = countColorVariants(fresh.variants || []);
+        const formColorCount = countColorVariants(validVariants);
+
+        if (
+          dbColorCount > 0 &&
+          formColorCount === 0 &&
+          loadedColorVariantCount.current === 0
+        ) {
+          openError(
+            'Los colores no se cargaron correctamente. Cierra el modal y vuelve a abrir el producto antes de guardar.'
+          );
+          return;
+        }
+
+        if (loadedColorVariantCount.current > 0 && formColorCount === 0) {
+          useCartStore.getState().openModal({
+            title: 'Eliminar variantes de color',
+            message:
+              'Vas a quitar todas las variantes de color de este producto. ¿Continuar?',
+            type: 'confirm',
+            onConfirm: () => persistForm(true),
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error verifying product inventory before save:', error);
+        openError(
+          'No se pudo verificar el inventario. Inténtalo de nuevo en unos segundos.'
+        );
+        return;
+      }
+    }
+
+    persistForm();
   };
 
   return {
@@ -241,6 +325,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     availableDiscountCodes,
     setAvailableDiscountCodes,
     isUploading,
+    isProductLoading,
     cropSrc,
     setCropSrc,
     editingImageIndex,

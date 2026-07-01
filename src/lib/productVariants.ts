@@ -84,6 +84,10 @@ export function variantHasColor(v: ProductVariant): boolean {
   return v.color_id != null;
 }
 
+export function countColorVariants(variants: ProductVariant[]): number {
+  return variants.filter(variantHasColor).length;
+}
+
 export function hasColorVariants(variants: ProductVariant[]): boolean {
   return variants.some(variantHasColor);
 }

@@ -19,6 +19,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     setAvailableLabels,
     availableDiscountCodes,
     isUploading,
+    isProductLoading,
     cropSrc,
     setCropSrc,
     setEditingImageIndex,
@@ -69,6 +70,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               setAvailableLabels={setAvailableLabels}
               availableDiscountCodes={availableDiscountCodes}
               isUploading={isUploading}
+              isProductLoading={isProductLoading}
               fileInputRef={fileInputRef}
               handleFileChange={handleFileChange}
               handleEditImage={handleEditImage}

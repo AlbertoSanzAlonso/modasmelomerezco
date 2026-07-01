@@ -112,9 +112,12 @@ function toVariantDbRows(product_id: string, variants: any[]): VariantDbRow[] {
 
 async function syncProductVariants(
   product_id: string,
-  variants: any[]
+  variants: any[],
+  options?: { allowColorRemoval?: boolean }
 ): Promise<void> {
   const rows = toVariantDbRows(product_id, variants);
+  const allowColorRemoval = options?.allowColorRemoval === true;
+  const incomingColoredCount = rows.filter((r) => r.color_id != null).length;
 
   const { data: existing, error: fetchError } = await supabase
     .from('product_variants')
@@ -123,11 +126,14 @@ async function syncProductVariants(
 
   assertNoSupabaseError(fetchError, 'product_variants select');
 
+  const existingRows = existing ?? [];
+  const existingColoredCount = existingRows.filter((r) => r.color_id != null).length;
+
   const existingByKey = new Map<
     string,
     { variant_id: number; size: string; color_id: number | null }
   >();
-  for (const row of existing ?? []) {
+  for (const row of existingRows) {
     existingByKey.set(
       variantSizeColorKey(row.size, row.color_id ?? null),
       row
@@ -159,9 +165,22 @@ async function syncProductVariants(
     }
   }
 
-  for (const row of existing ?? []) {
+  for (const row of existingRows) {
     const key = variantSizeColorKey(row.size, row.color_id ?? null);
     if (desiredKeys.has(key)) continue;
+
+    if (
+      row.color_id != null &&
+      existingColoredCount > 0 &&
+      incomingColoredCount === 0 &&
+      !allowColorRemoval
+    ) {
+      console.warn(
+        '[product_variants sync] Se omitió borrar variantes de color (inventario incompleto en el formulario):',
+        row.variant_id
+      );
+      continue;
+    }
 
     const { error } = await supabase
       .from('product_variants')
@@ -522,8 +541,8 @@ export const products = {
     return products.getById(product.product_id);
   },
 
-  update: async (product_id: string, updates: Partial<Product>): Promise<Product> => {
-    const { variants, images, colors, labels, discountCodes, ...pUpdates } = updates as any;
+  update: async (product_id: string, updates: Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } }): Promise<Product> => {
+    const { variants, images, colors, labels, discountCodes, _syncOptions, ...pUpdates } = updates as any;
 
     // 1. Update product table
     const filteredUpdates = cleanProductTablePayload(pUpdates);
@@ -539,7 +558,7 @@ export const products = {
 
     // 2. Update variants if provided
     if (variants) {
-      await syncProductVariants(product_id, variants);
+      await syncProductVariants(product_id, variants, _syncOptions);
     }
 
     // 3. Update images if provided

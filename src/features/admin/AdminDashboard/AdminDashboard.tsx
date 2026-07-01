@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, type QueryClient } from '@tanstack/react-query';
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { ProductModal } from "@/features/admin/ProductModal/ProductModal";
 import { OverviewTab } from "@/features/admin/AdminDashboard/components/OverviewTab";
@@ -16,6 +16,16 @@ import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
 import { useCartStore } from "@/store/useCartStore";
 import type { Product, Order } from "@/types";
+
+function refreshProductCaches(queryClient: QueryClient, product: Product) {
+  queryClient.setQueryData(['product', product.product_id], product);
+  queryClient.invalidateQueries({ queryKey: ['products'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+  queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
+  queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+  queryClient.invalidateQueries({ queryKey: ['product', product.product_id] });
+  queryClient.invalidateQueries({ queryKey: ['product-siblings'] });
+}
 
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts'>('dashboard');
@@ -68,10 +78,7 @@ export const AdminDashboard: React.FC = () => {
       return api.products.create(data as Omit<Product, 'product_id'>);
     },
     onSuccess: (product: Product, variables: Partial<Product>) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
-      queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+      refreshProductCaches(queryClient, product);
       setIsModalOpen(false);
       
       const isNew = !editingProduct;
@@ -88,15 +95,14 @@ export const AdminDashboard: React.FC = () => {
           type: 'product_created',
           actionLabel: 'Publicar y Ver',
           onAction: async () => {
-            await api.products.update(product.product_id, { is_published: true });
-            queryClient.invalidateQueries({ queryKey: ['products'] });
-            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-            queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+            const published = await api.products.update(product.product_id, {
+              is_published: true,
+            });
+            refreshProductCaches(queryClient, published);
             window.open(`/producto/${product.product_id}`, '_blank');
           },
           secondaryActionLabel: 'Dejar en Borrador',
           onSecondaryAction: async () => {
-            // Keep as draft (already is)
             queryClient.invalidateQueries({ queryKey: ['admin-products'] });
           }
         });
@@ -113,7 +119,18 @@ export const AdminDashboard: React.FC = () => {
           }
         });
       }
-    }
+    },
+    onError: (error: Error) => {
+      const msg = error.message || '';
+      const friendly = msg.includes('combinación de talla y color')
+        ? 'No se pudieron guardar las tallas o colores. Revisa que no haya duplicados e inténtalo de nuevo.'
+        : msg.replace(/^\[[^\]]+\]\s*/, '') || 'No se pudo guardar el producto. Inténtalo de nuevo.';
+      openModal({
+        title: 'Error al guardar',
+        message: friendly,
+        type: 'error',
+      });
+    },
   });
 
   const deleteMutation = useMutation({

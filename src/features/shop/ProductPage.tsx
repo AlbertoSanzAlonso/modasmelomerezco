@@ -128,7 +128,8 @@ const ProductPage = () => {
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.products.getById(id!),
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 0,
   });
 
   const { data: siblings } = useQuery({

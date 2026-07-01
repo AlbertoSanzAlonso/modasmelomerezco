@@ -21,6 +21,7 @@ interface ProductFormProps {
   setAvailableLabels: React.Dispatch<React.SetStateAction<Label[]>>;
   availableDiscountCodes: DiscountCode[];
   isUploading: boolean;
+  isProductLoading?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEditImage: (idx: number) => void;
@@ -41,6 +42,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   setAvailableLabels,
   availableDiscountCodes,
   isUploading,
+  isProductLoading = false,
   fileInputRef,
   handleFileChange,
   handleEditImage,
@@ -105,7 +107,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         onPublishedChange={(val) => setFormData({ ...formData, is_published: val })}
       />
 
-      <ProductFooter onCancel={onCancel} />
+      <ProductFooter
+        onCancel={onCancel}
+        disabled={isUploading || isProductLoading}
+      />
     </form>
   );
 };

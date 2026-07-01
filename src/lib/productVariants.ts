@@ -13,6 +13,61 @@ export function normalizeSize(size?: string | null): string {
   return size?.trim().toUpperCase() ?? '';
 }
 
+/** Orden estándar de tallas de letra (de menor a mayor). */
+const LETTER_SIZE_ORDER = [
+  'XXS',
+  'XS',
+  'S',
+  'M',
+  'L',
+  'XL',
+  'XXL',
+  '2XL',
+  'XXXL',
+  '3XL',
+  '4XL',
+  '5XL',
+  'TU',
+  'U',
+  'UNICA',
+  'ÚNICA',
+  'ONE SIZE',
+  'OS',
+] as const;
+
+/** Compara dos tallas: letra (S→XL), numéricas (36→40) y resto alfabético. */
+export function compareSizes(a: string, b: string): number {
+  const normA = normalizeSize(a);
+  const normB = normalizeSize(b);
+
+  const rankA = LETTER_SIZE_ORDER.indexOf(normA as (typeof LETTER_SIZE_ORDER)[number]);
+  const rankB = LETTER_SIZE_ORDER.indexOf(normB as (typeof LETTER_SIZE_ORDER)[number]);
+  const letterA = rankA !== -1;
+  const letterB = rankB !== -1;
+
+  if (letterA && letterB) return rankA - rankB;
+  if (letterA) return -1;
+  if (letterB) return 1;
+
+  const numericPattern = /^\d+(?:[.,]\d+)?$/;
+  const numA = numericPattern.test(normA);
+  const numB = numericPattern.test(normB);
+
+  if (numA && numB) {
+    return (
+      parseFloat(normA.replace(',', '.')) - parseFloat(normB.replace(',', '.'))
+    );
+  }
+  if (numA) return -1;
+  if (numB) return 1;
+
+  return normA.localeCompare(normB, 'es');
+}
+
+export function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort(compareSizes);
+}
+
 /** Normaliza texto de color en pedidos o datos antiguos. */
 export function normalizeColor(color?: string | null): string {
   if (!color?.trim()) return DEFAULT_COLOR;
@@ -63,7 +118,7 @@ export function groupVariantsBySize(variants: ProductVariant[]): SizeVariantGrou
     map.get(size)!.push(v);
   }
 
-  return order.map((size) => ({ size, items: map.get(size)! }));
+  return sortSizes(order).map((size) => ({ size, items: map.get(size)! }));
 }
 
 export function getBaseVariantForSize(
@@ -103,7 +158,7 @@ export function getUniqueSizes(variants: ProductVariant[]): string[] {
       sizes.push(size);
     }
   }
-  return sizes;
+  return sortSizes(sizes);
 }
 
 export function findVariant(

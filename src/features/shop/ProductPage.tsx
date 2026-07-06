@@ -563,6 +563,15 @@ const ProductPage = () => {
                 </button>
               </div>
 
+              {product.details?.trim() && (
+                <div className="pt-8 border-t border-secondary/5">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4">Detalles</h4>
+                  <p className="text-sm leading-relaxed text-secondary/70 whitespace-pre-line">
+                    {product.details.trim()}
+                  </p>
+                </div>
+              )}
+
               <div className="pt-12 border-t border-secondary/5">
                 <button 
                   onClick={() => {

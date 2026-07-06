@@ -6,6 +6,7 @@ import { ProductCategories } from './ProductCategories';
 import { ProductInventory } from './ProductInventory';
 import { ProductLabels } from './ProductLabels';
 import { ProductDiscountCodes } from './ProductDiscountCodes';
+import { ProductDetailsField } from './ProductDetailsField';
 import { ProductPublishOptions } from './ProductPublishOptions';
 import { ProductFooter } from './ProductFooter';
 import type { Category, Subcategory, Color, Label, DiscountCode } from '@/types/index';
@@ -100,6 +101,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         onCodesChange={(discountCodes) => setFormData({ ...formData, discountCodes })}
       />
 
+      <ProductDetailsField
+        details={formData.details}
+        onDetailsChange={(details) => setFormData({ ...formData, details })}
+      />
+
       <ProductPublishOptions 
         isNew={formData.is_new}
         isPublished={formData.is_published}
@@ -114,4 +120,3 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     </form>
   );
 };
-

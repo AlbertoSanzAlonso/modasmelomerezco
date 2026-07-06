@@ -10,6 +10,7 @@ export interface ProductModalProps {
 export interface ProductFormState extends Partial<Product> {
   name: string;
   description: string;
+  details?: string | null;
   price: number;
   category_id?: number;
   subcategory_id?: number;

@@ -14,6 +14,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
     description: '',
+    details: '',
     price: 0,
     category_id: undefined,
     subcategory_id: undefined,

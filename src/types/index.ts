@@ -34,6 +34,7 @@ export interface Product {
   product_id: string;
   name: string;
   description: string;
+  details?: string | null;
   price: number;
   category_id: number;
   subcategory_id?: number;

@@ -1,5 +1,5 @@
 import type { ProductVariant } from '@/types';
-import { groupVariantsBySize, normalizeSize } from '@/lib/productVariants';
+import { groupVariantsBySize, normalizeSize, sortSizes } from '@/lib/productVariants';
 
 export const UNIQUE_SIZE_LABEL = 'Única';
 
@@ -58,16 +58,19 @@ export function isSizeTakenByOtherGroup(
 }
 
 export function getSizeOptionsForRow(currentSize: string): string[] {
-  const options: string[] = [...ADMIN_SIZE_OPTIONS];
   const trimmed = currentSize.trim();
+  const options = new Set<string>([...ADMIN_SIZE_OPTIONS]);
 
   if (
     trimmed &&
-    !options.some((o) => normalizeSize(o) === normalizeSize(trimmed)) &&
+    ![...options].some((o) => normalizeSize(o) === normalizeSize(trimmed)) &&
     !isUniqueSize(trimmed)
   ) {
-    options.splice(options.length - 1, 0, trimmed);
+    options.add(trimmed);
   }
 
-  return options;
+  const regular = [...options].filter((s) => !isUniqueSize(s));
+  const unique = [...options].filter((s) => isUniqueSize(s));
+
+  return [...sortSizes(regular), ...sortSizes(unique)];
 }

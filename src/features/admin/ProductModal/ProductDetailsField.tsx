@@ -11,7 +11,7 @@ export const ProductDetailsField: React.FC<ProductDetailsFieldProps> = ({
   onDetailsChange,
 }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 border-t border-(--border-main) pt-12">
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">
           Detalles del Producto

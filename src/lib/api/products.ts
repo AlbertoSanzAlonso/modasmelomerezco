@@ -50,6 +50,7 @@ const PRODUCT_TABLE_COLUMNS = new Set([
   'product_id',
   'name',
   'description',
+  'details',
   'price',
   'is_published',
   'is_new',

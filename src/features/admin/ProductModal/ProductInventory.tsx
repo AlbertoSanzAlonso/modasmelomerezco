@@ -11,6 +11,12 @@ import {
   getVariantColorName,
   ensureNeutroInCatalog,
 } from '@/lib/productVariants';
+import { SizeChecklist } from './SizeChecklist';
+import {
+  canAddMoreSizes,
+  isUniqueSize,
+  UNIQUE_SIZE_LABEL,
+} from './sizeMode';
 
 interface ProductInventoryProps {
   variants: ProductVariant[];
@@ -65,10 +71,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     setExpandedSizes((prev) => ({ ...prev, [key]: !isExpanded(size) }));
   };
 
-  const updateSizeLabel = (oldSize: string, newSize: string) => {
-    onVariantsChange(
-      variants.map((v) => (v.size === oldSize ? { ...v, size: newSize } : v))
-    );
+  const migrateSizeUiState = (oldSize: string, newSize: string) => {
     if (pendingColorBySize[oldSize] !== undefined) {
       setPendingColorBySize((prev) => {
         const next = { ...prev };
@@ -85,6 +88,36 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
         delete next[oldKey];
         return next;
       });
+    }
+  };
+
+  const updateSizeLabel = (oldSize: string, newSize: string) => {
+    onVariantsChange(
+      variants.map((v) => (v.size === oldSize ? { ...v, size: newSize } : v))
+    );
+    migrateSizeUiState(oldSize, newSize);
+  };
+
+  const selectSize = (oldSize: string, newSize: string, groupItems: ProductVariant[]) => {
+    if (isUniqueSize(newSize)) {
+      const stock = groupItems.reduce((sum, v) => sum + (v.stock ?? 0), 0);
+      const baseId = groupItems[0]?.id ?? `size-${Date.now()}`;
+      onVariantsChange([
+        {
+          id: baseId,
+          size: UNIQUE_SIZE_LABEL,
+          color_id: null,
+          stock,
+        },
+      ]);
+      setPendingColorBySize({});
+      setExpandedSizes({ [sizeKey(UNIQUE_SIZE_LABEL)]: true });
+      return;
+    }
+
+    updateSizeLabel(oldSize, newSize);
+    if (!expandedSizes[sizeKey(newSize)]) {
+      setExpandedSizes((prev) => ({ ...prev, [sizeKey(newSize)]: true }));
     }
   };
 
@@ -313,18 +346,14 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                       <ChevronDown className="w-4 h-4" />
                     )}
                   </button>
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex-1 min-w-[240px]">
                     <label className="text-[8px] font-black uppercase tracking-widest text-primary">
                       Talla
                     </label>
-                    <input
-                      autoComplete="off"
-                      className="w-28 bg-(--bg-main) border border-(--border-main) px-4 py-3 text-sm font-black focus:border-primary outline-none rounded-xl uppercase"
-                      value={group.size}
-                      onChange={(e) =>
-                        updateSizeLabel(group.size, e.target.value)
-                      }
-                      placeholder="S"
+                    <SizeChecklist
+                      currentSize={group.size}
+                      variants={variants}
+                      onSelect={(size) => selectSize(group.size, size, group.items)}
                     />
                   </div>
                   {summary && (
@@ -341,16 +370,18 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                       Ver / editar stock
                     </button>
                   )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-red-500 border-red-500/20 font-black text-[10px] rounded-xl ml-auto"
-                    onClick={() => removeSize(group.size)}
-                  >
-                    <Trash2 className="w-3 h-3 mr-1 inline" />
-                    QUITAR TALLA
-                  </Button>
+                  {!isUniqueSize(group.size) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 border-red-500/20 font-black text-[10px] rounded-xl ml-auto"
+                      onClick={() => removeSize(group.size)}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1 inline" />
+                      QUITAR TALLA
+                    </Button>
+                  )}
                 </div>
 
                 {open && (
@@ -506,15 +537,17 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
         </div>
       )}
 
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl"
-        onClick={addSize}
-      >
-        + AÑADIR TALLA
-      </Button>
+      {canAddMoreSizes(variants) && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl"
+          onClick={addSize}
+        >
+          + AÑADIR TALLA
+        </Button>
+      )}
     </div>
   );
 };

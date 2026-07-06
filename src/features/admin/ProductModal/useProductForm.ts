@@ -261,10 +261,12 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     }
 
     const colors = deriveProductColors(validVariants, availableColors);
+    const trimmedDetails = formData.details?.trim() || null;
 
     const persistForm = (allowColorRemoval = false) => {
       onSave({
         ...formData,
+        details: trimmedDetails,
         variants: validVariants,
         colors,
         labels: formData.labels || [],

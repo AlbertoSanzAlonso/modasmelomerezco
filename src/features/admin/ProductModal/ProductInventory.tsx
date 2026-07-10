@@ -327,7 +327,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
             return (
               <div
                 key={group.size || `empty-${group.items[0]?.id}`}
-                className="border border-(--border-main) rounded-2xl overflow-hidden bg-(--bg-card)"
+                className="border border-(--border-main) rounded-2xl bg-(--bg-card)"
               >
                 <div
                   className={`flex flex-wrap items-center gap-4 p-5 bg-primary/5 ${

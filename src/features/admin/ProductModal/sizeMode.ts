@@ -1,7 +1,13 @@
 import type { ProductVariant } from '@/types';
-import { groupVariantsBySize, normalizeSize, sortSizes } from '@/lib/productVariants';
+import {
+  groupVariantsBySize,
+  isUniqueSize,
+  normalizeSize,
+  sortSizes,
+  UNIQUE_SIZE_LABEL,
+} from '@/lib/productVariants';
 
-export const UNIQUE_SIZE_LABEL = 'Única';
+export { isUniqueSize, UNIQUE_SIZE_LABEL };
 
 export const ADMIN_SIZE_OPTIONS = [
   'XS',
@@ -12,23 +18,6 @@ export const ADMIN_SIZE_OPTIONS = [
   'XXL',
   UNIQUE_SIZE_LABEL,
 ] as const;
-
-const UNIQUE_SIZE_VALUES = new Set([
-  'única',
-  'unica',
-  'talla única',
-  'talla unica',
-  'u',
-  'tu',
-  'one size',
-  'os',
-]);
-
-export function isUniqueSize(size?: string | null): boolean {
-  if (!size?.trim()) return false;
-  const norm = size.trim().toLowerCase();
-  return UNIQUE_SIZE_VALUES.has(norm) || norm === UNIQUE_SIZE_LABEL.toLowerCase();
-}
 
 export function canAddMoreSizes(variants: ProductVariant[]): boolean {
   return !variants.some((v) => isUniqueSize(v.size));

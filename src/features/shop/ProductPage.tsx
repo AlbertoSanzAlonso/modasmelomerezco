@@ -15,6 +15,7 @@ import {
   hasStockForColor,
   findVariant,
   hasColorVariants,
+  isUniqueSize,
   normalizeSize,
 } from '@/lib/productVariants';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
@@ -146,6 +147,12 @@ const ProductPage = () => {
   useEffect(() => {
     if (!product) return;
 
+    const sizes = getUniqueSizes(product.variants);
+    if (sizes.length === 1 && isUniqueSize(sizes[0])) {
+      setSelectedSize(sizes[0]);
+      return;
+    }
+
     const sizeParam = searchParams.get('talla')?.trim();
     const colorParam = searchParams.get('color')?.trim();
     if (!sizeParam && !colorParam) return;
@@ -222,6 +229,8 @@ const ProductPage = () => {
 
   const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
   const availableSizes = getUniqueSizes(product.variants);
+  const hasUniqueSizeOnly =
+    availableSizes.length === 1 && isUniqueSize(availableSizes[0]);
   const catalogColors = product.colors || [];
   const requiresColor = hasColorVariants(product.variants);
   const productDescription = truncateDescription(
@@ -432,37 +441,51 @@ const ProductPage = () => {
             </div>
 
             <div className="space-y-12">
-              <div>
-                <div className="mb-6">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Talla</h4>
+              {hasUniqueSizeOnly ? (
+                <div>
+                  <div className="mb-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Talla</h4>
+                  </div>
+                  <div
+                    className="inline-flex py-4 px-8 text-xs font-black tracking-widest uppercase border bg-secondary/10 text-secondary border-secondary/20 cursor-default select-none"
+                    aria-label="Talla única"
+                  >
+                    Talla única
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
-                  {availableSizes.map((size) => {
-                    const isOutOfStock = !hasStockForSize(product.variants, size);
-                    return (
-                      <button
-                        key={size}
-                        disabled={isOutOfStock}
-                        onClick={() => handleSizeSelect(size)}
-                        className={`py-4 text-xs font-black tracking-widest transition-all border relative overflow-hidden
-                          ${selectedSize === size 
-                            ? 'bg-secondary text-white border-secondary shadow-xl' 
-                            : isOutOfStock 
-                              ? 'opacity-40 cursor-not-allowed border-secondary/5 text-secondary/40 grayscale' 
-                              : 'bg-transparent text-secondary border-secondary/10 hover:border-secondary'
-                          }`}
-                      >
-                        {normalizeSize(size)}
-                        {isOutOfStock && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-[120%] h-px bg-secondary/30 -rotate-45" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+              ) : (
+                <div>
+                  <div className="mb-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Talla</h4>
+                  </div>
+                  <div className="grid grid-cols-4 gap-4">
+                    {availableSizes.map((size) => {
+                      const isOutOfStock = !hasStockForSize(product.variants, size);
+                      return (
+                        <button
+                          key={size}
+                          disabled={isOutOfStock}
+                          onClick={() => handleSizeSelect(size)}
+                          className={`py-4 text-xs font-black tracking-widest transition-all border relative overflow-hidden
+                            ${selectedSize === size 
+                              ? 'bg-secondary text-white border-secondary shadow-xl' 
+                              : isOutOfStock 
+                                ? 'opacity-40 cursor-not-allowed border-secondary/5 text-secondary/40 grayscale' 
+                                : 'bg-transparent text-secondary border-secondary/10 hover:border-secondary'
+                            }`}
+                        >
+                          {normalizeSize(size)}
+                          {isOutOfStock && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-[120%] h-px bg-secondary/30 -rotate-45" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {requiresColor && (
                 <div>
@@ -510,7 +533,7 @@ const ProductPage = () => {
                     );
                     })}
                   </div>
-                  {!selectedSize && (
+                  {!selectedSize && !hasUniqueSizeOnly && (
                     <p className="text-[9px] text-secondary/40 font-bold uppercase tracking-widest mt-4">
                       Elige una talla para ver los colores disponibles
                     </p>

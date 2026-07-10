@@ -8,9 +8,28 @@ export const UNIQUE_COLOR = DEFAULT_COLOR;
 
 const LEGACY_DEFAULT_COLORS = new Set(['único', 'unico', 'neutro', '']);
 
+export const UNIQUE_SIZE_LABEL = 'Única';
+
+const UNIQUE_SIZE_VALUES = new Set([
+  'única',
+  'unica',
+  'talla única',
+  'talla unica',
+  'u',
+  'tu',
+  'one size',
+  'os',
+]);
+
 /** Talla en mayúsculas para tienda, pedidos y persistencia (p. ej. "Xl" → "XL"). */
 export function normalizeSize(size?: string | null): string {
   return size?.trim().toUpperCase() ?? '';
+}
+
+export function isUniqueSize(size?: string | null): boolean {
+  if (!size?.trim()) return false;
+  const norm = size.trim().toLowerCase();
+  return UNIQUE_SIZE_VALUES.has(norm) || norm === UNIQUE_SIZE_LABEL.toLowerCase();
 }
 
 /** Orden estándar de tallas de letra (de menor a mayor). */

@@ -16,6 +16,8 @@ import {
   findVariant,
   hasColorVariants,
   normalizeSize,
+  isOneSizeOnlyProduct,
+  getOneSizeForProduct,
 } from '@/lib/productVariants';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import {
@@ -146,23 +148,25 @@ const ProductPage = () => {
   useEffect(() => {
     if (!product) return;
 
+    const implicitSize = getOneSizeForProduct(product.variants);
     const sizeParam = searchParams.get('talla')?.trim();
     const colorParam = searchParams.get('color')?.trim();
-    if (!sizeParam && !colorParam) return;
+    if (!sizeParam && !colorParam && !implicitSize) return;
 
     const sizes = getUniqueSizes(product.variants);
 
-    let nextSize = '';
+    let nextSize = implicitSize ?? '';
     let nextColorId: number | null = null;
 
     const sizeParamNorm = normalizeSize(sizeParam);
-    if (sizeParamNorm && sizes.includes(sizeParamNorm)) {
-      nextSize = sizeParamNorm;
+    if (sizeParamNorm && sizes.some((s) => normalizeSize(s) === sizeParamNorm)) {
+      nextSize = sizes.find((s) => normalizeSize(s) === sizeParamNorm) ?? nextSize;
     }
 
-    if (colorParam && nextSize) {
+    const sizeForColor = nextSize || implicitSize || '';
+    if (colorParam && sizeForColor) {
       const colorId = Number(colorParam);
-      if (Number.isInteger(colorId) && hasStockForColor(product.variants, nextSize, colorId)) {
+      if (Number.isInteger(colorId) && hasStockForColor(product.variants, sizeForColor, colorId)) {
         nextColorId = colorId;
       }
     }
@@ -222,6 +226,9 @@ const ProductPage = () => {
 
   const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
   const availableSizes = getUniqueSizes(product.variants);
+  const oneSizeOnly = isOneSizeOnlyProduct(product.variants);
+  const implicitSize = oneSizeOnly ? getOneSizeForProduct(product.variants) : null;
+  const sizeForSelection = oneSizeOnly ? implicitSize : selectedSize;
   const catalogColors = product.colors || [];
   const requiresColor = hasColorVariants(product.variants);
   const productDescription = truncateDescription(
@@ -432,6 +439,7 @@ const ProductPage = () => {
             </div>
 
             <div className="space-y-12">
+              {!oneSizeOnly && (
               <div>
                 <div className="mb-6">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Talla</h4>
@@ -463,6 +471,7 @@ const ProductPage = () => {
                   })}
                 </div>
               </div>
+              )}
 
               {requiresColor && (
                 <div>
@@ -472,9 +481,11 @@ const ProductPage = () => {
                   <div className="flex flex-wrap gap-4">
                     {catalogColors.map((c: Color) => {
                       const colorOutOfStock =
-                        !!selectedSize &&
-                        !hasStockForColor(product.variants, selectedSize, c.id);
-                      const colorDisabled = !selectedSize || colorOutOfStock;
+                        !!sizeForSelection &&
+                        !hasStockForColor(product.variants, sizeForSelection, c.id);
+                      const colorDisabled = oneSizeOnly
+                        ? colorOutOfStock
+                        : !selectedSize || colorOutOfStock;
                       return (
                       <button
                         key={c.id}
@@ -510,7 +521,7 @@ const ProductPage = () => {
                     );
                     })}
                   </div>
-                  {!selectedSize && (
+                  {!oneSizeOnly && !selectedSize && (
                     <p className="text-[9px] text-secondary/40 font-bold uppercase tracking-widest mt-4">
                       Elige una talla para ver los colores disponibles
                     </p>
@@ -523,7 +534,7 @@ const ProductPage = () => {
                   size="lg" 
                   className="flex-1 py-6 text-base font-black tracking-widest uppercase italic bg-primary hover:bg-primary-dark text-white shadow-xl shadow-primary/20"
                   onClick={() => {
-                    if (!selectedSize) {
+                    if (!oneSizeOnly && !selectedSize) {
                       openModal({
                         title: 'Selecciona tu talla',
                         message: 'Por favor, elige una talla antes de añadir el artículo a la cesta.',
@@ -539,7 +550,8 @@ const ProductPage = () => {
                       });
                       return;
                     }
-                    const variant = findVariant(product.variants, selectedSize, {
+                    const cartSize = sizeForSelection ?? selectedSize;
+                    const variant = findVariant(product.variants, cartSize, {
                       colorId: requiresColor ? selectedColorId! : undefined,
                     });
                     if (!variant || variant.stock <= 0) {

@@ -36,10 +36,39 @@ export const SizeChecklist: React.FC<SizeChecklistProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const options = getSizeOptionsForRow(currentSize);
   const uniqueDisabled = isUniqueSizeOptionDisabled(variants);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      const button = buttonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      setMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: Math.max(rect.width, 220),
+        zIndex: 200,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -47,7 +76,7 @@ export const SizeChecklist: React.FC<SizeChecklistProps> = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const summary = currentSize.trim()
     ? formatSizeLabel(currentSize)
@@ -61,6 +90,7 @@ export const SizeChecklist: React.FC<SizeChecklistProps> = ({
   return (
     <div className="relative w-full max-w-xs" ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className="w-full flex items-center justify-between gap-3 bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-left text-xs font-black uppercase tracking-wider hover:border-primary/50 transition-colors"
@@ -77,7 +107,8 @@ export const SizeChecklist: React.FC<SizeChecklistProps> = ({
 
       {isOpen && (
         <div
-          className="absolute z-30 mt-2 w-full min-w-[220px] bg-(--bg-main) border border-(--border-main) rounded-xl shadow-xl p-3"
+          style={menuStyle}
+          className="bg-(--bg-main) border border-(--border-main) rounded-xl shadow-xl p-3"
           role="listbox"
         >
           <div className="flex flex-wrap gap-2">

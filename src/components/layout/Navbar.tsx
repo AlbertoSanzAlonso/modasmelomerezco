@@ -1,9 +1,10 @@
-import { type FC } from 'react';
+import { type FC, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, Search, Menu, X, User as UserIcon, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
+import { SearchOverlay } from './SearchOverlay';
 
 interface NavbarProps {
   setIsCartOpen: (open: boolean) => void;
@@ -17,6 +18,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
   const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const favoriteCount = user?.favorites?.length || 0;
   const location = useLocation();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleInicioClick = (e: React.MouseEvent) => {
     if (location.pathname === '/') {
@@ -27,6 +29,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
 
   return (
     <>
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <nav className="fixed top-0 w-full z-50 bg-accent/80 backdrop-blur-md border-b border-secondary/3">
         <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-20">
@@ -47,7 +50,12 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               </Link>
             </div>
             <div className="flex items-center justify-end gap-4 md:gap-8 flex-1">
-              <button aria-label="Buscar productos" className="hidden md:flex items-center gap-3 text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">
+              <button
+                type="button"
+                aria-label="Buscar productos"
+                onClick={() => setIsSearchOpen(true)}
+                className="flex items-center gap-3 text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors"
+              >
                 <Search className="w-5 h-5" />
               </button>
               
@@ -149,6 +157,36 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                       </Link>
                     </motion.div>
                   ))}
+
+                  <motion.div variants={{ open: { opacity: 1 }, closed: { opacity: 0 } }} className="h-px bg-secondary/10 my-4" />
+
+                  <motion.div
+                    variants={{
+                      open: { x: 0, opacity: 1 },
+                      closed: { x: -20, opacity: 0 },
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsSearchOpen(true);
+                      }}
+                      className="flex items-center gap-5 text-secondary group py-2 w-full text-left"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-white shadow-lg border border-secondary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                        <Search className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black uppercase tracking-[0.2em] group-hover:text-primary transition-colors">
+                          Buscar
+                        </span>
+                        <span className="text-[10px] text-secondary/40 uppercase tracking-widest">
+                          Encuentra tu pieza
+                        </span>
+                      </div>
+                    </button>
+                  </motion.div>
 
                   <motion.div variants={{ open: { opacity: 1 }, closed: { opacity: 0 } }} className="h-px bg-secondary/10 my-4" />
 

@@ -54,6 +54,36 @@ const LETTER_SIZE_ORDER = [
   'OS',
 ] as const;
 
+const ONE_SIZE_LABELS = new Set([
+  'única',
+  'unica',
+  'talla única',
+  'talla unica',
+  'u',
+  'tu',
+  'one size',
+  'os',
+]);
+
+/** Talla única (sin selector de letra/número en tienda). */
+export function isOneSize(size?: string | null): boolean {
+  if (!size?.trim()) return false;
+  const lower = size.trim().toLowerCase();
+  if (ONE_SIZE_LABELS.has(lower)) return true;
+  const norm = normalizeSize(size);
+  return norm === 'UNICA' || norm === 'ÚNICA' || norm === 'ONE SIZE' || norm === 'OS' || norm === 'TU' || norm === 'U';
+}
+
+export function isOneSizeOnlyProduct(variants: ProductVariant[]): boolean {
+  const sizes = getUniqueSizes(variants);
+  return sizes.length === 1 && isOneSize(sizes[0]);
+}
+
+export function getOneSizeForProduct(variants: ProductVariant[]): string | null {
+  if (!isOneSizeOnlyProduct(variants)) return null;
+  return getUniqueSizes(variants)[0] ?? null;
+}
+
 /** Compara dos tallas: letra (S→XL), numéricas (36→40) y resto alfabético. */
 export function compareSizes(a: string, b: string): number {
   const normA = normalizeSize(a);

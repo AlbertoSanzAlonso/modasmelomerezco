@@ -23,13 +23,8 @@ export function canAddMoreSizes(variants: ProductVariant[]): boolean {
   return !variants.some((v) => isUniqueSize(v.size));
 }
 
-export function isUniqueSizeOptionDisabled(variants: ProductVariant[]): boolean {
-  const sizes = groupVariantsBySize(variants)
-    .map((g) => g.size.trim())
-    .filter(Boolean);
-
-  if (sizes.length > 1) return true;
-  if (sizes.length === 1 && !isUniqueSize(sizes[0])) return true;
+/** Única siempre se puede elegir; solo se bloquea añadir más tallas (canAddMoreSizes). */
+export function isUniqueSizeOptionDisabled(_variants: ProductVariant[]): boolean {
   return false;
 }
 

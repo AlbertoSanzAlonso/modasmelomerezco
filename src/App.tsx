@@ -50,6 +50,7 @@ const ForgotPasswordPage = safeLazy(() => import("@/features/auth/ForgotPassword
 const SubscriptionConfirmation = safeLazy(() => import("@/features/shop/SubscriptionConfirmation"));
 const UnsubscribePage = safeLazy(() => import("@/features/shop/UnsubscribePage"));
 const ConocenosPage = safeLazy(() => import("@/features/shop/ConocenosPage"));
+const SearchPage = safeLazy(() => import("@/features/shop/SearchPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -169,6 +170,7 @@ function App() {
                   <Route index element={<HomePage />} />
                   <Route path="/producto/:id" element={<ProductPage />} />
                   <Route path="/categoria/:category" element={<CategoryPage />} />
+                  <Route path="/buscar" element={<SearchPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/aviso-legal" element={<AvisoLegalPage />} />
                   <Route path="/politica-de-privacidad" element={<PrivacyPolicyPage />} />

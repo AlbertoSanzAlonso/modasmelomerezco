@@ -288,7 +288,7 @@ export const useCheckoutForm = () => {
       shipping_floor: formData.floor,
       shipping_door: formData.door,
       shipping_stair: formData.stair,
-      customer_email: user?.email || formData.email.trim(),
+      customer_email: (user?.email || formData.email).toLowerCase().trim(),
       ...guestContactFields(),
       tax_amount: 0,
       shipping_cost: shippingCost,

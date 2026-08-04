@@ -29,14 +29,18 @@ export const OrderHistory: React.FC = () => {
     window.history.replaceState({}, '', window.location.pathname);
 
     const confirmPaymentReturn = async () => {
-      const customerKey = user?.customer_id || user?.email || '';
-      if (!customerKey) return;
+      if (!user?.customer_id && !user?.email) return;
 
       const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
       for (let attempt = 0; attempt < 6; attempt++) {
         try {
-          const latestOrders = await api.orders.getByCustomer(customerKey);
+          const latestOrders = await api.orders.getByCustomer(
+            user?.customer_id || '',
+            1,
+            20,
+            user?.email
+          );
           const latest = latestOrders[0];
           const isRecent =
             latest &&
@@ -73,8 +77,14 @@ export const OrderHistory: React.FC = () => {
   }, [clearCart, openModal, closeModal, user]);
 
   const { data: orders, isLoading, error } = useQuery({
-    queryKey: ['orders', user?.email || user?.customer_id, currentPage],
-    queryFn: () => api.orders.getByCustomer(user?.email || user?.customer_id || '', currentPage, itemsPerPage),
+    queryKey: ['orders', user?.customer_id, user?.email, currentPage],
+    queryFn: () =>
+      api.orders.getByCustomer(
+        user?.customer_id || '',
+        currentPage,
+        itemsPerPage,
+        user?.email
+      ),
     enabled: !!user?.customer_id || !!user?.email
   });
 

@@ -1,6 +1,118 @@
 
 import { supabase } from '../supabase';
-import type { Customer, Admin } from '@/types';
+import type { Address, Customer, Admin, Order } from '@/types';
+import { orders } from './orders';
+import { addresses } from './addresses';
+
+function mapAddresses(addrData: any[] | null | undefined): Address[] {
+  return (addrData || []).map((addr: any) => ({
+    shipping_address_id: addr.shipping_address_id,
+    type: addr.address_type ?? addr.type,
+    street: addr.street,
+    floor: addr.floor,
+    door: addr.door,
+    stair: addr.stair,
+    province: addr.province,
+    city: addr.city,
+    zip: addr.zip,
+    location_id: addr.location_id,
+    isDefault: addr.is_default ?? addr.isDefault ?? false,
+  }));
+}
+
+async function importAddressFromGuestOrders(
+  customerId: string,
+  guestOrders: Order[],
+  existing: Address[]
+): Promise<Address[]> {
+  if (existing.length > 0) return existing;
+
+  const source = guestOrders.find((o) => o.shipping_street?.trim());
+  if (!source?.shipping_street?.trim()) return existing;
+
+  try {
+    const created = await addresses.create(customerId, {
+      type: 'Dirección de envío',
+      street: source.shipping_street.trim(),
+      floor: source.shipping_floor || '',
+      door: source.shipping_door || '',
+      stair: source.shipping_stair || '',
+      province: source.shipping_province || '',
+      city: source.shipping_city || '',
+      zip: source.shipping_zip || '',
+      isDefault: true,
+    });
+    return [created];
+  } catch (error) {
+    console.error('No se pudo importar la dirección del pedido invitado:', error);
+    return existing;
+  }
+}
+
+async function enrichProfileFromGuestOrders(
+  customer: Customer,
+  guestOrders: Order[]
+): Promise<Customer> {
+  if (!guestOrders.length) return customer;
+
+  const latest = guestOrders[0];
+  const updates: Partial<Customer> = {};
+
+  if (!customer.phone?.trim() && latest.guest_phone?.trim()) {
+    updates.phone = latest.guest_phone.trim();
+  }
+  if (!customer.name?.trim() && latest.guest_name?.trim()) {
+    updates.name = latest.guest_name.trim();
+  }
+  if (!customer.surname?.trim() && latest.guest_surname?.trim()) {
+    updates.surname = latest.guest_surname.trim();
+  }
+
+  if (Object.keys(updates).length === 0) return customer;
+
+  const { data, error } = await supabase
+    .from('customers')
+    .update(updates)
+    .eq('customer_id', customer.customer_id)
+    .select('*')
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('No se pudo enriquecer el perfil desde pedidos invitados:', error);
+    return { ...customer, ...updates };
+  }
+
+  return { ...customer, ...data };
+}
+
+/**
+ * Tras login/registro: reclama pedidos invitados del mismo email
+ * y, si falta, importa dirección / datos de contacto al perfil.
+ */
+async function attachGuestHistory(customer: Customer): Promise<Customer> {
+  try {
+    const claimed = await orders.claimGuestOrdersByEmail(
+      customer.email,
+      customer.customer_id
+    );
+
+    let next: Customer = { ...customer, addresses: customer.addresses || [] };
+
+    if (claimed.length > 0) {
+      next = await enrichProfileFromGuestOrders(next, claimed);
+      next.addresses = await importAddressFromGuestOrders(
+        next.customer_id,
+        claimed,
+        next.addresses || []
+      );
+    }
+
+    return next;
+  } catch (error) {
+    console.error('Error vinculando pedidos de invitado al perfil:', error);
+    return customer;
+  }
+}
 
 export const auth = {
   login: async (email: string, password: string): Promise<{ user: Customer, token: string }> => {
@@ -30,18 +142,7 @@ export const auth = {
       .select('*')
       .eq('customer_id', customer.customer_id);
 
-    const addresses = (addrData || []).map((addr: any) => ({
-      shipping_address_id: addr.shipping_address_id,
-      type: addr.address_type,
-      street: addr.street,
-      floor: addr.floor,
-      door: addr.door,
-      stair: addr.stair,
-      province: addr.province,
-      city: addr.city,
-      zip: addr.zip,
-      isDefault: addr.is_default
-    }));
+    const addressesMapped = mapAddresses(addrData);
 
     // 4. Recuperar favoritos
     const { data: favoritesData } = await supabase
@@ -51,8 +152,14 @@ export const auth = {
 
     const favorites = (favoritesData || []).map((f: any) => f.product_id);
 
+    const withHistory = await attachGuestHistory({
+      ...customer,
+      addresses: addressesMapped,
+      favorites,
+    });
+
     return {
-      user: { ...customer, addresses, favorites },
+      user: withHistory,
       token: authData.session?.access_token || ''
     };
   },
@@ -79,7 +186,7 @@ export const auth = {
       .eq('email', cleanEmail)
       .maybeSingle();
 
-    let finalCustomer;
+    let finalCustomer: Customer | null = null;
 
     if (existingCustomer) {
       // Si el cliente existe pero no tiene auth_id (o queremos actualizarlo), lo vinculamos
@@ -119,11 +226,12 @@ export const auth = {
     if (!finalCustomer) throw new Error('Error al gestionar el perfil de cliente');
 
     // 3. Crear direcciones si existen
+    let savedAddresses: Address[] = [];
     if (customer.addresses && customer.addresses.length > 0) {
-      await supabase
+      const { data: insertedAddresses, error: addrError } = await supabase
         .from('shipping_addresses')
         .insert(customer.addresses.map(addr => ({
-          customer_id: newCustomer.customer_id,
+          customer_id: finalCustomer!.customer_id,
           address_type: addr.type,
           street: addr.street,
           floor: addr.floor,
@@ -133,11 +241,25 @@ export const auth = {
           city: addr.city,
           zip: addr.zip,
           is_default: addr.isDefault
-        })));
+        })))
+        .select();
+
+      if (addrError) {
+        console.error('Error al guardar direcciones en el registro:', addrError);
+        savedAddresses = customer.addresses;
+      } else {
+        savedAddresses = mapAddresses(insertedAddresses);
+      }
     }
+
+    const withHistory = await attachGuestHistory({
+      ...finalCustomer,
+      addresses: savedAddresses,
+      favorites: [],
+    });
     
     return {
-      user: { ...newCustomer, addresses: customer.addresses || [], favorites: [] },
+      user: withHistory,
       token: authData.session?.access_token || ''
     };
   },

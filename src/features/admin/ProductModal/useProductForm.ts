@@ -10,7 +10,11 @@ import {
   variantHasColor,
 } from '@/lib/productVariants';
 
-export const useProductForm = (product: Product | null | undefined, onSave: (product: Partial<Product>) => void) => {
+export const useProductForm = (
+  product: Product | null | undefined,
+  onSave: (product: Partial<Product>) => void,
+  isSaving = false
+) => {
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -36,10 +40,19 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
   const [isUploading, setIsUploading] = useState(false);
   const [isProductLoading, setIsProductLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const loadedColorVariantCount = useRef(0);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isSaving) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [isSaving]);
 
   useEffect(() => {
     api.categories.getAll().then(setCategoriesList);
@@ -188,6 +201,8 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSubmittingRef.current || isSaving) return;
     
     const openError = (msg: string) => {
       useCartStore.getState().openModal({
@@ -263,7 +278,18 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     const colors = deriveProductColors(validVariants, availableColors);
     const trimmedDetails = formData.details?.trim() || null;
 
+    const lockSubmit = () => {
+      isSubmittingRef.current = true;
+      setIsSubmitting(true);
+    };
+
+    const unlockSubmit = () => {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    };
+
     const persistForm = (allowColorRemoval = false) => {
+      lockSubmit();
       onSave({
         ...formData,
         details: trimmedDetails,
@@ -277,6 +303,8 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
       } as Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } });
     };
 
+    lockSubmit();
+
     if (product?.product_id) {
       try {
         const fresh = await api.products.getById(product.product_id);
@@ -288,6 +316,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
           formColorCount === 0 &&
           loadedColorVariantCount.current === 0
         ) {
+          unlockSubmit();
           openError(
             'Los colores no se cargaron correctamente. Cierra el modal y vuelve a abrir el producto antes de guardar.'
           );
@@ -295,6 +324,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
         }
 
         if (loadedColorVariantCount.current > 0 && formColorCount === 0) {
+          unlockSubmit();
           useCartStore.getState().openModal({
             title: 'Eliminar variantes de color',
             message:
@@ -306,6 +336,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
         }
       } catch (error) {
         console.error('Error verifying product inventory before save:', error);
+        unlockSubmit();
         openError(
           'No se pudo verificar el inventario. Inténtalo de nuevo en unos segundos.'
         );
@@ -329,6 +360,7 @@ export const useProductForm = (product: Product | null | undefined, onSave: (pro
     setAvailableDiscountCodes,
     isUploading,
     isProductLoading,
+    isSubmitting: isSubmitting || isSaving,
     cropSrc,
     setCropSrc,
     editingImageIndex,

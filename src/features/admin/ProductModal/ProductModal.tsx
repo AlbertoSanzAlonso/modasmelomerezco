@@ -7,7 +7,7 @@ import { useProductForm } from './useProductForm';
 import { ProductForm } from './ProductForm';
 import type { ProductModalProps } from './types';
 
-export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave }) => {
+export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave, isSaving = false }) => {
   const {
     formData,
     setFormData,
@@ -20,6 +20,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     availableDiscountCodes,
     isUploading,
     isProductLoading,
+    isSubmitting,
     cropSrc,
     setCropSrc,
     setEditingImageIndex,
@@ -30,7 +31,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     handleEditImage,
     removeImage,
     handleSubmit
-  } = useProductForm(product, onSave);
+  } = useProductForm(product, onSave, isSaving);
 
   return (
     <>
@@ -53,7 +54,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
             <h2 className="text-2xl font-display font-black uppercase tracking-tighter italic text-(--text-main)">
               {product ? 'Editar Pieza' : 'Nueva Pieza Luxury'}
             </h2>
-            <button onClick={onClose} className="p-2 hover:bg-primary/10 rounded-full transition-all text-(--text-main)">
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="p-2 hover:bg-primary/10 rounded-full transition-all text-(--text-main) disabled:opacity-50 disabled:pointer-events-none"
+            >
               <X className="w-6 h-6" />
             </button>
           </header>
@@ -71,6 +76,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               availableDiscountCodes={availableDiscountCodes}
               isUploading={isUploading}
               isProductLoading={isProductLoading}
+              isSubmitting={isSubmitting}
               fileInputRef={fileInputRef}
               handleFileChange={handleFileChange}
               handleEditImage={handleEditImage}

@@ -449,8 +449,12 @@ export const AdminDashboard: React.FC = () => {
       {isModalOpen && (
         <ProductModal 
           product={editingProduct} 
-          onClose={() => setIsModalOpen(false)} 
-          onSave={(data) => saveMutation.mutate(data)} 
+          onClose={() => {
+            if (saveMutation.isPending) return;
+            setIsModalOpen(false);
+          }}
+          onSave={(data) => saveMutation.mutate(data)}
+          isSaving={saveMutation.isPending}
         />
       )}
 

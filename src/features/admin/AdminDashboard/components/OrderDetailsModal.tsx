@@ -1,14 +1,16 @@
-import React from 'react';
-import { X, Truck, FileImage } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Truck, FileImage, Copy, Check, Mail } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { api } from '@/lib/api';
 import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
+import { absoluteUrl } from '@/lib/seo/constants';
 import { OrderLinePricing } from '@/components/orders/OrderLinePricing';
 import { OrderItemVariantInfo } from '@/components/orders/OrderItemVariantInfo';
 import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
 import { ScrollArea } from '@/components/ui/ScrollArea';
+import { useCartStore } from '@/store/useCartStore';
 
 interface OrderDetailsModalProps {
   order: Order;
@@ -24,6 +26,55 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onGenerateLabel
 }) => {
   const contact = getOrderContact(order);
+  const openModal = useCartStore((s) => s.openModal);
+  const paymentPending = !canFulfillOrder(order);
+  const paymentLink = absoluteUrl(`/pagar/${order.order_id}`);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const handleCopyPaymentLink = async () => {
+    try {
+      await navigator.clipboard.writeText(paymentLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      openModal({
+        title: 'No se pudo copiar',
+        message: paymentLink,
+        type: 'warning',
+      });
+    }
+  };
+
+  const handleSendPaymentEmail = async () => {
+    const email = contact.email?.trim();
+    if (!email) {
+      openModal({
+        title: 'Sin email',
+        message: 'Este pedido no tiene email de cliente para enviar el enlace.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      await api.mail.sendPaymentReminder(order, email, paymentLink);
+      openModal({
+        title: 'Email enviado',
+        message: `Se ha enviado el enlace de pago a ${email}.`,
+        type: 'info',
+      });
+    } catch (err: any) {
+      openModal({
+        title: 'Error al enviar',
+        message: err?.message || 'No se pudo enviar el email. Inténtalo de nuevo.',
+        type: 'warning',
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-110 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">
@@ -117,6 +168,55 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </div>
             </div>
           </div>
+
+          {paymentPending && (
+            <div className="space-y-6">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+                Recuperar pago pendiente
+              </h4>
+              <div className="bg-yellow-500/5 p-6 border border-yellow-500/20 rounded-2xl space-y-4">
+                <p className="text-xs text-gray-500 font-bold leading-relaxed">
+                  El cliente no ha completado el pago. Puedes copiar el enlace o enviárselo por email para que lo termine.
+                </p>
+                <p className="text-[10px] font-mono text-gray-400 break-all">{paymentLink}</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 py-4 text-[10px] font-black tracking-widest italic"
+                    onClick={handleCopyPaymentLink}
+                  >
+                    {linkCopied ? (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        ENLACE COPIADO
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-2" />
+                        COPIAR ENLACE
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="flex-1 py-4 text-[10px] font-black tracking-widest italic"
+                    onClick={handleSendPaymentEmail}
+                    disabled={sendingEmail || !contact.email}
+                    title={!contact.email ? 'Sin email en el pedido' : undefined}
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    {sendingEmail ? 'ENVIANDO…' : 'ENVIAR EMAIL'}
+                  </Button>
+                </div>
+                {!contact.email && (
+                  <p className="text-[9px] font-black uppercase tracking-widest text-yellow-600">
+                    Sin email: solo puedes copiar el enlace
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Items */}
           <div className="space-y-6">

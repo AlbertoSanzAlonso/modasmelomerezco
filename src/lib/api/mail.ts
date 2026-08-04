@@ -114,6 +114,50 @@ export const mailApi = {
     return mailApi.send(payload);
   },
 
+  sendPaymentReminder: async (order: any, customerEmail: string, paymentLink: string) => {
+    const orderId = order.order_id.split('-')[0].toUpperCase();
+    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const name =
+      order.customer?.name ||
+      [order.guest_name, order.guest_surname].filter(Boolean).join(' ').trim() ||
+      'cliente';
+    const total = Number(order.total_amount ?? 0).toFixed(2);
+
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px;">
+        <div style="text-align: center; margin-bottom: 10px;">
+          <img src="${logoUrl}" alt="Modas Me lo Merezco" style="width: 180px; height: auto;">
+        </div>
+        <h2 style="color: #000; text-transform: uppercase; font-style: italic; text-align: center;">
+          Completa el pago de tu pedido <span style="color: #ff3366;">#${orderId}</span>
+        </h2>
+        <p style="text-align: center;">Hola <strong>${name}</strong>,</p>
+        <p style="text-align: center; line-height: 1.6; color: #333;">
+          Tu pedido por <strong>${total} €</strong> está pendiente de pago. Pulsa el botón para terminarlo de forma segura.
+        </p>
+        <div style="margin: 35px 0; text-align: center;">
+          <a href="${paymentLink}" style="background: #000; color: #fff; padding: 16px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">
+            Completar pago
+          </a>
+        </div>
+        <p style="text-align: center; font-size: 12px; color: #888; word-break: break-all;">
+          O copia este enlace:<br>
+          <a href="${paymentLink}" style="color: #ff3366;">${paymentLink}</a>
+        </p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+        <p style="font-size: 11px; color: #999; text-align: center;">
+          Si no iniciaste este pedido, puedes ignorar este correo.
+        </p>
+      </div>
+    `;
+
+    return mailApi.send({
+      to: customerEmail,
+      subject: `Completa el pago de tu pedido #${orderId} - Modas Me lo Merezco`,
+      html,
+    });
+  },
+
   sendPasswordRecovery: async (email: string, resetLink: string) => {
     const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
     const html = `

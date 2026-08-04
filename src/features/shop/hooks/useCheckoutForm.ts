@@ -304,8 +304,8 @@ export const useCheckoutForm = () => {
         createdOrder.order_id,
         finalTotal,
         {
-          urlOk: `${window.location.origin}/cuenta/pedidos?payment=success`,
-          urlKo: `${window.location.origin}/checkout?payment=error`,
+          urlOk: `${window.location.origin}/api/redsys/return-ok`,
+          urlKo: `${window.location.origin}/api/redsys/return-ko`,
           urlNotification: `${window.location.origin}/api/webhooks/redsys`, 
           productDescription: `Pedido #${createdOrder.order_id.split('-')[0].toUpperCase()}`,
           paymentMethod: paymentMethod
@@ -327,11 +327,17 @@ export const useCheckoutForm = () => {
       document.body.appendChild(form);
       form.submit();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating order:', error);
+      const detail =
+        error?.message ||
+        error?.error_description ||
+        (typeof error === 'string' ? error : null);
       openModal({
         title: 'Error en el pago',
-        message: 'Hubo un error al procesar el pago. Por favor, inténtalo de nuevo.',
+        message: detail
+          ? `No se pudo crear el pedido: ${detail}`
+          : 'Hubo un error al procesar el pago. Por favor, inténtalo de nuevo.',
         type: 'warning'
       });
     } finally {

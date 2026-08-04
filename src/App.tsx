@@ -29,6 +29,8 @@ const HomePage = safeLazy(() => import("@/features/shop/HomePage"));
 const ProductPage = safeLazy(() => import("@/features/shop/ProductPage"));
 const CategoryPage = safeLazy(() => import("@/features/shop/CategoryPage"));
 const CheckoutPage = safeLazy(() => import("@/features/shop/CheckoutPage"));
+const ResumePaymentPage = safeLazy(() => import("@/features/shop/ResumePaymentPage"));
+const PaymentConfirmationPage = safeLazy(() => import("@/features/shop/PaymentConfirmationPage"));
 const AdminDashboard = safeLazy(() => import("@/features/admin/AdminDashboard"));
 const LoginPage = safeLazy(() => import("@/features/auth/LoginPage").then(m => ({ default: m.LoginPage })));
 const SignupPage = safeLazy(() => import("@/features/auth/SignupPage").then(m => ({ default: m.SignupPage })));
@@ -172,6 +174,8 @@ function App() {
                   <Route path="/categoria/:category" element={<CategoryPage />} />
                   <Route path="/buscar" element={<SearchPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/pagar/:orderId" element={<ResumePaymentPage />} />
+                  <Route path="/pedido-confirmado" element={<PaymentConfirmationPage />} />
                   <Route path="/aviso-legal" element={<AvisoLegalPage />} />
                   <Route path="/politica-de-privacidad" element={<PrivacyPolicyPage />} />
                   <Route path="/condiciones-venta" element={<TermsPage />} />

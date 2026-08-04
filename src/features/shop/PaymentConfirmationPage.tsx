@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 type Result = 'success' | 'error' | null;
 
 /**
- * Página pública tras el retorno de Redsys (vía /api/redsys/return-ok|ko).
+ * Página pública tras el retorno de Redsys (vía /api/redsys/[return-ok|return-ko]).
  * Funciona para clientes logueados e invitados.
  */
 const PaymentConfirmationPage = () => {

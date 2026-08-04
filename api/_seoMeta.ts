@@ -274,7 +274,7 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
   const staticPage = STATIC_PAGES[path];
   if (staticPage) {
     const canonical = absoluteUrl(path);
-    let jsonLd: Record<string, unknown> | undefined;
+    let jsonLd: SeoPageMeta['jsonLd'];
 
     if (path === '/') {
       jsonLd = [

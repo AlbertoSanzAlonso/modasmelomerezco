@@ -57,6 +57,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   onSubmit,
   onCancel
 }) => {
+  // Solo colores ya asignados a alguna talla del producto (no el catálogo completo)
   const galleryColors = deriveProductColors(
     formData.variants || [],
     availableColors

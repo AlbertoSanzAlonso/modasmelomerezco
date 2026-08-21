@@ -386,6 +386,15 @@ const normalise = (p: any): Product => ({
     }
     return p.images || [];
   })(),
+  image_color_ids: (() => {
+    if (p.product_images && p.product_images.length > 0) {
+      return p.product_images
+        .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
+        .map((img: any) => normalizeColorId(img.color_id));
+    }
+    const urls: string[] = p.images || [];
+    return urls.map(() => null);
+  })(),
   variants: (() => {
     const rawVariants =
       p.product_variants?.length > 0 ? p.product_variants : p.variants || [];
@@ -420,6 +429,20 @@ const normalise = (p: any): Product => ({
   category: p.categories?.name || p.category,
   subcategory: p.subcategories?.name || p.subcategory,
 });
+
+function toProductImageRecords(
+  product_id: string,
+  images: string[],
+  imageColorIds?: (number | null)[]
+) {
+  return images.map((url: string, index: number) => ({
+    product_id,
+    image_url: url,
+    orden: index,
+    is_main: index === 0,
+    color_id: normalizeColorId(imageColorIds?.[index] ?? null),
+  }));
+}
 
 export const products = {
   getAll: async (
@@ -607,7 +630,7 @@ export const products = {
   },
 
   create: async (productData: Omit<Product, 'product_id'> & { product_id?: string }): Promise<Product> => {
-    const { variants, images, colors, labels, discountCodes, ...pData } = productData as any;
+    const { variants, images, image_color_ids, colors, labels, discountCodes, ...pData } = productData as any;
     const productPayload = cleanProductTablePayload({
       product_id: pData.product_id || createProductId(),
       ...pData,
@@ -629,12 +652,11 @@ export const products = {
 
     // 3. Create images if any
     if (images && images.length > 0) {
-      const imageRecords = images.map((url: string, index: number) => ({
-        product_id: product.product_id,
-        image_url: url,
-        orden: index,
-        is_main: index === 0
-      }));
+      const imageRecords = toProductImageRecords(
+        product.product_id,
+        images,
+        image_color_ids
+      );
       const { error: imagesError } = await supabase
         .from('product_images')
         .insert(imageRecords);
@@ -663,7 +685,7 @@ export const products = {
   },
 
   update: async (product_id: string, updates: Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } }): Promise<Product> => {
-    const { variants, images, colors, labels, discountCodes, _syncOptions, ...pUpdates } = updates as any;
+    const { variants, images, image_color_ids, colors, labels, discountCodes, _syncOptions, ...pUpdates } = updates as any;
 
     // 1. Update product table
     const filteredUpdates = cleanProductTablePayload(pUpdates);
@@ -690,12 +712,7 @@ export const products = {
         .eq('product_id', product_id);
       assertNoSupabaseError(deleteImagesError, 'product_images delete');
       if (images.length > 0) {
-        const imageRecords = images.map((url: string, index: number) => ({
-          product_id,
-          image_url: url,
-          orden: index,
-          is_main: index === 0
-        }));
+        const imageRecords = toProductImageRecords(product_id, images, image_color_ids);
         const { error: insertImagesError } = await supabase
           .from('product_images')
           .insert(imageRecords);

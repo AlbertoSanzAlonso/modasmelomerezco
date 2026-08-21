@@ -5,6 +5,8 @@ export interface ProductImage {
   orden?: number;
   is_main?: boolean;
   alt_text?: string;
+  /** Color asociado a esta foto (null = sin asociación) */
+  color_id?: number | null;
 }
 
 export interface Category {
@@ -48,6 +50,11 @@ export interface Product {
   subcategory?: string;
   /** Assembled from product_images rows, sorted by orden */
   images: string[];
+  /**
+   * Paralelo a `images`: color asociado a cada foto (null = sin asociación).
+   * En tienda, al elegir un color se muestra la primera foto con ese color_id.
+   */
+  image_color_ids?: (number | null)[];
   variants: ProductVariant[];
   is_new?: boolean;
   is_published?: boolean;

@@ -416,6 +416,29 @@ export function deriveProductColors(
     .filter((c): c is Color => !!c);
 }
 
+/** Alinea `image_color_ids` con la longitud de `images`. */
+export function alignImageColorIds(
+  imageCount: number,
+  colorIds?: (number | null)[] | null
+): (number | null)[] {
+  const ids = colorIds ? [...colorIds] : [];
+  while (ids.length < imageCount) ids.push(null);
+  return ids.slice(0, imageCount).map((id) => {
+    if (id == null) return null;
+    const n = Number(id);
+    return Number.isInteger(n) ? n : null;
+  });
+}
+
+/** Índice de la primera foto asociada a un color, o -1 si no hay. */
+export function findImageIndexForColor(
+  imageColorIds: (number | null)[] | undefined | null,
+  colorId: number
+): number {
+  if (!imageColorIds?.length || !Number.isInteger(colorId)) return -1;
+  return imageColorIds.findIndex((id) => id === colorId);
+}
+
 /** Al guardar: si una talla tiene colores, quitar filas sin color_id de esa talla. */
 export function consolidateVariantsForSave(
   variants: ProductVariant[]

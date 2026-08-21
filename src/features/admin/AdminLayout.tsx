@@ -82,14 +82,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                   onTabChange(item.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-4 px-6 py-4 transition-all group ${
+                className={`w-full flex items-center justify-start gap-4 px-6 py-4 text-left transition-all group ${
                   activeTab === item.id 
                     ? 'bg-primary text-white font-black italic border-l-4 border-white' 
                     : 'text-gray-500 hover:text-primary hover:bg-primary/5'
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-white' : 'group-hover:text-primary'}`} />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">{item.label}</span>
+                <item.icon className={`w-5 h-5 shrink-0 ${activeTab === item.id ? 'text-white' : 'group-hover:text-primary'}`} />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-left">{item.label}</span>
               </button>
             ))}
           </nav>

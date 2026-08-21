@@ -26,7 +26,8 @@ description: >-
 - **Colores propios:** `colors.product_id` = id del artículo. Nombre en BD: `Amarillo_nombre-producto` (tienda muestra solo «Amarillo»). Migración: `colors_product_id.sql`.
 - **Colores genéricos:** `colors.product_id` null (catálogo compartido). En el modal se listan aparte de los propios.
 - **Estampados:** `colors.swatch_url` = URL de muestra; si existe, el selector muestra la imagen en lugar del hex. Migración: `colors_swatch_url.sql`.
-- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`, `isOwnedProductColor`).
+- **Foto por color:** `product_images.color_id` (nullable). En admin, cada foto de la galería puede asociarse a un color del inventario; en la ficha, al elegir ese color se muestra esa foto. Migración: `product_images_color_id.sql`. El producto expone `image_color_ids` paralelo a `images`.
+- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`, `isOwnedProductColor`, `alignImageColorIds`, `findImageIndexForColor`).
 - Al crear un color propio, las tallas se expanden para poder asignarlo al momento.
 
 ## Admin (`ProductInventory.tsx`)
@@ -67,6 +68,7 @@ description: >-
 |------|---------|
 | Helpers | `src/lib/productVariants.ts` |
 | Admin UI | `src/features/admin/ProductModal/ProductInventory.tsx` |
+| Galería ↔ color | `src/features/admin/ProductModal/ProductImages.tsx` |
 | Ventas tienda | `src/features/admin/AdminDashboard/components/DailySalesTab.tsx` |
 | Form | `src/features/admin/ProductModal/useProductForm.ts` |
 | API | `src/lib/api/products.ts`, `src/lib/api/colors.ts` |

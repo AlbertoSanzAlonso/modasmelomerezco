@@ -16,6 +16,7 @@ export interface ProductFormState extends Partial<Product> {
   category_id?: number;
   subcategory_id?: number;
   images: string[];
+  image_color_ids?: (number | null)[];
   stock: number;
   is_new: boolean;
   is_published: boolean;

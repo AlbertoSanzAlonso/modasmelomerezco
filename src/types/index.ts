@@ -22,6 +22,8 @@ export interface Color {
   id: number;
   name: string;
   hex: string;
+  /** Muestra de estampado; si existe, se usa en el selector en lugar del hex */
+  swatch_url?: string | null;
   /** Si tiene valor, el color solo aplica a ese producto */
   product_id?: string | null;
 }

@@ -143,11 +143,15 @@ export function hasColorVariants(variants: ProductVariant[]): boolean {
 
 export function getVariantColorName(
   v: ProductVariant,
-  catalog: Color[] = []
+  catalog: Color[] = [],
+  productName?: string | null
 ): string | null {
   if (v.color_id == null) return null;
-  if (v.color?.trim()) return v.color.trim();
-  return catalog.find((c) => c.id === v.color_id)?.name ?? null;
+  if (v.color?.trim()) {
+    return getColorDisplayName(v.color.trim(), productName);
+  }
+  const fromCatalog = catalog.find((c) => c.id === v.color_id)?.name;
+  return fromCatalog ? getColorDisplayName(fromCatalog, productName) : null;
 }
 
 const variantKey = (size: string, colorId: number | null) =>
@@ -220,10 +224,10 @@ export function getUnusedColorsForSize(
 ): Color[] {
   const used = new Set(
     variants
-      .filter((v) => v.size === size && v.color_id != null)
-      .map((v) => v.color_id)
+      .filter((v) => v.size === size && asColorId(v.color_id) != null)
+      .map((v) => asColorId(v.color_id) as number)
   );
-  return catalog.filter((c) => !used.has(c.id));
+  return catalog.filter((c) => !used.has(Number(c.id)));
 }
 
 export function getUniqueSizes(variants: ProductVariant[]): string[] {
@@ -239,20 +243,28 @@ export function getUniqueSizes(variants: ProductVariant[]): string[] {
   return sortSizes(sizes);
 }
 
+function asColorId(colorId: unknown): number | null {
+  if (colorId == null || colorId === '') return null;
+  const parsed = Number(colorId);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
 export function findVariant(
   variants: ProductVariant[],
   size: string,
   options?: { colorId?: number | null; colorName?: string }
 ): ProductVariant | undefined {
-  const sized = variants.filter((v) => v.size === size);
+  const sizeNorm = normalizeSize(size);
+  const sized = variants.filter((v) => normalizeSize(v.size) === sizeNorm);
   if (options?.colorId != null) {
-    return sized.find((v) => v.color_id === options.colorId);
+    const want = asColorId(options.colorId);
+    return sized.find((v) => asColorId(v.color_id) === want);
   }
   if (options?.colorName) {
     const name = options.colorName.trim().toLowerCase();
     return sized.find((v) => v.color?.trim().toLowerCase() === name);
   }
-  return sized.find((v) => v.color_id == null);
+  return sized.find((v) => asColorId(v.color_id) == null);
 }
 
 export function hasStockForSize(variants: ProductVariant[], size: string): boolean {
@@ -330,6 +342,54 @@ export function getProductUrlWithVariant(
   if (variant.color_id != null) params.set('color', String(variant.color_id));
   const qs = params.toString();
   return `/producto/${productId}${qs ? `?${qs}` : ''}`;
+}
+
+/** Slug estable para ligar nombres de color al artículo (p. ej. amarillo_vestido-lino). */
+export function slugifyProductKey(name: string): string {
+  return (
+    name
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'producto'
+  );
+}
+
+/**
+ * Nombre único en BD: "Amarillo_nombre-producto".
+ * Si ya existe, "Amarillo_2_nombre-producto", etc.
+ */
+export function buildScopedColorName(
+  label: string,
+  productName: string,
+  existingNames: string[] = []
+): string {
+  const base = label.trim();
+  const slug = slugifyProductKey(productName);
+  const existing = new Set(existingNames.map((n) => n.toLowerCase()));
+  let candidate = `${base}_${slug}`;
+  let n = 2;
+  while (existing.has(candidate.toLowerCase())) {
+    candidate = `${base}_${n}_${slug}`;
+    n += 1;
+  }
+  return candidate;
+}
+
+/** Etiqueta visible: quita el sufijo _nombre-producto del nombre guardado. */
+export function getColorDisplayName(
+  storedName: string,
+  productName?: string | null
+): string {
+  if (!storedName?.trim()) return storedName;
+  if (!productName?.trim()) return storedName;
+  const slug = slugifyProductKey(productName);
+  const escaped = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`_(?:\\d+_)?${escaped}$`, 'i');
+  const display = storedName.replace(re, '').trim();
+  return display || storedName;
 }
 
 /** Colores de catálogo web derivados de variantes con color_id. */

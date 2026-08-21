@@ -17,7 +17,7 @@ const PRODUCT_SELECT_BASE =
   '*, product_variants(*, colors(*)), product_images(*), categories(name), subcategories(name), product_colors(colors(*))';
 
 export function mapProductVariant(v: any): ProductVariant {
-  const colorId = v.color_id ?? null;
+  const colorId = normalizeColorId(v.color_id);
   const legacyName =
     v.color != null && String(v.color).trim() !== ''
       ? normalizeColor(v.color)
@@ -392,15 +392,24 @@ const normalise = (p: any): Product => ({
     return rawVariants.map(mapProductVariant);
   })(),
   colors: (() => {
+    const mapColor = (c: any): Color | null => {
+      if (!c?.id) return null;
+      const id = Number(c.id);
+      if (!Number.isInteger(id)) return null;
+      return { ...c, id };
+    };
     const fromBridge: Color[] =
-      p.product_colors?.map((pc: any) => pc.colors).filter(Boolean) || [];
+      p.product_colors
+        ?.map((pc: any) => mapColor(pc.colors))
+        .filter(Boolean) || [];
     if (fromBridge.length > 0) return fromBridge;
     const raw = p.product_variants || [];
     const mapped = raw.map(mapProductVariant);
     if (!hasColorVariants(mapped)) return [];
     const catalogById = new Map<number, Color>();
     for (const row of raw) {
-      if (row.colors?.id) catalogById.set(row.colors.id, row.colors);
+      const color = mapColor(row.colors);
+      if (color) catalogById.set(color.id, color);
     }
     return deriveProductColors(mapped, [...catalogById.values()]);
   })(),

@@ -4,6 +4,8 @@ import type { Color } from '@/types';
 export type ColorInput = {
   name: string;
   hex: string;
+  /** Muestra de estampado (opcional) */
+  swatch_url?: string | null;
   /** Si se indica, el color solo existe para ese artículo */
   product_id?: string | null;
 };
@@ -69,6 +71,7 @@ export const colors = {
     const payload = {
       name: color.name.trim(),
       hex: color.hex,
+      swatch_url: color.swatch_url ?? null,
       product_id: color.product_id ?? null,
     };
 

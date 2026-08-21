@@ -23,8 +23,9 @@ description: >-
 - **`color_id` null:** solo talla; en tienda **no** hay selector de color.
 - **`color_id` con valor:** variante de color; selector visible si el producto tiene alguna variante con color.
 - **Colores en ficha web:** tabla `product_colors` (derivada al guardar desde variantes con `color_id`).
-- **Colores propios:** `colors.product_id` = id del artículo (creados con el selector del modal). Solo aparecen en ese producto. Migración: `colors_product_id.sql`.
-- **Helpers:** `src/lib/productVariants.ts` (reutilizar, no duplicar).
+- **Colores propios:** `colors.product_id` = id del artículo. Nombre en BD: `Amarillo_nombre-producto` (tienda muestra solo «Amarillo»). Migración: `colors_product_id.sql`.
+- **Estampados:** `colors.swatch_url` = URL de muestra; si existe, el selector muestra la imagen en lugar del hex. Migración: `colors_swatch_url.sql`.
+- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`).
 
 ## Admin (`ProductInventory.tsx`)
 

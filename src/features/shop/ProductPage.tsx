@@ -19,8 +19,10 @@ import {
   isOneSizeOnlyProduct,
   getOneSizeForProduct,
   isProductSoldOut,
+  getColorDisplayName,
 } from '@/lib/productVariants';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
+import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import {
   absoluteUrl,
   truncateDescription,
@@ -514,10 +516,11 @@ const ProductPage = () => {
               {requiresColor && (
                 <div>
                   <div className="mb-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Color</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Color / estampado</h4>
                   </div>
                   <div className="flex flex-wrap gap-4">
                     {catalogColors.map((c: Color) => {
+                      const colorLabel = getColorDisplayName(c.name, product.name);
                       const colorOutOfStock =
                         !!sizeForSelection &&
                         !hasStockForColor(product.variants, sizeForSelection, c.id);
@@ -529,31 +532,30 @@ const ProductPage = () => {
                         key={c.id}
                         type="button"
                         disabled={colorDisabled}
-                        onClick={() => !colorDisabled && handleColorSelect(c.id, c.name)}
+                        onClick={() => !colorDisabled && handleColorSelect(Number(c.id), colorLabel)}
                         className={`relative group transition-all ${colorDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                        title={c.name}
+                        title={colorLabel}
                       >
                         {/* Outer selected ring */}
                         <div className={`absolute inset-0 -m-1.5 rounded-full border-2 transition-all duration-300
-                          ${selectedColorId === c.id 
+                          ${selectedColorId === Number(c.id)
                             ? 'border-primary scale-100 opacity-100' 
                             : 'border-transparent scale-75 opacity-0 group-hover:border-secondary/30 group-hover:scale-100 group-hover:opacity-100'
                           }`}
                         />
-                        {/* Inner color swatch */}
-                        <div 
-                          className="w-10 h-10 rounded-full border border-black/10 shadow-md relative overflow-hidden transition-all duration-300 group-hover:scale-105 active:scale-95"
-                          style={{ backgroundColor: c.hex }}
+                        {/* Inner color / pattern swatch */}
+                        <ColorSwatch
+                          color={{ ...c, name: colorLabel }}
+                          className="w-10 h-10 rounded-full relative overflow-hidden transition-all duration-300 group-hover:scale-105 active:scale-95 shadow-md"
                         />
-                        
                         {/* Tooltip */}
                         <span className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-secondary text-white text-[9px] font-bold uppercase tracking-wider rounded-lg pointer-events-none transition-opacity duration-200 whitespace-nowrap shadow-lg z-10
-                          ${(isTouchDevice && activeMobileColorTooltip === c.name) 
+                          ${(isTouchDevice && activeMobileColorTooltip === colorLabel) 
                             ? 'opacity-100' 
                             : 'opacity-0 group-hover:opacity-100'
                           }`}
                         >
-                          {c.name}
+                          {colorLabel}
                         </span>
                       </button>
                     );

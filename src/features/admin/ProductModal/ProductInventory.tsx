@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Plus, Trash2, ChevronDown, ChevronUp, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import { api } from '@/lib/api';
 import type { Color, ProductVariant } from '@/types';
 import {
@@ -10,6 +11,8 @@ import {
   getBaseVariantForSize,
   getVariantColorName,
   ensureNeutroInCatalog,
+  buildScopedColorName,
+  getColorDisplayName,
 } from '@/lib/productVariants';
 import { SizeChecklist } from './SizeChecklist';
 import { ColorHexPicker } from './ColorHexPicker';
@@ -19,12 +22,18 @@ import {
   UNIQUE_SIZE_LABEL,
 } from './sizeMode';
 
+/** Hex neutro para filas de estampado (la UI usa swatch_url). */
+const PATTERN_FALLBACK_HEX = '#E8E4DF';
+
+type ColorCreateMode = 'solid' | 'pattern';
 interface ProductInventoryProps {
   variants: ProductVariant[];
   availableColors: Color[];
   productImages?: string[];
   /** ID del artículo: los colores nuevos quedan ligados solo a él */
   productId: string;
+  /** Nombre del artículo: se usa en el nombre interno del color (amarillo_nombre-producto) */
+  productName: string;
   onVariantsChange: (variants: ProductVariant[]) => void;
   onColorCreated: (color: Color) => void;
 }
@@ -37,7 +46,8 @@ const variantMatches = (a: ProductVariant, b: ProductVariant, size: string) =>
 
 function stockSummary(
   items: ProductVariant[],
-  catalog: Color[]
+  catalog: Color[],
+  productName?: string
 ): string {
   const colored = items.filter((v) => v.color_id != null);
   if (colored.length === 0) {
@@ -45,7 +55,7 @@ function stockSummary(
     return base ? `Stock: ${base.stock ?? 0} uds` : '';
   }
   const lines = colored.map((v) => {
-    const name = getVariantColorName(v, catalog) ?? 'Color';
+    const name = getVariantColorName(v, catalog, productName) ?? 'Color';
     return `${name}: ${v.stock ?? 0} uds`;
   });
   const total = colored.reduce((s, v) => s + (v.stock ?? 0), 0);
@@ -57,15 +67,18 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   availableColors = [],
   productImages = [],
   productId,
+  productName,
   onVariantsChange,
   onColorCreated,
 }) => {
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#8B4513');
+  const [createMode, setCreateMode] = useState<ColorCreateMode>('solid');
+  const [patternPreview, setPatternPreview] = useState<string | null>(null);
+  const [patternFile, setPatternFile] = useState<File | null>(null);
   const [isCreatingColor, setIsCreatingColor] = useState(false);
-  const [pendingColorBySize, setPendingColorBySize] = useState<Record<string, string>>({});
   const [expandedSizes, setExpandedSizes] = useState<Record<string, boolean>>({});
-
+  const patternInputRef = useRef<HTMLInputElement>(null);
   const catalog = ensureNeutroInCatalog(availableColors);
   const sizeGroups = groupVariantsBySize(variants);
 
@@ -78,14 +91,6 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   };
 
   const migrateSizeUiState = (oldSize: string, newSize: string) => {
-    if (pendingColorBySize[oldSize] !== undefined) {
-      setPendingColorBySize((prev) => {
-        const next = { ...prev };
-        next[newSize] = next[oldSize];
-        delete next[oldSize];
-        return next;
-      });
-    }
     const oldKey = sizeKey(oldSize);
     if (expandedSizes[oldKey] !== undefined) {
       setExpandedSizes((prev) => {
@@ -116,7 +121,6 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
           stock,
         },
       ]);
-      setPendingColorBySize({});
       setExpandedSizes({ [sizeKey(UNIQUE_SIZE_LABEL)]: true });
       return;
     }
@@ -129,11 +133,6 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
 
   const removeSize = (size: string) => {
     onVariantsChange(variants.filter((v) => v.size !== size));
-    setPendingColorBySize((prev) => {
-      const next = { ...prev };
-      delete next[size];
-      return next;
-    });
     setExpandedSizes((prev) => {
       const next = { ...prev };
       delete next[sizeKey(size)];
@@ -167,19 +166,27 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     size: string,
     colorId: number
   ) => {
+    const id = Number(colorId);
+    if (!Number.isInteger(id)) return;
     const duplicate = variants.some(
       (v) =>
         v.size === size &&
-        v.color_id === colorId &&
+        Number(v.color_id) === id &&
         !variantMatches(v, row, size)
     );
     if (duplicate) return;
 
-    const color = catalog.find((c) => c.id === colorId);
+    const color = catalog.find((c) => Number(c.id) === id);
     onVariantsChange(
       variants.map((v) =>
         variantMatches(v, row, size)
-          ? { ...v, color_id: colorId, color: color?.name }
+          ? {
+              ...v,
+              color_id: id,
+              color: color
+                ? getColorDisplayName(color.name, productName)
+                : undefined,
+            }
           : v
       )
     );
@@ -205,13 +212,14 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   };
 
   const addColorToSize = (size: string, colorId: number) => {
-    if (!colorId) return;
+    const id = Number(colorId);
+    if (!Number.isInteger(id)) return;
     const exists = variants.some(
-      (v) => v.size === size && v.color_id === colorId
+      (v) => v.size === size && Number(v.color_id) === id
     );
     if (exists) return;
 
-    const color = catalog.find((c) => c.id === colorId);
+    const color = catalog.find((c) => Number(c.id) === id);
     const base = getBaseVariantForSize(variants, size);
     const baseStock = base?.stock ?? 0;
     let next = variants.filter(
@@ -221,44 +229,91 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     next = [
       ...next,
       {
-        id: `v-${Date.now()}-${colorId}`,
+        id: `v-${Date.now()}-${id}`,
         size,
-        color_id: colorId,
-        color: color?.name,
+        color_id: id,
+        color: color
+          ? getColorDisplayName(color.name, productName)
+          : undefined,
         stock: base ? baseStock : 0,
       },
     ];
 
     onVariantsChange(next);
-    setPendingColorBySize((prev) => ({ ...prev, [size]: '' }));
+  };
+
+  const clearPatternUpload = () => {
+    if (patternPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(patternPreview);
+    }
+    setPatternPreview(null);
+    setPatternFile(null);
+    if (patternInputRef.current) patternInputRef.current.value = '';
+  };
+
+  const handlePatternFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (patternPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(patternPreview);
+    }
+    setPatternFile(file);
+    setPatternPreview(URL.createObjectURL(file));
   };
 
   const handleCreateColor = async () => {
     const trimmedName = newColorName.trim();
     if (!trimmedName) return;
 
-    const hex = /^#[0-9A-Fa-f]{6}$/.test(newColorHex)
-      ? newColorHex.toUpperCase()
-      : '#8B4513';
+    if (createMode === 'pattern' && !patternFile) return;
 
-    const exists = catalog.find(
-      (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+    const productLabel = productName.trim() || 'producto';
+    const displayExists = catalog.some(
+      (c) =>
+        getColorDisplayName(c.name, productLabel).toLowerCase() ===
+        trimmedName.toLowerCase()
     );
-    if (exists) {
+    if (displayExists) {
       setNewColorName('');
       return;
     }
 
+    const scopedName = buildScopedColorName(
+      trimmedName,
+      productLabel,
+      catalog.map((c) => c.name)
+    );
+
+    const hex =
+      createMode === 'pattern'
+        ? PATTERN_FALLBACK_HEX
+        : /^#[0-9A-Fa-f]{6}$/.test(newColorHex)
+          ? newColorHex.toUpperCase()
+          : '#8B4513';
+
     setIsCreatingColor(true);
     try {
+      let swatch_url: string | null = null;
+      if (createMode === 'pattern' && patternFile) {
+        const ext = patternFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)
+          ? ext
+          : 'jpg';
+        const path = `${productId}/swatches/${Date.now()}.${safeExt}`;
+        swatch_url = await api.storage.upload(patternFile, path);
+      }
+
       const created = await api.colors.create({
-        name: trimmedName,
+        name: scopedName,
         hex,
+        swatch_url,
         product_id: productId,
       });
       onColorCreated(created);
       setNewColorName('');
       setNewColorHex('#8B4513');
+      clearPatternUpload();
+      setCreateMode('solid');
     } catch (error) {
       console.error('Error creating color:', error);
     } finally {
@@ -274,20 +329,47 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
         </label>
         <p className="text-[10px] text-gray-500 uppercase tracking-wider leading-relaxed">
           Por defecto cada talla solo tiene stock (sin variantes de color). Añade
-          colores si el producto existe en varios tonos; en la tienda solo entonces
-          aparecerá el selector de color.
+          colores o estampados si la pieza existe en varios tonos; en la tienda
+          solo entonces aparecerá el selector.
         </p>
       </div>
 
       <div className="bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl space-y-5">
         <div className="space-y-1">
           <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
-            Colores de este artículo
+            Colores y estampados de este artículo
           </label>
           <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-            Solo disponibles en esta pieza (nombre + hex o cuentagotas)
+            Se guarda como Nombre_producto (ej. Amarillo_vestido-lino). En la tienda
+            solo se ve el nombre corto.
           </p>
         </div>
+
+        <div className="flex gap-2 p-1 bg-(--bg-main) rounded-xl w-fit">
+          <button
+            type="button"
+            onClick={() => setCreateMode('solid')}
+            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+              createMode === 'solid'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-500 hover:text-(--text-main)'
+            }`}
+          >
+            Color sólido
+          </button>
+          <button
+            type="button"
+            onClick={() => setCreateMode('pattern')}
+            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+              createMode === 'pattern'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-500 hover:text-(--text-main)'
+            }`}
+          >
+            Estampado
+          </button>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
           <div className="space-y-2 flex-1 w-full min-w-0">
             <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
@@ -297,29 +379,100 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
               type="text"
               autoComplete="off"
               className="w-full bg-(--bg-main) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl"
-              placeholder="Ej: Marrón, Negro..."
+              placeholder={
+                createMode === 'pattern'
+                  ? 'Ej: Floral, Rayas...'
+                  : 'Ej: Marrón, Negro...'
+              }
               value={newColorName}
               onChange={(e) => setNewColorName(e.target.value)}
               disabled={isCreatingColor}
             />
           </div>
-          <div className="w-full sm:w-[240px] shrink-0">
-            <ColorHexPicker
-              value={newColorHex}
-              onChange={setNewColorHex}
-              disabled={isCreatingColor}
-              productImages={productImages}
-            />
-          </div>
+
+          {createMode === 'solid' ? (
+            <div className="w-full sm:w-[240px] shrink-0">
+              <ColorHexPicker
+                value={newColorHex}
+                onChange={setNewColorHex}
+                disabled={isCreatingColor}
+                productImages={productImages}
+              />
+            </div>
+          ) : (
+            <div className="w-full sm:w-[240px] shrink-0 space-y-2">
+              <label className="text-[8px] font-black uppercase tracking-widest text-gray-500 block">
+                Muestra del estampado
+              </label>
+              <input
+                ref={patternInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePatternFileChange}
+                disabled={isCreatingColor}
+              />
+              {patternPreview ? (
+                <div className="relative flex items-center gap-3 bg-(--bg-main) border border-(--border-main) rounded-xl p-2">
+                  <img
+                    src={patternPreview}
+                    alt="Muestra"
+                    className="w-14 h-14 rounded-lg object-cover border border-black/10"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold truncate text-(--text-main)">
+                      {patternFile?.name || 'Muestra'}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-[9px] font-black uppercase text-primary mt-1"
+                      onClick={() => patternInputRef.current?.click()}
+                      disabled={isCreatingColor}
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="p-2 text-gray-400 hover:text-red-500"
+                    onClick={clearPatternUpload}
+                    disabled={isCreatingColor}
+                    aria-label="Quitar muestra"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => patternInputRef.current?.click()}
+                  disabled={isCreatingColor}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-primary/40 text-primary text-[10px] font-black uppercase tracking-wider hover:bg-primary/5 transition-all disabled:opacity-50"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                  Subir muestra
+                </button>
+              )}
+            </div>
+          )}
+
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl whitespace-nowrap self-end"
-            disabled={isCreatingColor || !newColorName.trim()}
+            disabled={
+              isCreatingColor ||
+              !newColorName.trim() ||
+              (createMode === 'pattern' && !patternFile)
+            }
             onClick={handleCreateColor}
           >
-            {isCreatingColor ? 'GUARDANDO...' : '+ CREAR COLOR'}
+            {isCreatingColor
+              ? 'GUARDANDO...'
+              : createMode === 'pattern'
+                ? '+ CREAR ESTAMPADO'
+                : '+ CREAR COLOR'}
           </Button>
         </div>
       </div>
@@ -343,7 +496,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
               group.size,
               catalog
             );
-            const summary = stockSummary(group.items, catalog);
+            const summary = stockSummary(group.items, catalog, productName);
             const open = isExpanded(group.size);
 
             return (
@@ -446,17 +599,22 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                         </thead>
                         <tbody className="divide-y divide-(--border-main)">
                           {coloredRows.map((row, idx) => {
-                            const swatch =
-                              catalog.find((c) => c.id === row.color_id)?.hex ??
-                              '#C4B8A8';
+                            const colorRow = catalog.find(
+                              (c) => Number(c.id) === Number(row.color_id)
+                            );
 
                             return (
                               <tr key={row.variant_id ?? row.id ?? idx}>
                                 <td className="py-4">
                                   <div className="flex items-center gap-3">
-                                    <span
-                                      className="w-8 h-8 rounded-full border border-black/10 shadow-inner shrink-0"
-                                      style={{ backgroundColor: swatch }}
+                                    <ColorSwatch
+                                      color={
+                                        colorRow ?? {
+                                          hex: '#C4B8A8',
+                                          name: row.color || 'Color',
+                                        }
+                                      }
+                                      className="w-8 h-8 rounded-full shrink-0"
                                     />
                                     <select
                                       className="flex-1 bg-(--bg-main) border border-(--border-main) px-3 py-2.5 text-xs font-black uppercase focus:border-primary outline-none rounded-xl cursor-pointer"
@@ -471,7 +629,8 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                                     >
                                       {catalog.map((c) => (
                                         <option key={c.id} value={c.id}>
-                                          {c.name}
+                                          {getColorDisplayName(c.name, productName)}
+                                          {c.swatch_url ? ' (estampado)' : ''}
                                         </option>
                                       ))}
                                     </select>
@@ -517,62 +676,34 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                             ? 'Añadir otro color a esta talla'
                             : 'Añadir variante de color'}
                         </label>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                          Pulsa un color para añadirlo
+                        </p>
                         <div
                           className="flex flex-wrap gap-2"
                           role="listbox"
                           aria-label="Colores disponibles"
                         >
                           {unusedColors.map((c) => {
-                            const pending =
-                              pendingColorBySize[group.size] === String(c.id);
+                            const label = getColorDisplayName(c.name, productName);
                             return (
-                              <button
-                                key={c.id}
-                                type="button"
-                                role="option"
-                                aria-selected={pending}
-                                title={c.name}
-                                onClick={() =>
-                                  setPendingColorBySize((prev) => ({
-                                    ...prev,
-                                    [group.size]:
-                                      prev[group.size] === String(c.id)
-                                        ? ''
-                                        : String(c.id),
-                                  }))
-                                }
-                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all
-                                  ${
-                                    pending
-                                      ? 'border-primary bg-primary/10 text-primary'
-                                      : 'border-(--border-main) bg-(--bg-main) text-(--text-main) hover:border-primary/50'
-                                  }`}
-                              >
-                                <span
-                                  className="w-4 h-4 rounded-full border border-black/10 shadow-inner shrink-0"
-                                  style={{ backgroundColor: c.hex }}
-                                />
-                                {c.name}
-                              </button>
+                            <button
+                              key={c.id}
+                              type="button"
+                              role="option"
+                              title={`Añadir ${label}`}
+                              onClick={() => addColorToSize(group.size, Number(c.id))}
+                              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-(--border-main) bg-(--bg-main) text-(--text-main) text-[10px] font-black uppercase tracking-wider transition-all hover:border-primary hover:bg-primary/10 hover:text-primary"
+                            >
+                              <ColorSwatch
+                                color={{ ...c, name: label }}
+                                className="w-4 h-4 rounded-full shrink-0"
+                              />
+                              {label}
+                            </button>
                             );
                           })}
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl gap-1"
-                          disabled={!pendingColorBySize[group.size]}
-                          onClick={() =>
-                            addColorToSize(
-                              group.size,
-                              Number(pendingColorBySize[group.size])
-                            )
-                          }
-                        >
-                          <Plus className="w-3 h-3" />
-                          AÑADIR COLOR
-                        </Button>
                       </div>
                     )}
                   </div>

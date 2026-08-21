@@ -5,6 +5,7 @@ import { AdminLayout } from "@/features/admin/AdminLayout";
 import { ProductModal } from "@/features/admin/ProductModal/ProductModal";
 import { OverviewTab } from "@/features/admin/AdminDashboard/components/OverviewTab";
 import { ProductsTab } from "@/features/admin/AdminDashboard/components/ProductsTab";
+import { DailySalesTab } from "@/features/admin/AdminDashboard/components/DailySalesTab";
 import { OrdersTab } from "@/features/admin/AdminDashboard/components/OrdersTab";
 import { NewsletterTab } from "@/features/admin/AdminDashboard/components/NewsletterTab";
 import { CustomersTab } from "@/features/admin/AdminDashboard/components/CustomersTab";
@@ -12,6 +13,7 @@ import { DiscountCodesTab } from "@/features/admin/AdminDashboard/components/Dis
 import { OrderDetailsModal } from "@/features/admin/AdminDashboard/components/OrderDetailsModal";
 import { RestockSizesModal } from "@/features/admin/AdminDashboard/components/RestockSizesModal";
 import { useAdminData } from './useAdminData';
+import type { AdminTab } from "@/features/admin/AdminLayout";
 import { api } from "@/lib/api";
 import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
@@ -29,7 +31,7 @@ function refreshProductCaches(queryClient: QueryClient, product: Product) {
 }
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts'>('dashboard');
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -480,6 +482,8 @@ export const AdminDashboard: React.FC = () => {
             onCreate={() => { setEditingProduct(null); setIsModalOpen(true); }}
           />
         )}
+
+        {activeTab === 'daily-sales' && <DailySalesTab />}
 
         {activeTab === 'orders' && (
           <OrdersTab 

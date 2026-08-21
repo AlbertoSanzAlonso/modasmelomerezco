@@ -99,7 +99,9 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     null
   );
   const [canvasReady, setCanvasReady] = useState(false);
+  const [selectionLocked, setSelectionLocked] = useState(false);
   const draggingRef = useRef(false);
+  const selectionLockedRef = useRef(false);
 
   const pickingActive = isPicking || showImagePick;
 
@@ -111,6 +113,8 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
       setPreviewHex(null);
       setLoupe(null);
       setCursorPos(null);
+      setSelectionLocked(false);
+      selectionLockedRef.current = false;
       setCanvasReady(false);
       canvasRef.current = null;
     },
@@ -140,6 +144,8 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     setPreviewHex(null);
     setLoupe(null);
     setCursorPos(null);
+    setSelectionLocked(false);
+    selectionLockedRef.current = false;
     setCanvasReady(false);
     canvasRef.current = null;
     setShowImagePick(true);
@@ -271,6 +277,8 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     setPreviewHex(null);
     setLoupe(null);
     setCursorPos(null);
+    setSelectionLocked(false);
+    selectionLockedRef.current = false;
   };
 
   useEffect(() => {
@@ -374,8 +382,8 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                 </p>
                 <p className="text-[12px] text-gray-500 mt-1">
                   {isTouchPrimary
-                    ? 'Arrastra el dedo sobre la prenda y pulsa confirmar'
-                    : 'Mueve el gotero negro sobre la prenda y haz clic'}
+                    ? 'Arrastra el dedo, suelta para fijar y pulsa Usar'
+                    : 'Mueve el gotero, haz clic para fijar el color y pulsa Usar'}
                 </p>
               </div>
               <button
@@ -399,6 +407,8 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                       setPreviewHex(null);
                       setLoupe(null);
                       setCursorPos(null);
+                      setSelectionLocked(false);
+                      selectionLockedRef.current = false;
                       setCanvasReady(false);
                       canvasRef.current = null;
                     }}
@@ -421,27 +431,36 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
             <div
               className={`relative rounded-xl overflow-hidden border border-(--border-main) bg-(--bg-main) touch-none select-none ${
                 isTouchPrimary ? '' : 'cursor-none'
-              }`}
+              } ${selectionLocked ? 'ring-2 ring-primary ring-offset-2' : ''}`}
               onPointerEnter={(e) => {
-                if (isTouchPrimary) return;
+                if (isTouchPrimary || selectionLockedRef.current) return;
                 updateCursorFromEvent(e, true);
               }}
               onPointerLeave={() => {
-                if (!draggingRef.current) setCursorPos(null);
+                if (!draggingRef.current && !selectionLockedRef.current) {
+                  setCursorPos(null);
+                }
               }}
               onPointerDown={(e) => {
+                // Nuevo clic: desbloquea y vuelve a muestrear
+                selectionLockedRef.current = false;
+                setSelectionLocked(false);
                 draggingRef.current = true;
                 e.currentTarget.setPointerCapture(e.pointerId);
                 updateCursorFromEvent(e, true);
               }}
               onPointerMove={(e) => {
-                updateCursorFromEvent(
-                  e,
-                  draggingRef.current || e.pointerType === 'mouse'
-                );
+                if (selectionLockedRef.current) return;
+                const shouldSample =
+                  draggingRef.current ||
+                  (!isTouchPrimary && e.pointerType === 'mouse');
+                updateCursorFromEvent(e, shouldSample);
               }}
               onPointerUp={() => {
                 draggingRef.current = false;
+                // Clic / soltar: fija el color de la vista previa
+                selectionLockedRef.current = true;
+                setSelectionLocked(true);
               }}
               onPointerCancel={() => {
                 draggingRef.current = false;
@@ -501,13 +520,18 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
               />
               <div className="flex-1 min-w-0">
                 <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">
-                  Vista previa
+                  {selectionLocked ? 'Color fijado' : 'Vista previa'}
                 </p>
                 <p className="text-sm font-mono font-bold text-(--text-main)">
                   {previewHex ?? '—'}
                 </p>
                 {!canvasReady && showImagePick && (
                   <p className="text-[10px] text-gray-400">Preparando foto…</p>
+                )}
+                {selectionLocked && previewHex && (
+                  <p className="text-[10px] text-primary font-medium mt-0.5">
+                    Pulsa Usar o clica de nuevo para cambiar
+                  </p>
                 )}
               </div>
               <button

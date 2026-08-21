@@ -35,6 +35,13 @@ description: >-
 - Al añadir el primer color a una talla, se elimina la fila `color_id` null y el stock pasa a la nueva línea.
 - Formulario: `useProductForm.ts` → `consolidateVariantsForSave()` + `deriveProductColors()`.
 
+## Ventas del día (tienda física)
+
+- Pestaña admin **Ventas del día** (`DailySalesTab.tsx`): buscar producto → talla/color → cantidad → lista → restar.
+- Usa `api.products.decrementStock(variant_id, quantity)` (no crea pedidos).
+- Respeta stock disponible (incluye lo ya añadido a la lista del día).
+- No marca `is_sold_out` automáticamente; eso sigue siendo manual (Agotar).
+
 ## Tienda y carrito
 
 - Buscar variante: `findVariant(variants, size, { colorId })` o sin `colorId` si solo talla.
@@ -58,6 +65,7 @@ description: >-
 |------|---------|
 | Helpers | `src/lib/productVariants.ts` |
 | Admin UI | `src/features/admin/ProductModal/ProductInventory.tsx` |
+| Ventas día | `src/features/admin/AdminDashboard/components/DailySalesTab.tsx` |
 | Form | `src/features/admin/ProductModal/useProductForm.ts` |
 | API | `src/lib/api/products.ts`, `src/lib/api/colors.ts` |
 | Tienda | `src/features/shop/ProductPage.tsx` |

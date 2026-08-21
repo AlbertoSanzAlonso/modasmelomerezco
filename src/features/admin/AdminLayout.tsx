@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Users, ExternalLink, Menu, X, Mail, Tag } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Users, ExternalLink, Menu, X, Mail, Tag, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useAdminStore } from "@/store/useAdminStore";
@@ -7,10 +7,19 @@ import { useThemeStore } from "@/store/useThemeStore";
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+export type AdminTab =
+  | 'dashboard'
+  | 'products'
+  | 'daily-sales'
+  | 'orders'
+  | 'customers'
+  | 'newsletter'
+  | 'discounts';
+
 interface AdminLayoutProps {
   children: React.ReactNode;
-  activeTab: 'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts';
-  onTabChange: (tab: 'dashboard' | 'products' | 'orders' | 'customers' | 'newsletter' | 'discounts') => void;
+  activeTab: AdminTab;
+  onTabChange: (tab: AdminTab) => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabChange }) => {
@@ -59,17 +68,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
           
           <nav className="space-y-4">
             {[
-              { id: 'dashboard', icon: LayoutDashboard, label: 'Resumen' },
-              { id: 'products', icon: Package, label: 'Productos' },
-              { id: 'orders', icon: ShoppingCart, label: 'Pedidos' },
-              { id: 'customers', icon: Users, label: 'Clientes' },
-              { id: 'newsletter', icon: Mail, label: 'Newsletter' },
-              { id: 'discounts', icon: Tag, label: 'Descuentos' },
+              { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Resumen' },
+              { id: 'products' as const, icon: Package, label: 'Productos' },
+              { id: 'daily-sales' as const, icon: ClipboardList, label: 'Ventas del día' },
+              { id: 'orders' as const, icon: ShoppingCart, label: 'Pedidos' },
+              { id: 'customers' as const, icon: Users, label: 'Clientes' },
+              { id: 'newsletter' as const, icon: Mail, label: 'Newsletter' },
+              { id: 'discounts' as const, icon: Tag, label: 'Descuentos' },
             ].map((item) => (
               <button 
                 key={item.id}
                 onClick={() => {
-                  onTabChange(item.id as any);
+                  onTabChange(item.id);
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center gap-4 px-6 py-4 transition-all group ${

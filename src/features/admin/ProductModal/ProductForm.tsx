@@ -118,6 +118,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               return [...prev, normalized];
             })
           }
+          onColorDeleted={(colorId) =>
+            setAvailableColors((prev) =>
+              prev.filter((c) => Number(c.id) !== Number(colorId))
+            )
+          }
         />
       )}
 

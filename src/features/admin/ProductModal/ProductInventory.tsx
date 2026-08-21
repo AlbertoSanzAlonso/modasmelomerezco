@@ -3,6 +3,7 @@ import { Plus, Trash2, ChevronDown, ChevronUp, ImagePlus, X } from 'lucide-react
 import { Button } from '@/components/ui/Button';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import { api } from '@/lib/api';
+import { useCartStore } from '@/store/useCartStore';
 import type { Color, ProductVariant } from '@/types';
 import {
   groupVariantsBySize,
@@ -38,6 +39,7 @@ interface ProductInventoryProps {
   productName: string;
   onVariantsChange: (variants: ProductVariant[]) => void;
   onColorCreated: (color: Color) => void;
+  onColorDeleted?: (colorId: number) => void;
 }
 
 const variantMatches = (a: ProductVariant, b: ProductVariant, size: string) =>
@@ -72,7 +74,9 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   productName,
   onVariantsChange,
   onColorCreated,
+  onColorDeleted,
 }) => {
+  const openModal = useCartStore((s) => s.openModal);
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#8B4513');
   const [createMode, setCreateMode] = useState<ColorCreateMode>('solid');
@@ -80,6 +84,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   const [patternFile, setPatternFile] = useState<File | null>(null);
   const [patternCropSrc, setPatternCropSrc] = useState<string | null>(null);
   const [isCreatingColor, setIsCreatingColor] = useState(false);
+  const [deletingColorId, setDeletingColorId] = useState<number | null>(null);
   const [expandedSizes, setExpandedSizes] = useState<Record<string, boolean>>({});
   const patternInputRef = useRef<HTMLInputElement>(null);
   const catalog = ensureNeutroInCatalog(availableColors);
@@ -218,6 +223,76 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
       return;
     }
     onVariantsChange(remaining);
+  };
+
+  const stripColorFromAllSizes = (colorId: number) => {
+    const id = Number(colorId);
+    const affectedSizes = [
+      ...new Set(
+        variants
+          .filter((v) => Number(v.color_id) === id)
+          .map((v) => v.size)
+          .filter((s) => s.trim())
+      ),
+    ];
+    let next = variants.filter((v) => Number(v.color_id) !== id);
+    for (const size of affectedSizes) {
+      const coloredLeft = getColoredVariantsForSize(next, size);
+      const hasBase = !!getBaseVariantForSize(next, size);
+      if (coloredLeft.length === 0 && !hasBase) {
+        next = [
+          ...next,
+          {
+            id: `base-${size}-${Date.now()}`,
+            size,
+            color_id: null,
+            stock: 0,
+          },
+        ];
+      }
+    }
+    onVariantsChange(next);
+  };
+
+  const requestDeleteColor = (color: Color) => {
+    const id = Number(color.id);
+    if (!Number.isInteger(id) || deletingColorId != null) return;
+
+    const label = getColorDisplayName(color.name, productName);
+    const owned = isOwnedProductColor(color, productId);
+
+    openModal({
+      title: owned ? 'Eliminar color propio' : 'Eliminar color genérico',
+      message: owned
+        ? `¿Eliminar «${label}»? Se quitará de las tallas de este artículo donde esté asignado.`
+        : `¿Eliminar el genérico «${label}» del catálogo? Dejará de estar disponible para asignar. Si otros productos lo usan, no se podrá borrar.`,
+      type: 'confirm',
+      onConfirm: () => {
+        void (async () => {
+          setDeletingColorId(id);
+          try {
+            await api.colors.delete(id, { productId });
+            stripColorFromAllSizes(id);
+            onColorDeleted?.(id);
+            if (color.swatch_url) {
+              api.storage.delete(color.swatch_url).catch(console.warn);
+            }
+          } catch (err) {
+            console.error('Error deleting color:', err);
+            openModal({
+              title: 'No se pudo eliminar',
+              message:
+                err instanceof Error
+                  ? err.message
+                  : 'Error al eliminar el color. Inténtalo de nuevo.',
+              type: 'error',
+            });
+          } finally {
+            setDeletingColorId(null);
+          }
+        })();
+      },
+    });
   };
 
   const addColorToSize = (size: string, colorId: number) => {
@@ -547,20 +622,31 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                 <div className="flex flex-wrap gap-2">
                   {ownedCatalog.map((c) => {
                     const label = getColorDisplayName(c.name, productName);
+                    const isDeleting = deletingColorId === Number(c.id);
                     return (
                       <span
                         key={c.id}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/5 text-[10px] font-black uppercase tracking-wider text-primary"
+                        className="inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-xl border border-primary/30 bg-primary/5 text-[10px] font-black uppercase tracking-wider text-primary"
                         title={c.name}
                       >
                         <ColorSwatch
                           color={{ ...c, name: label }}
                           className="w-4 h-4 rounded-full shrink-0"
                         />
-                        {label}
-                        <span className="text-[8px] opacity-70 normal-case tracking-normal">
+                        <span className="min-w-0 truncate">{label}</span>
+                        <span className="text-[8px] opacity-70 normal-case tracking-normal shrink-0">
                           propio
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteColor(c)}
+                          disabled={isDeleting || deletingColorId != null}
+                          className="p-1 rounded-lg text-primary/50 hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-40 shrink-0"
+                          title={`Eliminar ${label}`}
+                          aria-label={`Eliminar color ${label}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </span>
                     );
                   })}
@@ -573,22 +659,36 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                   Genéricos (catálogo)
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {genericCatalog.map((c) => (
-                    <span
-                      key={c.id}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-(--border-main) bg-(--bg-main) text-[10px] font-black uppercase tracking-wider text-(--text-main)"
-                      title={c.name}
-                    >
-                      <ColorSwatch
-                        color={c}
-                        className="w-4 h-4 rounded-full shrink-0"
-                      />
-                      {getColorDisplayName(c.name, productName)}
-                      <span className="text-[8px] text-gray-400 normal-case tracking-normal">
-                        genérico
+                  {genericCatalog.map((c) => {
+                    const label = getColorDisplayName(c.name, productName);
+                    const isDeleting = deletingColorId === Number(c.id);
+                    return (
+                      <span
+                        key={c.id}
+                        className="inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-xl border border-(--border-main) bg-(--bg-main) text-[10px] font-black uppercase tracking-wider text-(--text-main)"
+                        title={c.name}
+                      >
+                        <ColorSwatch
+                          color={c}
+                          className="w-4 h-4 rounded-full shrink-0"
+                        />
+                        <span className="min-w-0 truncate">{label}</span>
+                        <span className="text-[8px] text-gray-400 normal-case tracking-normal shrink-0">
+                          genérico
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteColor(c)}
+                          disabled={isDeleting || deletingColorId != null}
+                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-40 shrink-0"
+                          title={`Eliminar ${label}`}
+                          aria-label={`Eliminar color ${label}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </span>
-                    </span>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

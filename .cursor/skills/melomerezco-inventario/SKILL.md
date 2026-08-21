@@ -25,6 +25,7 @@ description: >-
 - **Colores en ficha web:** tabla `product_colors` (derivada al guardar desde variantes con `color_id`).
 - **Colores propios:** `colors.product_id` = id del artículo. Nombre en BD: `Amarillo_nombre-producto` (tienda muestra solo «Amarillo»). Migración: `colors_product_id.sql`.
 - **Colores genéricos:** `colors.product_id` null (catálogo compartido). En el modal se listan aparte de los propios.
+- **Eliminar color:** en las fichas del inventario (propios y genéricos), botón X + confirmación. API `colors.delete(id, { productId })` quita variantes/`product_colors` de ese artículo; si un genérico sigue en otros productos, falla.
 - **Estampados:** `colors.swatch_url` = URL de muestra; si existe, el selector muestra la imagen en lugar del hex. Migración: `colors_swatch_url.sql`.
 - **Foto por color:** `product_images.color_id` (nullable). En admin, cada foto de la galería puede asociarse a un color del inventario; en la ficha, al elegir ese color se muestra esa foto. Migración: `product_images_color_id.sql`. El producto expone `image_color_ids` paralelo a `images`.
 - **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`, `isOwnedProductColor`, `alignImageColorIds`, `findImageIndexForColor`).

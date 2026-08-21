@@ -121,6 +121,58 @@ export const colors = {
     return data;
   },
 
+  /**
+   * Elimina un color del catálogo.
+   * Primero quita vínculos de este artículo (variantes + product_colors).
+   * Si sigue usado en otros productos (genérico), falla con mensaje claro.
+   */
+  delete: async (
+    colorId: number,
+    options?: { productId?: string }
+  ): Promise<void> => {
+    const id = Number(colorId);
+    if (!Number.isInteger(id)) {
+      throw new Error('Color no válido.');
+    }
+
+    const { error: bridgeError } = await supabase
+      .from('product_colors')
+      .delete()
+      .eq('color_id', id);
+    if (bridgeError) throw bridgeError;
+
+    if (options?.productId) {
+      const { error: variantsError } = await supabase
+        .from('product_variants')
+        .delete()
+        .eq('product_id', options.productId)
+        .eq('color_id', id);
+      if (variantsError) throw variantsError;
+    }
+
+    const { count, error: countError } = await supabase
+      .from('product_variants')
+      .select('variant_id', { count: 'exact', head: true })
+      .eq('color_id', id);
+    if (countError) throw countError;
+
+    if ((count ?? 0) > 0) {
+      throw new Error(
+        'Este color genérico sigue usándose en otros productos. Quítalo de esos artículos antes de eliminarlo.'
+      );
+    }
+
+    const { error } = await supabase.from('colors').delete().eq('id', id);
+    if (error) {
+      if (error.code === '23503') {
+        throw new Error(
+          'No se puede eliminar: el color sigue referenciado en la base de datos.'
+        );
+      }
+      throw error;
+    }
+  },
+
   deleteForProduct: async (productId: string): Promise<void> => {
     const { error } = await supabase
       .from('colors')

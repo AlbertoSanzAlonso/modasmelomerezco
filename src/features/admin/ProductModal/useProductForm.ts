@@ -163,6 +163,26 @@ export const useProductForm = (
     }
   }, [formData.variants, formData.stock]);
 
+  // Quitar de fotos colores que ya no están en ninguna talla
+  useEffect(() => {
+    const images = formData.images || [];
+    if (images.length === 0) return;
+    const allowed = new Set(
+      (formData.variants || [])
+        .map((v) => v.color_id)
+        .filter((id): id is number => id != null)
+    );
+    setFormData((prev) => {
+      const imgs = prev.images || [];
+      const current = alignImageColorIds(imgs.length, prev.image_color_ids);
+      const next = current.map((id) =>
+        id == null || allowed.has(id) ? id : null
+      );
+      if (next.every((id, i) => id === current[i])) return prev;
+      return { ...prev, image_color_ids: next };
+    });
+  }, [formData.variants]);
+
   const sanitizeName = (name: string): string => {
     return name
       .toLowerCase()

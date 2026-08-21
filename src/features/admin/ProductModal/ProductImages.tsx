@@ -38,9 +38,13 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">
           Galería de Imágenes
         </label>
-        {colors.length > 0 && (
+        {colors.length > 0 ? (
           <p className="text-[9px] text-gray-500 uppercase tracking-widest">
-            Asocia un color a cada foto para que, al elegirlo en la tienda, se muestre esa imagen.
+            Solo puedes asociar colores ya asignados en las tallas del inventario.
+          </p>
+        ) : (
+          <p className="text-[9px] text-gray-500 uppercase tracking-widest">
+            Cuando asignes colores en las tallas, podrás vincularlos a cada foto.
           </p>
         )}
       </div>

@@ -528,7 +528,7 @@ const ProductPage = () => {
               {requiresColor && (
                 <div>
                   <div className="mb-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Color / estampado</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Color</h4>
                   </div>
                   <div className="flex flex-wrap gap-4">
                     {catalogColors.map((c: Color) => {

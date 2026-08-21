@@ -10,6 +10,7 @@ import { ProductDetailsField } from './ProductDetailsField';
 import { ProductPublishOptions } from './ProductPublishOptions';
 import { ProductFooter } from './ProductFooter';
 import type { Category, Subcategory, Color, Label, DiscountCode } from '@/types/index';
+import { alignImageColorIds, deriveProductColors } from '@/lib/productVariants';
 
 interface ProductFormProps {
   formData: any;
@@ -28,6 +29,7 @@ interface ProductFormProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEditImage: (idx: number) => void;
   handleSetPrincipal: (idx: number) => void;
+  handleImageColorChange: (idx: number, colorId: number | null) => void;
   removeImage: (idx: number) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
@@ -50,20 +52,33 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   handleFileChange,
   handleEditImage,
   handleSetPrincipal,
+  handleImageColorChange,
   removeImage,
   onSubmit,
   onCancel
 }) => {
+  const galleryColors = deriveProductColors(
+    formData.variants || [],
+    availableColors
+  );
+
   return (
     <form onSubmit={onSubmit} autoComplete="off" className="p-6 md:p-12 pt-4 space-y-10 md:space-y-12">
       <ProductImages 
         images={formData.images || []}
+        imageColorIds={alignImageColorIds(
+          (formData.images || []).length,
+          formData.image_color_ids
+        )}
+        colors={galleryColors}
+        productName={formData.name || ''}
         isUploading={isUploading}
         fileInputRef={fileInputRef}
         onFileChange={handleFileChange}
         onEditImage={handleEditImage}
         onSetPrincipal={handleSetPrincipal}
         onRemoveImage={removeImage}
+        onImageColorChange={handleImageColorChange}
       />
 
       <ProductGeneralInfo 

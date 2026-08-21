@@ -20,6 +20,7 @@ import {
   getOneSizeForProduct,
   isProductSoldOut,
   getColorDisplayName,
+  findImageIndexForColor,
 } from '@/lib/productVariants';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
@@ -146,6 +147,8 @@ const ProductPage = () => {
   useEffect(() => {
     setSelectedSize('');
     setSelectedColorId(null);
+    setActiveImage(0);
+    setImageLoaded(false);
   }, [id]);
 
   useEffect(() => {
@@ -177,6 +180,15 @@ const ProductPage = () => {
     if (nextSize) setSelectedSize(nextSize);
     if (nextColorId != null) setSelectedColorId(nextColorId);
   }, [product, searchParams]);
+
+  // Al elegir un color, mostrar la foto asociada (si existe)
+  useEffect(() => {
+    if (selectedColorId == null) return;
+    const imageIdx = findImageIndexForColor(product?.image_color_ids, selectedColorId);
+    if (imageIdx < 0) return;
+    setActiveImage(imageIdx);
+    setImageLoaded(false);
+  }, [selectedColorId, product?.image_color_ids, product?.product_id]);
 
   // Save the last viewed product ID for scroll restoration
   useEffect(() => {

@@ -28,6 +28,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     handleFileChange,
     handleCropConfirm,
     handleSetPrincipal,
+    handleImageColorChange,
     handleEditImage,
     removeImage,
     handleSubmit
@@ -81,6 +82,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               handleFileChange={handleFileChange}
               handleEditImage={handleEditImage}
               handleSetPrincipal={handleSetPrincipal}
+              handleImageColorChange={handleImageColorChange}
               removeImage={removeImage}
               onSubmit={handleSubmit}
               onCancel={onClose}

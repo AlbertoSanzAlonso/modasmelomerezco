@@ -8,6 +8,7 @@ import {
   deriveProductColors,
   normalizeVariantsForForm,
   variantHasColor,
+  alignImageColorIds,
 } from '@/lib/productVariants';
 
 function newDraftProductId(): string {
@@ -43,6 +44,7 @@ export const useProductForm = (
     category_id: undefined,
     subcategory_id: undefined,
     images: [],
+    image_color_ids: [],
     stock: 0,
     is_new: false,
     is_published: false,
@@ -126,7 +128,13 @@ export const useProductForm = (
         setAvailableColors(catalog);
         const variants = normalizeVariantsForForm(fresh.variants || [], catalog);
         loadedColorVariantCount.current = countColorVariants(variants);
-        setFormData({ ...fresh, variants });
+        const images = fresh.images || [];
+        setFormData({
+          ...fresh,
+          variants,
+          images,
+          image_color_ids: alignImageColorIds(images.length, fresh.image_color_ids),
+        });
       })
       .catch((error) => {
         console.error('Error loading product for edit:', error);
@@ -197,10 +205,21 @@ export const useProductForm = (
       if (editingImageIndex !== null) {
         const newImages = [...currentImages];
         newImages[editingImageIndex] = cacheBustedUrl;
-        setFormData(prev => ({ ...prev, images: newImages }));
+        setFormData((prev) => ({
+          ...prev,
+          images: newImages,
+          image_color_ids: alignImageColorIds(newImages.length, prev.image_color_ids),
+        }));
         setEditingImageIndex(null);
       } else {
-        setFormData(prev => ({ ...prev, images: [...(prev.images || []), cacheBustedUrl] }));
+        setFormData((prev) => {
+          const newImages = [...(prev.images || []), cacheBustedUrl];
+          return {
+            ...prev,
+            images: newImages,
+            image_color_ids: [...alignImageColorIds(currentImages.length, prev.image_color_ids), null],
+          };
+        });
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -216,9 +235,25 @@ export const useProductForm = (
 
   const handleSetPrincipal = (index: number) => {
     const newImages = [...(formData.images || [])];
+    const newColorIds = alignImageColorIds(newImages.length, formData.image_color_ids);
     const [selected] = newImages.splice(index, 1);
+    const [selectedColor] = newColorIds.splice(index, 1);
     newImages.unshift(selected);
-    setFormData(prev => ({ ...prev, images: newImages }));
+    newColorIds.unshift(selectedColor ?? null);
+    setFormData((prev) => ({
+      ...prev,
+      images: newImages,
+      image_color_ids: newColorIds,
+    }));
+  };
+
+  const handleImageColorChange = (index: number, colorId: number | null) => {
+    setFormData((prev) => {
+      const images = prev.images || [];
+      const ids = alignImageColorIds(images.length, prev.image_color_ids);
+      ids[index] = colorId;
+      return { ...prev, image_color_ids: ids };
+    });
   };
 
   const handleEditImage = (index: number) => {
@@ -232,7 +267,15 @@ export const useProductForm = (
     const imageUrl = formData.images?.[index];
     if (!imageUrl) return;
     const newImages = (formData.images || []).filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, images: newImages }));
+    const newColorIds = alignImageColorIds(
+      (formData.images || []).length,
+      formData.image_color_ids
+    ).filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      images: newImages,
+      image_color_ids: newColorIds,
+    }));
     api.storage.delete(imageUrl).catch(console.warn);
   };
 
@@ -326,10 +369,13 @@ export const useProductForm = (
     };
 
     const persistForm = (allowColorRemoval = false) => {
+      const images = formData.images || [];
       lockSubmit();
       onSave({
         ...formData,
         details: trimmedDetails,
+        images,
+        image_color_ids: alignImageColorIds(images.length, formData.image_color_ids),
         variants: validVariants,
         colors,
         labels: formData.labels || [],
@@ -406,6 +452,7 @@ export const useProductForm = (
     handleFileChange,
     handleCropConfirm,
     handleSetPrincipal,
+    handleImageColorChange,
     handleEditImage,
     removeImage,
     handleSubmit

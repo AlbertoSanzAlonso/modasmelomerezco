@@ -533,20 +533,16 @@ const ProductPage = () => {
                         type="button"
                         disabled={colorDisabled}
                         onClick={() => !colorDisabled && handleColorSelect(Number(c.id), colorLabel)}
-                        className={`relative group transition-all ${colorDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        className={`relative group shrink-0 ${colorDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                         title={colorLabel}
                       >
-                        {/* Outer selected ring */}
-                        <div className={`absolute inset-0 -m-1.5 rounded-full border-2 transition-all duration-300
-                          ${selectedColorId === Number(c.id)
-                            ? 'border-primary scale-100 opacity-100' 
-                            : 'border-transparent scale-75 opacity-0 group-hover:border-secondary/30 group-hover:scale-100 group-hover:opacity-100'
-                          }`}
-                        />
-                        {/* Inner color / pattern swatch */}
                         <ColorSwatch
                           color={{ ...c, name: colorLabel }}
-                          className="w-10 h-10 rounded-full relative overflow-hidden transition-all duration-300 group-hover:scale-105 active:scale-95 shadow-md"
+                          className={`block size-10 rounded-full overflow-hidden shadow-md outline outline-2 outline-offset-2 transition-[transform,outline-color] duration-300 active:scale-95 ${
+                            selectedColorId === Number(c.id)
+                              ? 'outline-primary'
+                              : 'outline-transparent group-hover:outline-secondary/40'
+                          } ${colorDisabled ? '' : 'group-hover:scale-105'}`}
                         />
                         {/* Tooltip */}
                         <span className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-secondary text-white text-[9px] font-bold uppercase tracking-wider rounded-lg pointer-events-none transition-opacity duration-200 whitespace-nowrap shadow-lg z-10

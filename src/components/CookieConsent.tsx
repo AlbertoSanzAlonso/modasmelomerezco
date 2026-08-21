@@ -63,7 +63,7 @@ export const CookieConsent: FC = () => {
               src="/assets/logo/LOGO MELOMEREZCO corona.svg"
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute -right-2 top-1/2 h-40 w-40 -translate-y-1/2 select-none object-contain opacity-[0.06] sm:h-48 sm:w-48 md:right-4"
+              className="pointer-events-none absolute -right-16 top-1/2 h-72 w-72 -translate-y-1/2 -rotate-12 select-none object-contain opacity-[0.07] sm:-right-20 sm:h-96 sm:w-96 sm:-rotate-[14deg] md:-right-24 md:h-[28rem] md:w-[28rem]"
             />
             <div
               aria-hidden="true"

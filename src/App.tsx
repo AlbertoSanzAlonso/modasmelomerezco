@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStore } from "@/store/useAdminStore";
 import { ShopLayout } from "@/components/layout/ShopLayout";
 import { AIChatAgent } from "@/components/ui/AIChatAgent";
+import { CookieConsent } from "@/components/CookieConsent";
 
 // Helper to handle chunk load errors by forcing a reload
 const safeLazy = (importFn: () => Promise<any>) => {
@@ -135,6 +136,7 @@ function App() {
         <ScrollToTop />
         <AddToCartModal />
         <AIChatAgent />
+        <CookieConsent />
         <Suspense fallback={<Skeleton />}>
           <Routes>
             <Route path="/admin/login" element={<AdminLoginPage />} />

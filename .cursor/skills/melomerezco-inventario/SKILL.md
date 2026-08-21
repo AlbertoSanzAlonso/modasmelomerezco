@@ -24,8 +24,10 @@ description: >-
 - **`color_id` con valor:** variante de color; selector visible si el producto tiene alguna variante con color.
 - **Colores en ficha web:** tabla `product_colors` (derivada al guardar desde variantes con `color_id`).
 - **Colores propios:** `colors.product_id` = id del artículo. Nombre en BD: `Amarillo_nombre-producto` (tienda muestra solo «Amarillo»). Migración: `colors_product_id.sql`.
+- **Colores genéricos:** `colors.product_id` null (catálogo compartido). En el modal se listan aparte de los propios.
 - **Estampados:** `colors.swatch_url` = URL de muestra; si existe, el selector muestra la imagen en lugar del hex. Migración: `colors_swatch_url.sql`.
-- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`).
+- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`, `isOwnedProductColor`).
+- Al crear un color propio, las tallas se expanden para poder asignarlo al momento.
 
 ## Admin (`ProductInventory.tsx`)
 
@@ -35,11 +37,11 @@ description: >-
 - Al añadir el primer color a una talla, se elimina la fila `color_id` null y el stock pasa a la nueva línea.
 - Formulario: `useProductForm.ts` → `consolidateVariantsForSave()` + `deriveProductColors()`.
 
-## Ventas del día (tienda física)
+## Ventas tienda (física)
 
-- Pestaña admin **Ventas del día** (`DailySalesTab.tsx`): buscar producto → talla/color → cantidad → lista → restar.
+- Pestaña admin **Ventas tienda** (`DailySalesTab.tsx`): buscar producto → talla/color → cantidad → lista → restar.
 - Usa `api.products.decrementStock(variant_id, quantity)` (no crea pedidos).
-- Respeta stock disponible (incluye lo ya añadido a la lista del día).
+- Respeta stock disponible (incluye lo ya añadido a la lista).
 - No marca `is_sold_out` automáticamente; eso sigue siendo manual (Agotar).
 
 ## Tienda y carrito
@@ -65,7 +67,7 @@ description: >-
 |------|---------|
 | Helpers | `src/lib/productVariants.ts` |
 | Admin UI | `src/features/admin/ProductModal/ProductInventory.tsx` |
-| Ventas día | `src/features/admin/AdminDashboard/components/DailySalesTab.tsx` |
+| Ventas tienda | `src/features/admin/AdminDashboard/components/DailySalesTab.tsx` |
 | Form | `src/features/admin/ProductModal/useProductForm.ts` |
 | API | `src/lib/api/products.ts`, `src/lib/api/colors.ts` |
 | Tienda | `src/features/shop/ProductPage.tsx` |

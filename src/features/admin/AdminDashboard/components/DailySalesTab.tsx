@@ -219,7 +219,7 @@ export const DailySalesTab: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-daily-sales-search'] });
       openModal({
         title: 'Inventario actualizado',
-        message: 'Las ventas del día se han restado del stock.',
+        message: 'Las ventas de tienda se han restado del stock.',
         type: 'success',
       });
     },
@@ -248,10 +248,10 @@ export const DailySalesTab: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 md:gap-0">
         <div>
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">
-            Ventas del día
+            Ventas tienda
           </h2>
           <p className="text-gray-500 text-sm">
-            Selecciona lo vendido en tienda y réstalo del inventario al cierre.
+            Selecciona lo vendido en tienda y réstalo del inventario.
           </p>
         </div>
       </div>
@@ -465,11 +465,11 @@ export const DailySalesTab: React.FC = () => {
           )}
         </div>
 
-        {/* Lista del día */}
+        {/* Lista de ventas */}
         <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 sm:p-8 border-b border-(--border-main) flex justify-between items-center gap-3">
             <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
-              Lista del día
+              Lista de ventas
             </h3>
             {lines.length > 0 && (
               <button

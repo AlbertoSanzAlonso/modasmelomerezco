@@ -70,7 +70,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
             {[
               { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Resumen' },
               { id: 'products' as const, icon: Package, label: 'Productos' },
-              { id: 'daily-sales' as const, icon: ClipboardList, label: 'Ventas del día' },
+              { id: 'daily-sales' as const, icon: ClipboardList, label: 'Ventas tienda' },
               { id: 'orders' as const, icon: ShoppingCart, label: 'Pedidos' },
               { id: 'customers' as const, icon: Users, label: 'Clientes' },
               { id: 'newsletter' as const, icon: Mail, label: 'Newsletter' },

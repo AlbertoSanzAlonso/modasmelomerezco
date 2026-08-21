@@ -23,15 +23,29 @@ export const colors = {
     return data || [];
   },
 
-  /** Colores disponibles para un artículo (propios + ya usados en sus variantes). */
+  /**
+   * Catálogo seleccionable para un artículo:
+   * - colores propios (product_id = artículo)
+   * - colores genéricos (product_id null)
+   * - extras ya usados en variantes (legacy)
+   */
   getForProduct: async (productId: string): Promise<Color[]> => {
-    const { data: owned, error: ownedError } = await supabase
-      .from('colors')
-      .select('*')
-      .eq('product_id', productId)
-      .order('name', { ascending: true });
+    const [{ data: owned, error: ownedError }, { data: globals, error: globalsError }] =
+      await Promise.all([
+        supabase
+          .from('colors')
+          .select('*')
+          .eq('product_id', productId)
+          .order('name', { ascending: true }),
+        supabase
+          .from('colors')
+          .select('*')
+          .is('product_id', null)
+          .order('name', { ascending: true }),
+      ]);
 
     if (ownedError) throw ownedError;
+    if (globalsError) throw globalsError;
 
     const { data: variantRows, error: variantError } = await supabase
       .from('product_variants')
@@ -41,30 +55,36 @@ export const colors = {
 
     if (variantError) throw variantError;
 
-    const ownedList = owned || [];
-    const ownedIds = new Set(ownedList.map((c) => c.id));
+    const map = new Map<number, Color>();
+    for (const c of [...(owned || []), ...(globals || [])]) {
+      if (c?.id != null) map.set(Number(c.id), { ...c, id: Number(c.id) });
+    }
+
     const missingIds = [
       ...new Set(
         (variantRows || [])
-          .map((r) => r.color_id as number)
-          .filter((id) => id != null && !ownedIds.has(id))
+          .map((r) => Number(r.color_id))
+          .filter((id) => Number.isInteger(id) && !map.has(id))
       ),
     ];
 
-    if (missingIds.length === 0) return ownedList;
+    if (missingIds.length > 0) {
+      const { data: extras, error: extrasError } = await supabase
+        .from('colors')
+        .select('*')
+        .in('id', missingIds);
+      if (extrasError) throw extrasError;
+      for (const c of extras || []) {
+        if (c?.id != null) map.set(Number(c.id), { ...c, id: Number(c.id) });
+      }
+    }
 
-    const { data: extras, error: extrasError } = await supabase
-      .from('colors')
-      .select('*')
-      .in('id', missingIds);
-
-    if (extrasError) throw extrasError;
-
-    const map = new Map<number, Color>();
-    for (const c of [...ownedList, ...(extras || [])]) map.set(c.id, c);
-    return [...map.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-    );
+    return [...map.values()].sort((a, b) => {
+      const aOwn = a.product_id === productId ? 0 : 1;
+      const bOwn = b.product_id === productId ? 0 : 1;
+      if (aOwn !== bOwn) return aOwn - bOwn;
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+    });
   },
 
   create: async (color: ColorInput): Promise<Color> => {

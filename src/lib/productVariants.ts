@@ -392,6 +392,15 @@ export function getColorDisplayName(
   return display || storedName;
 }
 
+/** true si el color es propio del artículo (no genérico del catálogo). */
+export function isOwnedProductColor(
+  color: Pick<Color, 'product_id'>,
+  productId?: string | null
+): boolean {
+  if (!productId) return Boolean(color.product_id);
+  return color.product_id === productId;
+}
+
 /** Colores de catálogo web derivados de variantes con color_id. */
 export function deriveProductColors(
   variants: ProductVariant[],

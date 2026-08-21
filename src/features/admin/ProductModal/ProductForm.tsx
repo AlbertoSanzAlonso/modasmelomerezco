@@ -91,7 +91,17 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           productId={formData.product_id}
           productName={formData.name || ''}
           onVariantsChange={(variants) => setFormData({ ...formData, variants })}
-          onColorCreated={(newColor) => setAvailableColors((prev) => [...prev, newColor])}
+          onColorCreated={(newColor) =>
+            setAvailableColors((prev) => {
+              const id = Number(newColor.id);
+              if (!Number.isInteger(id)) return prev;
+              const normalized = { ...newColor, id };
+              if (prev.some((c) => Number(c.id) === id)) {
+                return prev.map((c) => (Number(c.id) === id ? normalized : c));
+              }
+              return [...prev, normalized];
+            })
+          }
         />
       )}
 

@@ -29,6 +29,7 @@ interface ProductsTabProps {
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
   onBulkMarkSoldOut: () => void;
+  onBulkMarkInStock: () => void;
   onBulkDelete: () => void;
   onTogglePublish: (product: Product) => void;
   onEdit: (product: Product) => void;
@@ -58,6 +59,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   onToggleSelect,
   onBulkStatusChange,
   onBulkMarkSoldOut,
+  onBulkMarkInStock,
   onBulkDelete,
   onTogglePublish,
   onEdit,
@@ -66,6 +68,16 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
 }) => {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const totalPages = Math.ceil(totalProducts / pageSize);
+
+  const selectedProducts =
+    products?.filter((p) => selectedIds.includes(p.product_id)) ?? [];
+  const allSelectedSoldOut =
+    selectedProducts.length > 0 &&
+    selectedProducts.every((p) => isProductSoldOut(p));
+  const allSelectedInStock =
+    selectedProducts.length > 0 &&
+    selectedProducts.every((p) => !isProductSoldOut(p));
+  // Si la selección mezcla agotados y en stock, no se muestra el botón
 
   const handleBulkDownload = async () => {
     if (!products) return;
@@ -194,7 +206,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             </button>
             <button onClick={() => onBulkStatusChange(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Publicar</button>
             <button onClick={() => onBulkStatusChange(false)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Ocultar</button>
-            <button onClick={onBulkMarkSoldOut} className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Agotar</button>
+            {allSelectedInStock && (
+              <button onClick={onBulkMarkSoldOut} className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Agotar</button>
+            )}
+            {allSelectedSoldOut && (
+              <button onClick={onBulkMarkInStock} className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">En stock</button>
+            )}
             <button onClick={onBulkDelete} className="flex-1 sm:flex-none px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Eliminar</button>
             <button onClick={() => onToggleSelectAll()} className="px-4 py-2.5 text-white/60 hover:text-white transition-colors">
               <Plus className="w-4 h-4 rotate-45" />

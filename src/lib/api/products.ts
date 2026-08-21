@@ -8,6 +8,8 @@ import {
   normalizeSize,
   dedupeVariantsBySizeAndColor,
   variantSizeColorKey,
+  isUniqueSize,
+  UNIQUE_SIZE_LABEL,
 } from '../productVariants';
 import type { Color, ProductVariant } from '@/types';
 
@@ -54,6 +56,7 @@ const PRODUCT_TABLE_COLUMNS = new Set([
   'price',
   'is_published',
   'is_new',
+  'is_sold_out',
   'category_id',
   'subcategory_id',
 ]);
@@ -362,6 +365,7 @@ async function syncProductDiscountCodes(
 const normalise = (p: any): Product => ({
   ...p,
   is_published: p.is_published ?? true,
+  is_sold_out: p.is_sold_out === true,
   stock: (() => {
     const rawVariants =
       p.product_variants?.length > 0 ? p.product_variants : p.variants || [];
@@ -423,22 +427,6 @@ export const products = {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let inStockProductIds: string[] | null = null;
-    if (soldOutOnly !== undefined) {
-      const { data: stockRows, error: stockError } = await supabase
-        .from('product_variants')
-        .select('product_id')
-        .gt('stock', 0);
-      if (stockError) throw stockError;
-      inStockProductIds = [
-        ...new Set((stockRows || []).map((r) => r.product_id as string)),
-      ];
-
-      if (soldOutOnly === false && inStockProductIds.length === 0) {
-        return { products: [], total: 0 };
-      }
-    }
-
     const selects = labelId
       ? [PRODUCT_SELECT_FILTER_BY_LABEL, PRODUCT_SELECT_BASE]
       : [PRODUCT_SELECT_WITH_LABELS, PRODUCT_SELECT_BASE];
@@ -453,19 +441,9 @@ export const products = {
       if (search) query = query.ilike('name', `%${search}%`);
       if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
       if (isNewOnly !== undefined) query = query.eq('is_new', isNewOnly);
+      if (soldOutOnly !== undefined) query = query.eq('is_sold_out', soldOutOnly);
       if (labelId && select.includes('product_labels')) {
         query = query.eq('product_labels.label_id', labelId);
-      }
-      if (soldOutOnly === true) {
-        if (inStockProductIds && inStockProductIds.length > 0) {
-          query = query.not(
-            'product_id',
-            'in',
-            `(${inStockProductIds.join(',')})`
-          );
-        }
-      } else if (soldOutOnly === false && inStockProductIds) {
-        query = query.in('product_id', inStockProductIds);
       }
 
       const { data, count, error } = await query
@@ -619,10 +597,10 @@ export const products = {
     }
   },
 
-  create: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
+  create: async (productData: Omit<Product, 'product_id'> & { product_id?: string }): Promise<Product> => {
     const { variants, images, colors, labels, discountCodes, ...pData } = productData as any;
     const productPayload = cleanProductTablePayload({
-      product_id: createProductId(),
+      product_id: pData.product_id || createProductId(),
       ...pData,
     });
     
@@ -747,6 +725,9 @@ export const products = {
   },
 
   delete: async (product_id: string): Promise<void> => {
+    // Colores propios del artículo (sin FK cascade)
+    await supabase.from('colors').delete().eq('product_id', product_id);
+
     const { error } = await supabase
       .from('products')
       .delete()
@@ -775,13 +756,94 @@ export const products = {
     if (updateError) throw updateError;
   },
 
-  /** Pone a 0 el stock de todas las variantes (cartel Agotado en tienda). */
-  markSoldOut: async (product_id: string): Promise<void> => {
+  /** Marca agotado sin tocar unidades (el stock se conserva). */
+  setSoldOut: async (product_id: string, is_sold_out: boolean): Promise<void> => {
     const { error } = await supabase
-      .from('product_variants')
-      .update({ stock: 0 })
+      .from('products')
+      .update({ is_sold_out })
       .eq('product_id', product_id);
 
     if (error) throw error;
+  },
+
+  /**
+   * Quita agotado y deja 3 uds en cada talla elegida × color disponible
+   * (o talla única sin color si no hay colores).
+   */
+  restockWithSizes: async (
+    product_id: string,
+    sizes: string[],
+    units = 3
+  ): Promise<Product> => {
+    const product = await products.getById(product_id);
+    const normalizedSizes = [
+      ...new Set(sizes.map((s) => normalizeSize(s)).filter(Boolean)),
+    ];
+
+    if (normalizedSizes.length === 0) {
+      throw new Error('Selecciona al menos una talla.');
+    }
+
+    const uniqueSelected = normalizedSizes.some((s) => isUniqueSize(s));
+    const selectedSizes = uniqueSelected
+      ? [UNIQUE_SIZE_LABEL]
+      : normalizedSizes.filter((s) => !isUniqueSize(s));
+
+    const coloredIds = hasColorVariants(product.variants)
+      ? [
+          ...new Set(
+            product.variants
+              .map((v) => v.color_id)
+              .filter((id): id is number => id != null)
+          ),
+        ]
+      : (product.colors ?? []).map((c) => c.id);
+
+    const colorSlots: Array<number | null> =
+      coloredIds.length > 0 ? coloredIds : [null];
+
+    const nextVariants: ProductVariant[] = [];
+    for (const size of selectedSizes) {
+      for (const colorId of colorSlots) {
+        const existing = product.variants.find(
+          (v) =>
+            normalizeSize(v.size) === normalizeSize(size) &&
+            (v.color_id ?? null) === colorId
+        );
+        const colorName =
+          colorId != null
+            ? product.colors?.find((c) => c.id === colorId)?.name ??
+              existing?.color
+            : null;
+        nextVariants.push({
+          id: existing?.id ?? `v-${size}-${colorId ?? 'n'}`,
+          variant_id: existing?.variant_id,
+          size,
+          color_id: colorId,
+          color: colorName,
+          stock: units,
+        });
+      }
+    }
+
+    // Conservar otras tallas no seleccionadas con su stock actual
+    if (!uniqueSelected) {
+      for (const v of product.variants) {
+        if (isUniqueSize(v.size)) continue;
+        const selected = selectedSizes.some(
+          (s) => normalizeSize(s) === normalizeSize(v.size)
+        );
+        if (selected) continue;
+        nextVariants.push({ ...v, stock: v.stock ?? 0 });
+      }
+    }
+
+    await products.update(product_id, {
+      is_sold_out: false,
+      variants: nextVariants,
+      _syncOptions: { allowColorRemoval: true },
+    } as Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } });
+
+    return products.getById(product_id);
   },
 };

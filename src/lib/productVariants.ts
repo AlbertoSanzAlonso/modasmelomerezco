@@ -280,10 +280,11 @@ export function getProductTotalStock(product: {
 }
 
 export function isProductSoldOut(product: {
+  is_sold_out?: boolean | null;
   variants?: ProductVariant[] | null;
   stock?: number | null;
 }): boolean {
-  return getProductTotalStock(product) <= 0;
+  return product.is_sold_out === true;
 }
 
 export function formatVariantLabel(

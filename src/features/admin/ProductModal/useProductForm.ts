@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from "@/lib/api";
 import { useCartStore } from "@/store/useCartStore";
-import type { Product, Category, Subcategory } from "@/types/index";
+import type { Product, Category, Subcategory, Color } from "@/types/index";
 import {
   consolidateVariantsForSave,
   countColorVariants,
@@ -10,12 +10,32 @@ import {
   variantHasColor,
 } from '@/lib/productVariants';
 
+function newDraftProductId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function mergeColorCatalog(owned: Color[], extra: Color[]): Color[] {
+  const map = new Map<number, Color>();
+  for (const c of [...owned, ...extra]) {
+    if (c?.id != null) map.set(c.id, c);
+  }
+  return [...map.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+  );
+}
+
 export const useProductForm = (
   product: Product | null | undefined,
   onSave: (product: Partial<Product>) => void,
   isSaving = false
 ) => {
+  const draftProductIdRef = useRef(product?.product_id ?? newDraftProductId());
+
   const [formData, setFormData] = useState<Partial<Product>>({
+    product_id: draftProductIdRef.current,
     name: '',
     description: '',
     details: '',
@@ -34,7 +54,7 @@ export const useProductForm = (
 
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [subcategoriesList, setSubcategoriesList] = useState<Subcategory[]>([]);
-  const [availableColors, setAvailableColors] = useState<any[]>([]);
+  const [availableColors, setAvailableColors] = useState<Color[]>([]);
   const [availableLabels, setAvailableLabels] = useState<any[]>([]);
   const [availableDiscountCodes, setAvailableDiscountCodes] = useState<any[]>([]);
 
@@ -56,7 +76,6 @@ export const useProductForm = (
 
   useEffect(() => {
     api.categories.getAll().then(setCategoriesList);
-    api.colors.getAll().then(setAvailableColors).catch(console.error);
     api.labels.getAll().then(setAvailableLabels).catch(() => setAvailableLabels([]));
     api.discountCodes.getAll().then(setAvailableDiscountCodes).catch(() => setAvailableDiscountCodes([]));
   }, []);
@@ -71,24 +90,41 @@ export const useProductForm = (
 
   useEffect(() => {
     if (!product?.product_id) {
+      // Nuevo artículo: colores del id de borrador
+      if (!draftProductIdRef.current) {
+        draftProductIdRef.current = newDraftProductId();
+      }
+      const draftId = draftProductIdRef.current;
       setIsProductLoading(false);
       loadedColorVariantCount.current = 0;
-      return;
+      setFormData((prev) => ({ ...prev, product_id: draftId }));
+      let cancelled = false;
+      api.colors
+        .getForProduct(draftId)
+        .then((owned) => {
+          if (!cancelled) setAvailableColors(owned);
+        })
+        .catch(() => {
+          if (!cancelled) setAvailableColors([]);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
 
+    draftProductIdRef.current = product.product_id;
     let cancelled = false;
     setIsProductLoading(true);
 
-    api.products
-      .getById(product.product_id)
-      .then((fresh) => {
+    Promise.all([
+      api.products.getById(product.product_id),
+      api.colors.getForProduct(product.product_id),
+    ])
+      .then(([fresh, ownedColors]) => {
         if (cancelled) return;
-        const colorCatalog =
-          fresh.colors && fresh.colors.length > 0 ? fresh.colors : availableColors;
-        const variants = normalizeVariantsForForm(
-          fresh.variants || [],
-          colorCatalog
-        );
+        const catalog = mergeColorCatalog(ownedColors, fresh.colors || []);
+        setAvailableColors(catalog);
+        const variants = normalizeVariantsForForm(fresh.variants || [], catalog);
         loadedColorVariantCount.current = countColorVariants(variants);
         setFormData({ ...fresh, variants });
       })
@@ -110,10 +146,10 @@ export const useProductForm = (
     return () => {
       cancelled = true;
     };
-  }, [product?.product_id, availableColors]);
+  }, [product?.product_id]);
 
   useEffect(() => {
-    const totalStock = formData.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
+    const totalStock = formData.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) || 0;
     if (totalStock !== formData.stock) {
       setFormData(prev => ({ ...prev, stock: totalStock }));
     }

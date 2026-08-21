@@ -83,13 +83,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         onSubcategoryChange={(id) => setFormData({ ...formData, subcategory_id: id })}
       />
 
-      <ProductInventory
-        variants={formData.variants || []}
-        availableColors={availableColors}
-        productImages={formData.images || []}
-        onVariantsChange={(variants) => setFormData({ ...formData, variants })}
-        onColorCreated={(newColor) => setAvailableColors((prev) => [...prev, newColor])}
-      />
+      {formData.product_id && (
+        <ProductInventory
+          variants={formData.variants || []}
+          availableColors={availableColors}
+          productImages={formData.images || []}
+          productId={formData.product_id}
+          onVariantsChange={(variants) => setFormData({ ...formData, variants })}
+          onColorCreated={(newColor) => setAvailableColors((prev) => [...prev, newColor])}
+        />
+      )}
 
       <ProductLabels
         selectedLabels={formData.labels || []}

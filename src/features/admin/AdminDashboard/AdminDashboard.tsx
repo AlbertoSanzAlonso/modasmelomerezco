@@ -10,6 +10,7 @@ import { NewsletterTab } from "@/features/admin/AdminDashboard/components/Newsle
 import { CustomersTab } from "@/features/admin/AdminDashboard/components/CustomersTab";
 import { DiscountCodesTab } from "@/features/admin/AdminDashboard/components/DiscountCodesTab";
 import { OrderDetailsModal } from "@/features/admin/AdminDashboard/components/OrderDetailsModal";
+import { RestockSizesModal } from "@/features/admin/AdminDashboard/components/RestockSizesModal";
 import { useAdminData } from './useAdminData';
 import { api } from "@/lib/api";
 import { getOrderContact } from '@/lib/orderContact';
@@ -45,6 +46,8 @@ export const AdminDashboard: React.FC = () => {
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
   const [soldOutFilter, setSoldOutFilter] = useState<boolean | undefined>(undefined);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [showRestockModal, setShowRestockModal] = useState(false);
+  const [isRestocking, setIsRestocking] = useState(false);
   const pageSize = 10;
 
   // Reset page when filters or search change
@@ -180,35 +183,76 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const invalidateShopProductCaches = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['product'] });
+    queryClient.invalidateQueries({ queryKey: ['search-products'] });
+    queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+  };
+
   const handleBulkMarkSoldOut = async () => {
     if (selectedIds.length === 0) return;
     openModal({
       title: 'Marcar como agotado',
-      message: `¿Poner a 0 el stock de ${selectedIds.length} producto${selectedIds.length === 1 ? '' : 's'}? En la web aparecerán como agotados y no se podrán comprar.`,
+      message: `¿Marcar ${selectedIds.length} producto${selectedIds.length === 1 ? '' : 's'} como agotado? En la web aparecerán con cartel Agotado y no se podrán comprar. El stock numérico se conserva.`,
       type: 'confirm',
       onConfirm: async () => {
         try {
-          await Promise.all(selectedIds.map((id) => api.products.markSoldOut(id)));
-          queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-          queryClient.invalidateQueries({ queryKey: ['products'] });
-          queryClient.invalidateQueries({ queryKey: ['product'] });
-          queryClient.invalidateQueries({ queryKey: ['search-products'] });
-          queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+          await Promise.all(
+            selectedIds.map((id) => api.products.setSoldOut(id, true))
+          );
+          invalidateShopProductCaches();
           setSelectedIds([]);
           openModal({
             title: 'Agotados',
-            message: 'Los productos seleccionados quedan sin stock y se muestran como agotados en la tienda.',
+            message: 'Los productos se muestran como agotados en la tienda.',
             type: 'info',
           });
         } catch {
           openModal({
             title: 'Error',
-            message: 'No se pudo marcar como agotado. Inténtalo de nuevo.',
+            message: 'No se pudo marcar como agotado. ¿Ejecutaste la migración products_is_sold_out.sql?',
             type: 'warning',
           });
         }
       },
     });
+  };
+
+  const handleBulkMarkInStock = () => {
+    if (selectedIds.length === 0) return;
+    setShowRestockModal(true);
+  };
+
+  const handleRestockConfirm = async (sizes: string[]) => {
+    if (selectedIds.length === 0) return;
+    setIsRestocking(true);
+    try {
+      await Promise.all(
+        selectedIds.map((id) => api.products.restockWithSizes(id, sizes, 3))
+      );
+      invalidateShopProductCaches();
+      setSelectedIds([]);
+      setShowRestockModal(false);
+      openModal({
+        title: 'En stock',
+        message:
+          'Productos repuestos: 3 unidades por cada talla/color seleccionado.',
+        type: 'info',
+      });
+    } catch (err) {
+      openModal({
+        title: 'Error',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'No se pudo reponer el stock. Inténtalo de nuevo.',
+        type: 'warning',
+      });
+    } finally {
+      setIsRestocking(false);
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -421,6 +465,7 @@ export const AdminDashboard: React.FC = () => {
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onBulkStatusChange={handleBulkStatusChange}
             onBulkMarkSoldOut={handleBulkMarkSoldOut}
+            onBulkMarkInStock={handleBulkMarkInStock}
             onBulkDelete={handleBulkDelete}
             onTogglePublish={(p) => togglePublishMutation.mutate(p)}
             onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}
@@ -502,6 +547,17 @@ export const AdminDashboard: React.FC = () => {
           isSaving={saveMutation.isPending}
         />
       )}
+
+      <RestockSizesModal
+        open={showRestockModal}
+        productCount={selectedIds.length}
+        isSubmitting={isRestocking}
+        onClose={() => {
+          if (isRestocking) return;
+          setShowRestockModal(false);
+        }}
+        onConfirm={handleRestockConfirm}
+      />
 
       {showOrderDetails && selectedOrder && (
         <OrderDetailsModal 

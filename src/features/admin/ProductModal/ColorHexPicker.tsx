@@ -1,19 +1,16 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Pipette, X, Check } from 'lucide-react';
 
-/** Cursor SVG de gotero (hotspot en la punta). */
+/** Cursor SVG de gotero negro (hotspot en la punta). */
 const EYEDROPPER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none'>
-    <g stroke-linecap='round' stroke-linejoin='round'>
-      <path d='M2 22l1-1h3l9.5-9.5' stroke='white' stroke-width='3.5'/>
-      <path d='M14.5 5.5l4 4' stroke='white' stroke-width='3.5'/>
-      <path d='M16 3.5l4.5 4.5a1.5 1.5 0 0 1 0 2.1L18 12.6' stroke='white' stroke-width='3.5'/>
-      <path d='M2 22l1-1h3l9.5-9.5' stroke='%23111' stroke-width='1.8'/>
-      <path d='M14.5 5.5l4 4' stroke='%23111' stroke-width='1.8'/>
-      <path d='M11.5 8.5l4 4' stroke='%23111' stroke-width='1.8'/>
-      <path d='M16 3.5l4.5 4.5a1.5 1.5 0 0 1 0 2.1L18 12.6' stroke='%23111' stroke-width='1.8'/>
-      <circle cx='18.8' cy='5.2' r='1.35' fill='%23111' stroke='white' stroke-width='0.8'/>
+    <g stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'>
+      <path d='M2 22l1-1h3l9.5-9.5'/>
+      <path d='M14.5 5.5l4 4'/>
+      <path d='M11.5 8.5l4 4'/>
+      <path d='M16 3.5l4.5 4.5a1.5 1.5 0 0 1 0 2.1L18 12.6'/>
     </g>
+    <circle cx='18.8' cy='5.2' r='1.5' fill='%23000000'/>
   </svg>`
 )}") 2 30, crosshair`;
 

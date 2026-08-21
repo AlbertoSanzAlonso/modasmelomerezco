@@ -23,6 +23,8 @@ interface ProductInventoryProps {
   variants: ProductVariant[];
   availableColors: Color[];
   productImages?: string[];
+  /** ID del artículo: los colores nuevos quedan ligados solo a él */
+  productId: string;
   onVariantsChange: (variants: ProductVariant[]) => void;
   onColorCreated: (color: Color) => void;
 }
@@ -54,6 +56,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   variants = [],
   availableColors = [],
   productImages = [],
+  productId,
   onVariantsChange,
   onColorCreated,
 }) => {
@@ -251,6 +254,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
       const created = await api.colors.create({
         name: trimmedName,
         hex,
+        product_id: productId,
       });
       onColorCreated(created);
       setNewColorName('');
@@ -278,10 +282,10 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
       <div className="bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl space-y-5">
         <div className="space-y-1">
           <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
-            Colores del catálogo
+            Colores de este artículo
           </label>
           <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-            Nombre + color (puedes extraerlo de la foto con el cuentagotas)
+            Solo disponibles en esta pieza (nombre + hex o cuentagotas)
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">

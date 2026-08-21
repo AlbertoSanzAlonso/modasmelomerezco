@@ -8,12 +8,22 @@ description: >-
 
 # Inventario talla × color (melomerezco)
 
+## Agotado (`is_sold_out`)
+
+- Columna `products.is_sold_out` (default `false` = en stock).
+- Migración: `supabase/migrations/products_is_sold_out.sql`.
+- Tienda: cartel Agotado + sin compra si `is_sold_out`.
+- Admin: Agotar / En stock (solo si toda la selección es homogénea).
+- Al reponer: modal de tallas → 3 uds por talla × color (`restockWithSizes`).
+
 ## Fuente de verdad
 
 - **Stock:** tabla `product_variants` → `size`, `color_id` (FK nullable), `stock`, `variant_id`.
+- **Agotado visual/compra:** `products.is_sold_out` (no borra el stock).
 - **`color_id` null:** solo talla; en tienda **no** hay selector de color.
 - **`color_id` con valor:** variante de color; selector visible si el producto tiene alguna variante con color.
 - **Colores en ficha web:** tabla `product_colors` (derivada al guardar desde variantes con `color_id`).
+- **Colores propios:** `colors.product_id` = id del artículo (creados con el selector del modal). Solo aparecen en ese producto. Migración: `colors_product_id.sql`.
 - **Helpers:** `src/lib/productVariants.ts` (reutilizar, no duplicar).
 
 ## Admin (`ProductInventory.tsx`)

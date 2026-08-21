@@ -22,6 +22,8 @@ export interface Color {
   id: number;
   name: string;
   hex: string;
+  /** Si tiene valor, el color solo aplica a ese producto */
+  product_id?: string | null;
 }
 
 export interface Label {
@@ -47,6 +49,8 @@ export interface Product {
   variants: ProductVariant[];
   is_new?: boolean;
   is_published?: boolean;
+  /** true = cartel Agotado en tienda; por defecto false (en stock) */
+  is_sold_out?: boolean;
   stock: number;
   colors?: Color[];
   labels?: Label[];

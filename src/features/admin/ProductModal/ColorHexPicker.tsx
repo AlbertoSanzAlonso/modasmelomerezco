@@ -1,19 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Pipette, X, Check } from 'lucide-react';
 
-/** Cursor SVG de gotero negro (hotspot en la punta). */
-const EYEDROPPER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none'>
-    <g stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'>
-      <path d='M2 22l1-1h3l9.5-9.5'/>
-      <path d='M14.5 5.5l4 4'/>
-      <path d='M11.5 8.5l4 4'/>
-      <path d='M16 3.5l4.5 4.5a1.5 1.5 0 0 1 0 2.1L18 12.6'/>
-    </g>
-    <circle cx='18.8' cy='5.2' r='1.5' fill='%23000000'/>
-  </svg>`
-)}") 2 30, crosshair`;
-
 function normalizeHex(value: string): string {
   const raw = value.trim();
   if (/^#[0-9A-Fa-f]{6}$/.test(raw)) return raw.toUpperCase();
@@ -108,22 +95,13 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
   const [activeImage, setActiveImage] = useState(0);
   const [previewHex, setPreviewHex] = useState<string | null>(null);
   const [loupe, setLoupe] = useState<{ x: number; y: number } | null>(null);
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [canvasReady, setCanvasReady] = useState(false);
   const draggingRef = useRef(false);
 
   const pickingActive = isPicking || showImagePick;
-
-  useEffect(() => {
-    if (!pickingActive) return;
-    const prevBody = document.body.style.cursor;
-    const prevHtml = document.documentElement.style.cursor;
-    document.body.style.cursor = EYEDROPPER_CURSOR;
-    document.documentElement.style.cursor = EYEDROPPER_CURSOR;
-    return () => {
-      document.body.style.cursor = prevBody;
-      document.documentElement.style.cursor = prevHtml;
-    };
-  }, [pickingActive]);
 
   const applyHex = useCallback(
     (hex: string) => {
@@ -132,6 +110,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
       setShowImagePick(false);
       setPreviewHex(null);
       setLoupe(null);
+      setCursorPos(null);
       setCanvasReady(false);
       canvasRef.current = null;
     },
@@ -160,6 +139,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     setActiveImage(0);
     setPreviewHex(null);
     setLoupe(null);
+    setCursorPos(null);
     setCanvasReady(false);
     canvasRef.current = null;
     setShowImagePick(true);
@@ -169,7 +149,6 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     if (disabled) return;
     setPickError(null);
 
-    // Con fotos: muestreo sobre la imagen con cursor gotero
     if (productImages.length > 0) {
       openImagePicker();
       return;
@@ -269,17 +248,39 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     }
   };
 
-  const onPointerSample = (
+  const updateCursorFromEvent = (
     e: React.PointerEvent<HTMLDivElement>,
-    src: string
+    sample: boolean
   ) => {
-    e.preventDefault();
-    void sampleAtClientPoint(e.clientX, e.clientY, src);
+    const wrap = e.currentTarget.getBoundingClientRect();
+    setCursorPos({
+      x: e.clientX - wrap.left,
+      y: e.clientY - wrap.top,
+    });
+    if (sample) {
+      void sampleAtClientPoint(e.clientX, e.clientY, productImages[activeImage]);
+    }
   };
 
   const confirmPreview = () => {
     if (previewHex) applyHex(previewHex);
   };
+
+  const closePicker = () => {
+    setShowImagePick(false);
+    setPreviewHex(null);
+    setLoupe(null);
+    setCursorPos(null);
+  };
+
+  useEffect(() => {
+    if (!showImagePick) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') closePicker();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showImagePick]);
 
   const hexValid = /^#[0-9A-Fa-f]{6}$/i.test(value);
 
@@ -336,7 +337,6 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                 ? 'border-primary bg-primary text-white'
                 : 'border-primary/40 text-primary hover:bg-primary hover:text-white'
             }`}
-          style={pickingActive ? { cursor: EYEDROPPER_CURSOR } : undefined}
         >
           <Pipette className={`w-4 h-4 ${isPicking ? 'animate-pulse' : ''}`} />
           <span className="sr-only">Extraer color de la foto</span>
@@ -345,7 +345,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
 
       <p className="text-[9px] text-gray-400 uppercase tracking-wider leading-relaxed">
         {pickingActive
-          ? 'Puntero gotero activo: elige un tono de la foto…'
+          ? 'Gotero activo: elige un tono de la foto…'
           : isTouchPrimary
             ? 'Pipeta: toca la foto y confirma el color'
             : 'Cuentagotas: toma el color de la foto'}
@@ -361,16 +361,10 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Extraer color de la foto"
-          style={{ cursor: EYEDROPPER_CURSOR }}
-          onClick={() => {
-            setShowImagePick(false);
-            setPreviewHex(null);
-            setLoupe(null);
-          }}
+          onClick={closePicker}
         >
           <div
             className="bg-(--bg-card) border border-(--border-main) rounded-t-3xl sm:rounded-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] max-w-lg w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto"
-            style={{ cursor: 'default' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
@@ -381,16 +375,12 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                 <p className="text-[12px] text-gray-500 mt-1">
                   {isTouchPrimary
                     ? 'Arrastra el dedo sobre la prenda y pulsa confirmar'
-                    : 'El cursor es un gotero: haz clic en el tono de la prenda'}
+                    : 'Mueve el gotero negro sobre la prenda y haz clic'}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setShowImagePick(false);
-                  setPreviewHex(null);
-                  setLoupe(null);
-                }}
+                onClick={closePicker}
                 className="p-2.5 rounded-full hover:bg-black/5 text-gray-500"
                 aria-label="Cerrar"
               >
@@ -408,6 +398,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                       setActiveImage(i);
                       setPreviewHex(null);
                       setLoupe(null);
+                      setCursorPos(null);
                       setCanvasReady(false);
                       canvasRef.current = null;
                     }}
@@ -428,16 +419,26 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
             )}
 
             <div
-              className="relative rounded-xl overflow-hidden border border-(--border-main) bg-(--bg-main) touch-none select-none"
-              style={{ cursor: EYEDROPPER_CURSOR }}
+              className={`relative rounded-xl overflow-hidden border border-(--border-main) bg-(--bg-main) touch-none select-none ${
+                isTouchPrimary ? '' : 'cursor-none'
+              }`}
+              onPointerEnter={(e) => {
+                if (isTouchPrimary) return;
+                updateCursorFromEvent(e, true);
+              }}
+              onPointerLeave={() => {
+                if (!draggingRef.current) setCursorPos(null);
+              }}
               onPointerDown={(e) => {
                 draggingRef.current = true;
                 e.currentTarget.setPointerCapture(e.pointerId);
-                onPointerSample(e, productImages[activeImage]);
+                updateCursorFromEvent(e, true);
               }}
               onPointerMove={(e) => {
-                if (!draggingRef.current) return;
-                onPointerSample(e, productImages[activeImage]);
+                updateCursorFromEvent(
+                  e,
+                  draggingRef.current || e.pointerType === 'mouse'
+                );
               }}
               onPointerUp={() => {
                 draggingRef.current = false;
@@ -458,9 +459,28 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                   void ensureCanvas(productImages[activeImage]);
                 }}
               />
+
+              {/* Gotero visible (no depende del cursor CSS del SO) */}
+              {!isTouchPrimary && cursorPos && (
+                <div
+                  className="pointer-events-none absolute z-30 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)] drop-shadow-[0_0_1px_rgba(255,255,255,1)]"
+                  style={{
+                    left: cursorPos.x,
+                    top: cursorPos.y,
+                    transform: 'translate(-2px, -28px)',
+                  }}
+                  aria-hidden
+                >
+                  <Pipette
+                    className="w-7 h-7 text-black"
+                    strokeWidth={2.5}
+                  />
+                </div>
+              )}
+
               {loupe && previewHex && (
                 <div
-                  className="pointer-events-none absolute w-14 h-14 -ml-7 -mt-16 rounded-full border-4 border-white shadow-lg ring-1 ring-black/20"
+                  className="pointer-events-none absolute w-14 h-14 -ml-7 -mt-16 rounded-full border-4 border-white shadow-lg ring-1 ring-black/20 z-20"
                   style={{
                     left: loupe.x,
                     top: loupe.y,

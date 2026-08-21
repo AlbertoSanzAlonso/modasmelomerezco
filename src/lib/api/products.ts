@@ -673,8 +673,8 @@ export const products = {
       await syncProductVariants(product_id, variants, _syncOptions);
     }
 
-    // 3. Update images if provided
-    if (images) {
+    // 3. Update images only when explicitly provided (never from restock/agotado)
+    if (Object.prototype.hasOwnProperty.call(updates, 'images') && images) {
       const { error: deleteImagesError } = await supabase
         .from('product_images')
         .delete()
@@ -769,6 +769,7 @@ export const products = {
   /**
    * Quita agotado y deja 3 uds en cada talla elegida × color disponible
    * (o talla única sin color si no hay colores).
+   * No toca imágenes, etiquetas ni códigos.
    */
   restockWithSizes: async (
     product_id: string,
@@ -838,11 +839,29 @@ export const products = {
       }
     }
 
-    await products.update(product_id, {
-      is_sold_out: false,
-      variants: nextVariants,
-      _syncOptions: { allowColorRemoval: true },
-    } as Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } });
+    await products.setSoldOut(product_id, false);
+    await syncProductVariants(product_id, nextVariants, {
+      allowColorRemoval: true,
+    });
+
+    // Mantener product_colors alineado con variantes (sin tocar imágenes)
+    const derived = deriveProductColors(nextVariants, product.colors || []);
+    const { error: deleteColorsError } = await supabase
+      .from('product_colors')
+      .delete()
+      .eq('product_id', product_id);
+    assertNoSupabaseError(deleteColorsError, 'product_colors delete');
+    if (derived.length > 0) {
+      const { error: insertColorsError } = await supabase
+        .from('product_colors')
+        .insert(
+          derived.map((c) => ({
+            product_id,
+            color_id: c.id,
+          }))
+        );
+      assertNoSupabaseError(insertColorsError, 'product_colors insert');
+    }
 
     return products.getById(product_id);
   },

@@ -163,9 +163,10 @@ export const useProductForm = (
   };
 
   const buildImageFileName = (productName: string, index: number): string => {
-    const baseName = sanitizeName(productName);
-    if (!baseName) return `product_${Date.now()}.webp`;
-    return index === 0 ? `${baseName}.webp` : `${baseName}_${index}.webp`;
+    const baseName = sanitizeName(productName) || 'product';
+    const productKey = sanitizeName(formData.product_id || 'draft') || 'draft';
+    // Carpeta + timestamp: evita pisar archivos de otras piezas (o de este mismo producto)
+    return `${productKey}/${Date.now()}_${baseName}_${index}.webp`;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

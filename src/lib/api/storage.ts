@@ -34,18 +34,22 @@ export const storage = {
    * Borra un archivo del bucket.
    */
   delete: async (url: string): Promise<void> => {
-    // Extraer el nombre del archivo de la URL
-    const parts = url.split('/');
-    const fileName = parts.pop();
+    try {
+      const marker = `/object/public/${BUCKET}/`;
+      const idx = url.indexOf(marker);
+      let filePath = '';
+      if (idx !== -1) {
+        filePath = decodeURIComponent(url.slice(idx + marker.length).split('?')[0]);
+      } else {
+        const parts = url.split('/');
+        filePath = decodeURIComponent((parts.pop() || '').split('?')[0]);
+      }
+      if (!filePath) return;
 
-    if (!fileName) return;
-
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .remove([fileName]);
-
-    if (error) {
-      console.error('Error deleting from storage:', error);
+      const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
+      if (error) console.error('Error deleting from storage:', error);
+    } catch (err) {
+      console.error('Error deleting from storage:', err);
     }
   },
 };

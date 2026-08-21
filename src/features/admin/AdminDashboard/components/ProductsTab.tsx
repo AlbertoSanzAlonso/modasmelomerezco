@@ -188,32 +188,50 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="bg-primary text-white p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 animate-in slide-in-from-top duration-300">
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
-              {selectedIds.length}
+        <div className="bg-primary text-white p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 animate-in slide-in-from-top duration-300 min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
+                {selectedIds.length}
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest truncate">
+                Seleccionados
+              </p>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest">Elementos seleccionados</p>
+            <button
+              type="button"
+              onClick={() => onToggleSelectAll()}
+              className="sm:hidden p-2 text-white/60 hover:text-white transition-colors"
+              aria-label="Quitar selección"
+            >
+              <Plus className="w-4 h-4 rotate-45" />
+            </button>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <button 
-              onClick={handleBulkDownload} 
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto min-w-0">
+            <button
+              type="button"
+              onClick={handleBulkDownload}
               disabled={isDownloading}
-              className="flex-1 sm:flex-none px-6 py-2.5 bg-white text-primary hover:bg-white/90 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 disabled:opacity-50"
+              className="col-span-2 sm:col-span-1 px-3 sm:px-6 py-2.5 bg-white text-primary hover:bg-white/90 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isDownloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-              Descargar Fotos
+              Descargar fotos
             </button>
-            <button onClick={() => onBulkStatusChange(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Publicar</button>
-            <button onClick={() => onBulkStatusChange(false)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Ocultar</button>
+            <button type="button" onClick={() => onBulkStatusChange(true)} className="px-3 sm:px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Publicar</button>
+            <button type="button" onClick={() => onBulkStatusChange(false)} className="px-3 sm:px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Ocultar</button>
             {allSelectedInStock && (
-              <button onClick={onBulkMarkSoldOut} className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Agotar</button>
+              <button type="button" onClick={onBulkMarkSoldOut} className="px-3 sm:px-6 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Agotar</button>
             )}
             {allSelectedSoldOut && (
-              <button onClick={onBulkMarkInStock} className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">En stock</button>
+              <button type="button" onClick={onBulkMarkInStock} className="px-3 sm:px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">En stock</button>
             )}
-            <button onClick={onBulkDelete} className="flex-1 sm:flex-none px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Eliminar</button>
-            <button onClick={() => onToggleSelectAll()} className="px-4 py-2.5 text-white/60 hover:text-white transition-colors">
+            <button type="button" onClick={onBulkDelete} className="px-3 sm:px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Eliminar</button>
+            <button
+              type="button"
+              onClick={() => onToggleSelectAll()}
+              className="hidden sm:inline-flex px-4 py-2.5 text-white/60 hover:text-white transition-colors items-center justify-center"
+              aria-label="Quitar selección"
+            >
               <Plus className="w-4 h-4 rotate-45" />
             </button>
           </div>

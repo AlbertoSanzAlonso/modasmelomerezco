@@ -55,46 +55,46 @@ export const CookieConsent: FC = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 28 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-3 bottom-20 z-60 sm:inset-x-auto sm:left-6 sm:right-auto sm:bottom-6 sm:max-w-md md:max-w-lg"
+          className="fixed inset-x-0 bottom-0 z-60 flex justify-center px-4 pb-4 sm:px-6 sm:pb-6 pointer-events-none"
         >
-          <div className="relative overflow-hidden rounded-2xl border border-secondary/8 bg-accent/95 shadow-[0_24px_60px_-20px_rgba(5,5,5,0.35)] backdrop-blur-xl dark:bg-secondary/95 dark:border-white/10">
+          <div className="pointer-events-auto relative w-full max-w-4xl overflow-hidden rounded-2xl border border-black/5 bg-[#faf9f6] shadow-[0_20px_50px_-16px_rgba(5,5,5,0.28)]">
             {/* Marca de agua del logo */}
             <img
               src="/assets/logo/LOGO MELOMEREZCO corona.svg"
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute -right-6 -top-4 h-36 w-36 select-none object-contain opacity-[0.07] sm:h-44 sm:w-44 sm:-right-4 sm:-top-2 dark:opacity-[0.12] dark:invert"
+              className="pointer-events-none absolute -right-2 top-1/2 h-40 w-40 -translate-y-1/2 select-none object-contain opacity-[0.06] sm:h-48 sm:w-48 md:right-4"
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/50 to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#ff4f70]/60 to-transparent"
             />
 
-            <div className="relative z-10 flex flex-col gap-5 p-5 sm:p-6">
-              <div className="space-y-2 pr-10 sm:pr-14">
-                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-primary">
+            <div className="relative z-10 flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:gap-8 md:p-8">
+              <div className="min-w-0 flex-1 space-y-2 md:pr-8">
+                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#ff4f70]">
                   Cookies
                 </p>
-                <h2 className="font-display text-lg font-black uppercase tracking-tight italic text-secondary sm:text-xl">
+                <h2 className="font-display text-xl font-black uppercase tracking-tight italic text-[#050505] sm:text-2xl">
                   Tu privacidad{' '}
-                  <span className="font-serif lowercase not-italic text-primary">importa</span>
+                  <span className="font-serif lowercase not-italic text-[#ff4f70]">importa</span>
                 </h2>
-                <p className="text-sm font-light leading-relaxed text-secondary/65">
+                <p className="max-w-xl text-sm font-light leading-relaxed text-[#050505]/65">
                   Usamos cookies técnicas para que la tienda funcione y, si lo aceptas, otras
                   que nos ayudan a mejorar tu experiencia.{' '}
                   <Link
                     to="/cookies"
-                    className="font-medium text-secondary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+                    className="font-medium text-[#050505] underline decoration-[#ff4f70]/40 underline-offset-4 transition-colors hover:text-[#ff4f70] hover:decoration-[#ff4f70]"
                   >
                     Política de cookies
                   </Link>
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <div className="flex w-full shrink-0 flex-col gap-2.5 sm:flex-row sm:w-auto md:flex-col lg:flex-row">
                 <Button
                   size="sm"
-                  className="w-full rounded-xl py-3.5 text-[10px] sm:flex-1"
+                  className="w-full rounded-xl bg-[#ff4f70] py-3.5 text-[10px] hover:bg-[#e63e5d] sm:min-w-40"
                   onClick={() => dismiss('accepted')}
                 >
                   Aceptar
@@ -102,7 +102,7 @@ export const CookieConsent: FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full rounded-xl border-secondary/15 py-3.5 text-[10px] sm:flex-1"
+                  className="w-full rounded-xl border-black/10 bg-white py-3.5 text-[10px] text-[#050505] hover:bg-black/5 sm:min-w-40"
                   onClick={() => dismiss('necessary')}
                 >
                   Solo necesarias

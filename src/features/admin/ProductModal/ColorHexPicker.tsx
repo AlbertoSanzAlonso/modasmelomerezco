@@ -1,5 +1,21 @@
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Pipette, X, Check } from 'lucide-react';
+
+/** Cursor SVG de gotero (hotspot en la punta). */
+const EYEDROPPER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none'>
+    <g stroke-linecap='round' stroke-linejoin='round'>
+      <path d='M2 22l1-1h3l9.5-9.5' stroke='white' stroke-width='3.5'/>
+      <path d='M14.5 5.5l4 4' stroke='white' stroke-width='3.5'/>
+      <path d='M16 3.5l4.5 4.5a1.5 1.5 0 0 1 0 2.1L18 12.6' stroke='white' stroke-width='3.5'/>
+      <path d='M2 22l1-1h3l9.5-9.5' stroke='%23111' stroke-width='1.8'/>
+      <path d='M14.5 5.5l4 4' stroke='%23111' stroke-width='1.8'/>
+      <path d='M11.5 8.5l4 4' stroke='%23111' stroke-width='1.8'/>
+      <path d='M16 3.5l4.5 4.5a1.5 1.5 0 0 1 0 2.1L18 12.6' stroke='%23111' stroke-width='1.8'/>
+      <circle cx='18.8' cy='5.2' r='1.35' fill='%23111' stroke='white' stroke-width='0.8'/>
+    </g>
+  </svg>`
+)}") 2 30, crosshair`;
 
 function normalizeHex(value: string): string {
   const raw = value.trim();
@@ -98,6 +114,20 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
   const [canvasReady, setCanvasReady] = useState(false);
   const draggingRef = useRef(false);
 
+  const pickingActive = isPicking || showImagePick;
+
+  useEffect(() => {
+    if (!pickingActive) return;
+    const prevBody = document.body.style.cursor;
+    const prevHtml = document.documentElement.style.cursor;
+    document.body.style.cursor = EYEDROPPER_CURSOR;
+    document.documentElement.style.cursor = EYEDROPPER_CURSOR;
+    return () => {
+      document.body.style.cursor = prevBody;
+      document.documentElement.style.cursor = prevHtml;
+    };
+  }, [pickingActive]);
+
   const applyHex = useCallback(
     (hex: string) => {
       onChange(normalizeHex(hex).toUpperCase());
@@ -142,13 +172,18 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
     if (disabled) return;
     setPickError(null);
 
-    // En móvil (o sin API): tocar la foto es lo usable
-    if (!supportsEyeDropper) {
+    // Con fotos: muestreo sobre la imagen con cursor gotero
+    if (productImages.length > 0) {
       openImagePicker();
       return;
     }
 
-    void openNativeEyeDropper();
+    if (supportsEyeDropper) {
+      void openNativeEyeDropper();
+      return;
+    }
+
+    setPickError('Sube primero una foto del producto para extraer el color.');
   };
 
   const ensureCanvas = async (src: string): Promise<HTMLCanvasElement | null> => {
@@ -300,10 +335,11 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
           title="Extraer color de la foto"
           className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-xl border transition-all disabled:opacity-50
             ${
-              isPicking
+              pickingActive
                 ? 'border-primary bg-primary text-white'
                 : 'border-primary/40 text-primary hover:bg-primary hover:text-white'
             }`}
+          style={pickingActive ? { cursor: EYEDROPPER_CURSOR } : undefined}
         >
           <Pipette className={`w-4 h-4 ${isPicking ? 'animate-pulse' : ''}`} />
           <span className="sr-only">Extraer color de la foto</span>
@@ -311,8 +347,8 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
       </div>
 
       <p className="text-[9px] text-gray-400 uppercase tracking-wider leading-relaxed">
-        {isPicking
-          ? 'Toca un tono de la foto…'
+        {pickingActive
+          ? 'Puntero gotero activo: elige un tono de la foto…'
           : isTouchPrimary
             ? 'Pipeta: toca la foto y confirma el color'
             : 'Cuentagotas: toma el color de la foto'}
@@ -328,6 +364,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Extraer color de la foto"
+          style={{ cursor: EYEDROPPER_CURSOR }}
           onClick={() => {
             setShowImagePick(false);
             setPreviewHex(null);
@@ -336,6 +373,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
         >
           <div
             className="bg-(--bg-card) border border-(--border-main) rounded-t-3xl sm:rounded-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] max-w-lg w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto"
+            style={{ cursor: 'default' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
@@ -344,7 +382,9 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
                   Extraer color
                 </p>
                 <p className="text-[12px] text-gray-500 mt-1">
-                  Arrastra el dedo sobre la prenda y pulsa confirmar
+                  {isTouchPrimary
+                    ? 'Arrastra el dedo sobre la prenda y pulsa confirmar'
+                    : 'El cursor es un gotero: haz clic en el tono de la prenda'}
                 </p>
               </div>
               <button
@@ -392,6 +432,7 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
 
             <div
               className="relative rounded-xl overflow-hidden border border-(--border-main) bg-(--bg-main) touch-none select-none"
+              style={{ cursor: EYEDROPPER_CURSOR }}
               onPointerDown={(e) => {
                 draggingRef.current = true;
                 e.currentTarget.setPointerCapture(e.pointerId);

@@ -3,12 +3,33 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from "@/lib/api";
 import type { Product, Order, Customer } from "@/types";
 
-export const useAdminData = (productPage: number, orderPage: number, customerPage: number, pageSize: number, searchTerm?: string, statusFilter?: boolean, isNewFilter?: boolean, customerSearch?: string) => {
+export const useAdminData = (
+  productPage: number,
+  orderPage: number,
+  customerPage: number,
+  pageSize: number,
+  searchTerm?: string,
+  statusFilter?: boolean,
+  isNewFilter?: boolean,
+  customerSearch?: string,
+  soldOutFilter?: boolean
+) => {
   const queryClient = useQueryClient();
 
   const { data: productsData, isLoading: loadingProducts } = useQuery<{ products: Product[], total: number }>({
-    queryKey: ['admin-products', productPage, searchTerm, statusFilter, isNewFilter],
-    queryFn: () => api.products.getAll(undefined, undefined, productPage, pageSize, statusFilter, searchTerm, isNewFilter)
+    queryKey: ['admin-products', productPage, searchTerm, statusFilter, isNewFilter, soldOutFilter],
+    queryFn: () =>
+      api.products.getAll(
+        undefined,
+        undefined,
+        productPage,
+        pageSize,
+        statusFilter,
+        searchTerm,
+        isNewFilter,
+        undefined,
+        soldOutFilter
+      ),
   });
   
   const products = productsData?.products;

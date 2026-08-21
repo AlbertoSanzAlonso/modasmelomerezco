@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import type { Product } from "@/types";
 import { motion } from 'framer-motion';
 import { downloadProductImagesAsZip } from '@/utils/imageDownloader';
+import { getProductTotalStock, isProductSoldOut } from '@/lib/productVariants';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
@@ -18,13 +19,16 @@ interface ProductsTabProps {
   searchTerm: string;
   statusFilter?: boolean;
   isNewFilter?: boolean;
+  soldOutFilter?: boolean;
   onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
   onStatusFilterChange: (status: boolean | undefined) => void;
   onIsNewFilterChange: (isNew: boolean | undefined) => void;
+  onSoldOutFilterChange: (soldOut: boolean | undefined) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
+  onBulkMarkSoldOut: () => void;
   onBulkDelete: () => void;
   onTogglePublish: (product: Product) => void;
   onEdit: (product: Product) => void;
@@ -32,10 +36,7 @@ interface ProductsTabProps {
   onCreate: () => void;
 }
 
-const calculateStock = (product: Product) => {
-  if (!product.variants || product.variants.length === 0) return product.stock || 0;
-  return product.variants.reduce((acc, v) => acc + (v.stock || 0), 0);
-};
+const calculateStock = (product: Product) => getProductTotalStock(product);
 
 export const ProductsTab: React.FC<ProductsTabProps> = ({
   products,
@@ -47,13 +48,16 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   searchTerm,
   statusFilter,
   isNewFilter,
+  soldOutFilter,
   onSearchChange,
   onPageChange,
   onStatusFilterChange,
   onIsNewFilterChange,
+  onSoldOutFilterChange,
   onToggleSelectAll,
   onToggleSelect,
   onBulkStatusChange,
+  onBulkMarkSoldOut,
   onBulkDelete,
   onTogglePublish,
   onEdit,
@@ -120,6 +124,20 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             <option value="false">Borradores</option>
           </select>
 
+          <select
+            value={soldOutFilter === undefined ? '' : soldOutFilter.toString()}
+            onChange={(e) =>
+              onSoldOutFilterChange(
+                e.target.value === '' ? undefined : e.target.value === 'true'
+              )
+            }
+            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+          >
+            <option value="">Todo el stock</option>
+            <option value="true">Solo agotados</option>
+            <option value="false">Con stock</option>
+          </select>
+
           <select 
             value={isNewFilter === undefined ? '' : isNewFilter.toString()}
             onChange={(e) => onIsNewFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
@@ -176,6 +194,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             </button>
             <button onClick={() => onBulkStatusChange(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Publicar</button>
             <button onClick={() => onBulkStatusChange(false)} className="flex-1 sm:flex-none px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Ocultar</button>
+            <button onClick={onBulkMarkSoldOut} className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Agotar</button>
             <button onClick={onBulkDelete} className="flex-1 sm:flex-none px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Eliminar</button>
             <button onClick={() => onToggleSelectAll()} className="px-4 py-2.5 text-white/60 hover:text-white transition-colors">
               <Plus className="w-4 h-4 rotate-45" />
@@ -246,7 +265,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </td>
                   <td className="px-4 py-5 xl:px-8 xl:py-6 text-sm font-black italic text-(--text-main) whitespace-nowrap">{product.price.toFixed(2)}€</td>
                   <td className="px-4 py-5 xl:px-8 xl:py-6 whitespace-nowrap">
-                    <span className={`inline-flex items-center text-[10px] font-black uppercase px-3 py-1 border rounded-lg whitespace-nowrap ${calculateStock(product) < 10 ? 'border-red-500 bg-red-500/5 text-red-500' : 'border-green-500/30 bg-green-500/5 text-green-500'}`}>
+                    <span className={`inline-flex items-center text-[10px] font-black uppercase px-3 py-1 border rounded-lg whitespace-nowrap ${
+                      isProductSoldOut(product) || calculateStock(product) < 10
+                        ? 'border-red-500 bg-red-500/5 text-red-500'
+                        : 'border-green-500/30 bg-green-500/5 text-green-500'
+                    }`}>
                       {calculateStock(product)}&nbsp;UNI
                     </span>
                   </td>
@@ -266,6 +289,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                           <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200 whitespace-nowrap">Borrador</span>
                         )}
                       </button>
+                      {isProductSoldOut(product) && (
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-amber-500/10 text-amber-700 border border-amber-500/30 rounded-full whitespace-nowrap">
+                          Agotado
+                        </span>
+                      )}
                       {product.is_new && (
                         <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full whitespace-nowrap">Novedad</span>
                       )}
@@ -396,17 +424,40 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         {products?.map((product) => (
           <div 
             key={product.product_id}
-            className="bg-(--bg-card) border border-(--border-main) rounded-4xl p-5 shadow-sm flex gap-4 relative overflow-hidden"
+            className={`bg-(--bg-card) border border-(--border-main) rounded-4xl p-5 shadow-sm flex gap-4 relative overflow-hidden ${
+              selectedIds.includes(product.product_id) ? 'ring-2 ring-primary/40' : ''
+            }`}
             onClick={() => onEdit(product)}
           >
-             <div className="w-20 h-28 bg-black overflow-hidden border border-(--border-main) rounded-xl shrink-0">
+             <div
+               className="absolute top-3 left-3 z-10"
+               onClick={(e) => e.stopPropagation()}
+             >
+               <input
+                 type="checkbox"
+                 className="accent-primary w-4 h-4 rounded cursor-pointer"
+                 checked={selectedIds.includes(product.product_id)}
+                 onChange={() => onToggleSelect(product.product_id)}
+               />
+             </div>
+             <div className="w-20 h-28 bg-black overflow-hidden border border-(--border-main) rounded-xl shrink-0 relative">
                <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
+               {isProductSoldOut(product) && (
+                 <span className="absolute inset-x-0 bottom-0 bg-black/70 text-white text-[7px] font-black uppercase tracking-widest text-center py-1">
+                   Agotado
+                 </span>
+               )}
              </div>
              <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                <div>
                  <div className="flex justify-between items-start gap-2">
                    <h4 className="text-xs font-black uppercase italic truncate leading-tight text-(--text-main)">{product.name}</h4>
                    <div className="shrink-0 flex gap-2">
+                      {isProductSoldOut(product) && (
+                        <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-amber-500/10 text-amber-700 border border-amber-500/30 rounded-full">
+                          Agotado
+                        </span>
+                      )}
                       {product.is_new && (
                         <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                       )}
@@ -425,7 +476,9 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                <div className="flex justify-between items-end">
                  <div>
                    <p className="text-sm font-black italic text-(--text-main)">{product.price.toFixed(2)}€</p>
-                   <p className="text-[8px] font-bold text-gray-400 uppercase mt-0.5">{calculateStock(product)} UNI</p>
+                   <p className={`text-[8px] font-bold uppercase mt-0.5 ${isProductSoldOut(product) ? 'text-amber-600' : 'text-gray-400'}`}>
+                     {isProductSoldOut(product) ? 'Agotado' : `${calculateStock(product)} UNI`}
+                   </p>
                  </div>
                  <div className="flex gap-1">
                    <button 

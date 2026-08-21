@@ -43,13 +43,14 @@ export const AdminDashboard: React.FC = () => {
   const [productSearch, setProductSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
+  const [soldOutFilter, setSoldOutFilter] = useState<boolean | undefined>(undefined);
   const [customerSearch, setCustomerSearch] = useState('');
   const pageSize = 10;
 
   // Reset page when filters or search change
   useEffect(() => {
     setProductPage(1);
-  }, [productSearch, statusFilter, isNewFilter]);
+  }, [productSearch, statusFilter, isNewFilter, soldOutFilter]);
 
   // Newsletter state
   const [newsletterSubject, setNewsletterSubject] = useState('');
@@ -67,7 +68,17 @@ export const AdminDashboard: React.FC = () => {
     totalOrders,
     subscriptions,
     queryClient
-  } = useAdminData(productPage, orderPage, customerPage, pageSize, productSearch, statusFilter, isNewFilter, customerSearch);
+  } = useAdminData(
+    productPage,
+    orderPage,
+    customerPage,
+    pageSize,
+    productSearch,
+    statusFilter,
+    isNewFilter,
+    customerSearch,
+    soldOutFilter
+  );
 
   const openModal = useCartStore((state) => state.openModal);
 
@@ -167,6 +178,37 @@ export const AdminDashboard: React.FC = () => {
     } catch (err) {
       openModal({ title: 'Error', message: 'Error al actualizar el estado.', type: 'warning' });
     }
+  };
+
+  const handleBulkMarkSoldOut = async () => {
+    if (selectedIds.length === 0) return;
+    openModal({
+      title: 'Marcar como agotado',
+      message: `¿Poner a 0 el stock de ${selectedIds.length} producto${selectedIds.length === 1 ? '' : 's'}? En la web aparecerán como agotados y no se podrán comprar.`,
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await Promise.all(selectedIds.map((id) => api.products.markSoldOut(id)));
+          queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+          queryClient.invalidateQueries({ queryKey: ['products'] });
+          queryClient.invalidateQueries({ queryKey: ['product'] });
+          queryClient.invalidateQueries({ queryKey: ['search-products'] });
+          queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
+          setSelectedIds([]);
+          openModal({
+            title: 'Agotados',
+            message: 'Los productos seleccionados quedan sin stock y se muestran como agotados en la tienda.',
+            type: 'info',
+          });
+        } catch {
+          openModal({
+            title: 'Error',
+            message: 'No se pudo marcar como agotado. Inténtalo de nuevo.',
+            type: 'warning',
+          });
+        }
+      },
+    });
   };
 
   const handleBulkDelete = async () => {
@@ -371,11 +413,14 @@ export const AdminDashboard: React.FC = () => {
             onPageChange={setProductPage}
             statusFilter={statusFilter}
             isNewFilter={isNewFilter}
+            soldOutFilter={soldOutFilter}
             onStatusFilterChange={setStatusFilter}
             onIsNewFilterChange={setIsNewFilter}
+            onSoldOutFilterChange={setSoldOutFilter}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === products?.length ? [] : products?.map(p => p.product_id) || [])}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onBulkStatusChange={handleBulkStatusChange}
+            onBulkMarkSoldOut={handleBulkMarkSoldOut}
             onBulkDelete={handleBulkDelete}
             onTogglePublish={(p) => togglePublishMutation.mutate(p)}
             onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}

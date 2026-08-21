@@ -86,6 +86,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       <ProductInventory
         variants={formData.variants || []}
         availableColors={availableColors}
+        productImages={formData.images || []}
         onVariantsChange={(variants) => setFormData({ ...formData, variants })}
         onColorCreated={(newColor) => setAvailableColors((prev) => [...prev, newColor])}
       />

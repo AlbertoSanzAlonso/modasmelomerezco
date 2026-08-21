@@ -7,6 +7,7 @@ import type { Product } from "@/types/index";
 import { ProductImage } from "./ProductImage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
+import { isProductSoldOut } from '@/lib/productVariants';
 
 interface ProductCardProps {
   product: Product;
@@ -17,6 +18,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const soldOut = isProductSoldOut(product);
   
   const isFavorite = user?.favorites?.includes(String(product.product_id)) || false;
 
@@ -64,14 +66,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   return (
-    <div className="group relative flex flex-col bg-transparent">
+    <div className={`group relative flex flex-col bg-transparent ${soldOut ? 'opacity-90' : ''}`}>
       <Link to={`/producto/${product.product_id}`}>
-        <ProductImage 
-          src={product.images?.[0]} 
-          alt={product.name} 
-          onLoad={() => setIsLoaded(true)}
-          containerClassName="rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-500"
-        />
+        <div className="relative">
+          <ProductImage 
+            src={product.images?.[0]} 
+            alt={product.name} 
+            onLoad={() => setIsLoaded(true)}
+            containerClassName={`rounded-xl shadow-lg transition-all duration-500 ${
+              soldOut
+                ? 'grayscale-[0.35]'
+                : 'group-hover:shadow-2xl'
+            }`}
+          />
+          {soldOut && isLoaded && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none rounded-xl overflow-hidden">
+              <div className="absolute inset-0 bg-black/35" />
+              <span className="relative px-4 py-2 md:px-6 md:py-2.5 bg-black/80 text-white text-[10px] md:text-xs font-black uppercase tracking-[0.35em] italic shadow-lg">
+                Agotado
+              </span>
+            </div>
+          )}
+        </div>
       </Link>
         
       {/* Absolute Overlays (Heart and Badge) */}
@@ -88,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <Heart className={`w-4 h-4 md:w-5 md:h-5 ${isFavorite ? 'fill-current' : ''}`} />
       </button>
 
-      {((product as any).is_new || (product as any).featured) && (
+      {!soldOut && ((product as any).is_new || (product as any).featured) && (
         <span className={`absolute top-2 left-2 md:top-4 md:left-4 bg-primary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic transition-all duration-500 z-20 ${
           isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
         }`}>
@@ -104,7 +120,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               {product.name}
             </h3>
             <p className="text-[10px] text-secondary/40 mt-1 uppercase tracking-widest">
-              {product.category}
+              {soldOut ? 'Agotado' : product.category}
             </p>
           </div>
           <p className="text-xs md:text-sm font-black text-secondary italic">

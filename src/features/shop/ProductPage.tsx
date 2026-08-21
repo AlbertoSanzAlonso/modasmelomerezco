@@ -18,6 +18,7 @@ import {
   normalizeSize,
   isOneSizeOnlyProduct,
   getOneSizeForProduct,
+  isProductSoldOut,
 } from '@/lib/productVariants';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import {
@@ -237,6 +238,7 @@ const ProductPage = () => {
   );
 
   const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+  const soldOut = isProductSoldOut(product);
   const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   return (
@@ -399,11 +401,20 @@ const ProductPage = () => {
                     console.error("Error loading image in ProductPage");
                     setImageLoaded(true); // Still set to true to show the broken image icon or placeholder
                   }}
-                  className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'} ${soldOut ? 'grayscale-[0.25]' : ''}`}
                   loading="eager"
                   fetchPriority="high"
                 />
               </AnimatePresence>
+
+              {soldOut && imageLoaded && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 bg-black/40" />
+                  <span className="relative px-8 py-3 bg-black/85 text-white text-sm sm:text-base font-black uppercase tracking-[0.4em] italic shadow-xl">
+                    Agotado
+                  </span>
+                </div>
+              )}
               
               {imageLoaded && (
                 <div className="absolute bottom-4 right-4 w-1/6 max-w-[120px] pointer-events-none opacity-60 select-none z-10">
@@ -439,6 +450,21 @@ const ProductPage = () => {
             </div>
 
             <div className="space-y-12">
+              {soldOut ? (
+                <div className="space-y-6">
+                  <p className="text-sm text-secondary/60 uppercase tracking-widest font-bold">
+                    Este artículo está agotado y no se puede comprar en este momento.
+                  </p>
+                  <Button
+                    size="lg"
+                    disabled
+                    className="w-full py-6 text-base font-black tracking-widest uppercase italic opacity-60 cursor-not-allowed"
+                  >
+                    Agotado
+                  </Button>
+                </div>
+              ) : (
+              <>
               {oneSizeOnly ? (
                 <div>
                   <div className="mb-6">
@@ -586,6 +612,8 @@ const ProductPage = () => {
                   <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : 'group-hover:fill-current'}`} />
                 </button>
               </div>
+              </>
+              )}
 
               {product.details?.trim() && (
                 <div className="pt-8 border-t border-secondary/5">

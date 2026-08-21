@@ -417,10 +417,27 @@ export const products = {
     publishedOnly?: boolean,
     search?: string,
     isNewOnly?: boolean,
-    labelId?: number
+    labelId?: number,
+    soldOutOnly?: boolean
   ): Promise<{ products: Product[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
+
+    let inStockProductIds: string[] | null = null;
+    if (soldOutOnly !== undefined) {
+      const { data: stockRows, error: stockError } = await supabase
+        .from('product_variants')
+        .select('product_id')
+        .gt('stock', 0);
+      if (stockError) throw stockError;
+      inStockProductIds = [
+        ...new Set((stockRows || []).map((r) => r.product_id as string)),
+      ];
+
+      if (soldOutOnly === false && inStockProductIds.length === 0) {
+        return { products: [], total: 0 };
+      }
+    }
 
     const selects = labelId
       ? [PRODUCT_SELECT_FILTER_BY_LABEL, PRODUCT_SELECT_BASE]
@@ -438,6 +455,17 @@ export const products = {
       if (isNewOnly !== undefined) query = query.eq('is_new', isNewOnly);
       if (labelId && select.includes('product_labels')) {
         query = query.eq('product_labels.label_id', labelId);
+      }
+      if (soldOutOnly === true) {
+        if (inStockProductIds && inStockProductIds.length > 0) {
+          query = query.not(
+            'product_id',
+            'in',
+            `(${inStockProductIds.join(',')})`
+          );
+        }
+      } else if (soldOutOnly === false && inStockProductIds) {
+        query = query.in('product_id', inStockProductIds);
       }
 
       const { data, count, error } = await query
@@ -745,5 +773,15 @@ export const products = {
       .eq('variant_id', variant_id);
 
     if (updateError) throw updateError;
+  },
+
+  /** Pone a 0 el stock de todas las variantes (cartel Agotado en tienda). */
+  markSoldOut: async (product_id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('product_variants')
+      .update({ stock: 0 })
+      .eq('product_id', product_id);
+
+    if (error) throw error;
   },
 };

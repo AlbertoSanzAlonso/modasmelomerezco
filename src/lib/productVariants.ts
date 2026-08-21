@@ -268,6 +268,24 @@ export function hasStockForColor(
   return (v?.stock ?? 0) > 0;
 }
 
+/** Unidades totales del producto (variantes o campo stock). */
+export function getProductTotalStock(product: {
+  variants?: ProductVariant[] | null;
+  stock?: number | null;
+}): number {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0);
+  }
+  return product.stock ?? 0;
+}
+
+export function isProductSoldOut(product: {
+  variants?: ProductVariant[] | null;
+  stock?: number | null;
+}): boolean {
+  return getProductTotalStock(product) <= 0;
+}
+
 export function formatVariantLabel(
   size: string,
   color?: string | null

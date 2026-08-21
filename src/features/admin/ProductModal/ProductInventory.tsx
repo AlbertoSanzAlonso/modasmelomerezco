@@ -12,6 +12,7 @@ import {
   ensureNeutroInCatalog,
 } from '@/lib/productVariants';
 import { SizeChecklist } from './SizeChecklist';
+import { ColorHexPicker } from './ColorHexPicker';
 import {
   canAddMoreSizes,
   isUniqueSize,
@@ -21,6 +22,7 @@ import {
 interface ProductInventoryProps {
   variants: ProductVariant[];
   availableColors: Color[];
+  productImages?: string[];
   onVariantsChange: (variants: ProductVariant[]) => void;
   onColorCreated: (color: Color) => void;
 }
@@ -51,6 +53,7 @@ function stockSummary(
 export const ProductInventory: React.FC<ProductInventoryProps> = ({
   variants = [],
   availableColors = [],
+  productImages = [],
   onVariantsChange,
   onColorCreated,
 }) => {
@@ -231,6 +234,10 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     const trimmedName = newColorName.trim();
     if (!trimmedName) return;
 
+    const hex = /^#[0-9A-Fa-f]{6}$/.test(newColorHex)
+      ? newColorHex.toUpperCase()
+      : '#8B4513';
+
     const exists = catalog.find(
       (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
     );
@@ -243,7 +250,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
     try {
       const created = await api.colors.create({
         name: trimmedName,
-        hex: newColorHex,
+        hex,
       });
       onColorCreated(created);
       setNewColorName('');
@@ -268,38 +275,49 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-end gap-4 bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl">
-        <div className="space-y-2 flex-1 w-full">
+      <div className="bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl space-y-5">
+        <div className="space-y-1">
           <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
             Colores del catálogo
           </label>
-          <input
-            type="text"
-            autoComplete="off"
-            className="w-full bg-(--bg-main) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl"
-            placeholder="Ej: Marrón, Negro..."
-            value={newColorName}
-            onChange={(e) => setNewColorName(e.target.value)}
-            disabled={isCreatingColor}
-          />
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+            Nombre + color (puedes extraerlo de la foto con el cuentagotas)
+          </p>
         </div>
-        <input
-          type="color"
-          className="w-12 h-12 border-0 p-0 cursor-pointer rounded-xl"
-          value={newColorHex}
-          onChange={(e) => setNewColorHex(e.target.value)}
-          disabled={isCreatingColor}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl whitespace-nowrap"
-          disabled={isCreatingColor || !newColorName.trim()}
-          onClick={handleCreateColor}
-        >
-          {isCreatingColor ? 'GUARDANDO...' : '+ CREAR COLOR'}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+          <div className="space-y-2 flex-1 w-full min-w-0">
+            <label className="text-[8px] font-black uppercase tracking-widest text-gray-500">
+              Nombre
+            </label>
+            <input
+              type="text"
+              autoComplete="off"
+              className="w-full bg-(--bg-main) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl"
+              placeholder="Ej: Marrón, Negro..."
+              value={newColorName}
+              onChange={(e) => setNewColorName(e.target.value)}
+              disabled={isCreatingColor}
+            />
+          </div>
+          <div className="w-full sm:w-[240px] shrink-0">
+            <ColorHexPicker
+              value={newColorHex}
+              onChange={setNewColorHex}
+              disabled={isCreatingColor}
+              productImages={productImages}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-[10px] font-black border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl whitespace-nowrap self-end"
+            disabled={isCreatingColor || !newColorName.trim()}
+            onClick={handleCreateColor}
+          >
+            {isCreatingColor ? 'GUARDANDO...' : '+ CREAR COLOR'}
+          </Button>
+        </div>
       </div>
 
       {sizeGroups.length === 0 ? (
@@ -489,28 +507,52 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                     )}
 
                     {unusedColors.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-(--border-main)">
-                        <select
-                          className="flex-1 min-w-[180px] max-w-xs bg-(--bg-main) border border-primary/40 px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl cursor-pointer"
-                          value={pendingColorBySize[group.size] ?? ''}
-                          onChange={(e) =>
-                            setPendingColorBySize((prev) => ({
-                              ...prev,
-                              [group.size]: e.target.value,
-                            }))
-                          }
+                      <div className="mt-4 pt-4 border-t border-(--border-main) space-y-3">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-gray-500 block">
+                          {hasColors
+                            ? 'Añadir otro color a esta talla'
+                            : 'Añadir variante de color'}
+                        </label>
+                        <div
+                          className="flex flex-wrap gap-2"
+                          role="listbox"
+                          aria-label="Colores disponibles"
                         >
-                          <option value="">
-                            {hasColors
-                              ? 'Añadir otro color a esta talla...'
-                              : 'Añadir variante de color...'}
-                          </option>
-                          {unusedColors.map((c) => (
-                            <option key={c.id} value={String(c.id)}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
+                          {unusedColors.map((c) => {
+                            const pending =
+                              pendingColorBySize[group.size] === String(c.id);
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                role="option"
+                                aria-selected={pending}
+                                title={c.name}
+                                onClick={() =>
+                                  setPendingColorBySize((prev) => ({
+                                    ...prev,
+                                    [group.size]:
+                                      prev[group.size] === String(c.id)
+                                        ? ''
+                                        : String(c.id),
+                                  }))
+                                }
+                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all
+                                  ${
+                                    pending
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'border-(--border-main) bg-(--bg-main) text-(--text-main) hover:border-primary/50'
+                                  }`}
+                              >
+                                <span
+                                  className="w-4 h-4 rounded-full border border-black/10 shadow-inner shrink-0"
+                                  style={{ backgroundColor: c.hex }}
+                                />
+                                {c.name}
+                              </button>
+                            );
+                          })}
+                        </div>
                         <Button
                           type="button"
                           size="sm"

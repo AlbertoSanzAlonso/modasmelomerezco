@@ -130,12 +130,21 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
-        <div>
-          <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Productos</h2>
-          <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda. ({totalProducts} productos)</p>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Productos</h2>
+            <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda. ({totalProducts} productos)</p>
+          </div>
+          <Button
+            size="sm"
+            className="w-full sm:w-auto shrink-0 font-black tracking-widest text-[10px] px-8 py-3 h-auto self-end sm:self-auto"
+            onClick={onCreate}
+          >
+            <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
+          </Button>
         </div>
-        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 w-full xl:w-auto">
+        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 w-full">
           {/* Filters */}
           <select
             value={categoryFilter ?? ''}
@@ -209,9 +218,6 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               </div>
             )}
           </div>
-          <Button size="sm" className="col-span-2 md:col-auto font-black tracking-widest text-[10px] px-8 py-3 h-auto" onClick={onCreate}>
-            <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
-          </Button>
         </div>
       </div>
 

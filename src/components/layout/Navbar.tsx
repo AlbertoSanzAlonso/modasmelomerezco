@@ -42,6 +42,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/" onClick={handleInicioClick} className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Inicio</Link>
               <Link to="/categoria/ropa" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Ropa</Link>
               <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
+              <Link to="/categoria/calzado" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Calzado</Link>
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
             </div>
             <div className="shrink-0">
@@ -138,6 +139,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                     { to: "/", label: "Inicio", onClick: (e: any) => handleInicioClick(e) },
                     { to: "/categoria/ropa", label: "Ropa" },
                     { to: "/categoria/complementos", label: "Complementos" },
+                    { to: "/categoria/calzado", label: "Calzado" },
                     { to: "/#novedades", label: "Novedades" },
                   ].map((item) => (
                     <motion.div

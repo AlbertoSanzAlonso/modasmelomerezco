@@ -35,6 +35,11 @@ const STATIC_PAGES: Record<string, { title?: string; description: string }> = {
     description:
       'Bolsos y accesorios de mujer. Estilo y calidad en Modas Me lo Merezco. Envío gratuito desde 50 €.',
   },
+  '/categoria/calzado': {
+    title: 'Calzado de mujer',
+    description:
+      'Calzado de mujer: zapatos, sandalias y más. Estilo y comodidad en Modas Me lo Merezco. Envío gratuito desde 50 €.',
+  },
   '/conocenos': {
     title: 'Conócenos',
     description:

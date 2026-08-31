@@ -106,6 +106,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           productImages={formData.images || []}
           productId={formData.product_id}
           productName={formData.name || ''}
+          categoryName={
+            categoriesList.find((c) => c.id === formData.category_id)?.name
+          }
           onVariantsChange={(variants) => setFormData({ ...formData, variants })}
           onColorCreated={(newColor) =>
             setAvailableColors((prev) => {

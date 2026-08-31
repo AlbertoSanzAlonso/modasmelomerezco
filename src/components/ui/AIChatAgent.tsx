@@ -177,6 +177,7 @@ NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. 
 - Ropa: /categoria/ropa
 - Complementos: /categoria/complementos
 - Bolsos: /categoria/bolsos
+- Calzado: /categoria/calzado
 - Novedades: /#novedades
 
 Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enlaces que no estén en esta lista. NUNCA incluyas el dominio completo (https://...) en los enlaces, usa siempre la forma relativa como se muestra arriba.`;

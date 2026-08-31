@@ -19,6 +19,32 @@ export const ADMIN_SIZE_OPTIONS = [
   UNIQUE_SIZE_LABEL,
 ] as const;
 
+/** Tallas EU habituales para calzado de mujer. */
+export const ADMIN_FOOTWEAR_SIZE_OPTIONS = [
+  '36',
+  '37',
+  '38',
+  '39',
+  '40',
+  '41',
+  '42',
+  '43',
+  '44',
+  UNIQUE_SIZE_LABEL,
+] as const;
+
+export type AdminSizeMode = 'clothing' | 'footwear';
+
+export function isFootwearCategory(categoryName?: string | null): boolean {
+  return (categoryName ?? '').trim().toLowerCase() === 'calzado';
+}
+
+export function getAdminSizeOptions(mode: AdminSizeMode = 'clothing'): string[] {
+  return mode === 'footwear'
+    ? [...ADMIN_FOOTWEAR_SIZE_OPTIONS]
+    : [...ADMIN_SIZE_OPTIONS];
+}
+
 export function canAddMoreSizes(variants: ProductVariant[]): boolean {
   return !variants.some((v) => isUniqueSize(v.size));
 }
@@ -41,9 +67,12 @@ export function isSizeTakenByOtherGroup(
   );
 }
 
-export function getSizeOptionsForRow(currentSize: string): string[] {
+export function getSizeOptionsForRow(
+  currentSize: string,
+  mode: AdminSizeMode = 'clothing'
+): string[] {
   const trimmed = currentSize.trim();
-  const options = new Set<string>([...ADMIN_SIZE_OPTIONS]);
+  const options = new Set<string>(getAdminSizeOptions(mode));
 
   if (
     trimmed &&

@@ -45,7 +45,7 @@ export interface Product {
   category_id: number;
   subcategory_id?: number;
   /** @deprecated use category_id instead */
-  category?: 'Ropa' | 'Bolsos' | string;
+  category?: 'Ropa' | 'Bolsos' | 'Complementos' | 'Calzado' | string;
   /** @deprecated use subcategory_id instead */
   subcategory?: string;
   /** Assembled from product_images rows, sorted by orden */

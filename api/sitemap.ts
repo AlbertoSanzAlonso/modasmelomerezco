@@ -16,6 +16,7 @@ const STATIC_PAGES: SitemapEntry[] = [
   { loc: '/categoria/ropa', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
   { loc: '/categoria/complementos', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
   { loc: '/categoria/bolsos', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
+  { loc: '/categoria/calzado', changefreq: 'daily', priority: '0.9', lastmod: '2026-08-31' },
   { loc: '/conocenos', changefreq: 'monthly', priority: '0.6', lastmod: '2026-06-10' },
   { loc: '/envios', changefreq: 'monthly', priority: '0.5', lastmod: '2026-06-10' },
   { loc: '/devoluciones', changefreq: 'monthly', priority: '0.5', lastmod: '2026-06-10' },

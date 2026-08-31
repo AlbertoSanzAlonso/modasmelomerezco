@@ -58,6 +58,21 @@ const getTemplatePool = (category?: string, subcategory?: string) => {
   }
 
   if (
+    label.includes('calzado') ||
+    label.includes('zapato') ||
+    label.includes('zapatos') ||
+    label.includes('sandalia') ||
+    label.includes('bota') ||
+    label.includes('botines')
+  ) {
+    return [
+      'Calzado con buen ajuste y acabado cuidado. Pensado para acompañarte con estilo y comodidad en el día a día.',
+      'Diseño equilibrado entre presencia y confort. Ideal para completar looks de día o de noche con un toque actual.',
+      'Pieza seleccionada por su calidad y silueta. Un básico de armario que eleva cualquier conjunto.',
+    ];
+  }
+
+  if (
     label.includes('accesorio') ||
     label.includes('accesorios') ||
     label.includes('joya') ||

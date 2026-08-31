@@ -7,6 +7,7 @@ import {
   isSizeTakenByOtherGroup,
   isUniqueSize,
   isUniqueSizeOptionDisabled,
+  type AdminSizeMode,
   UNIQUE_SIZE_LABEL,
 } from './sizeMode';
 
@@ -14,6 +15,7 @@ interface SizeChecklistProps {
   currentSize: string;
   variants: ProductVariant[];
   onSelect: (size: string) => void;
+  sizeMode?: AdminSizeMode;
 }
 
 function formatSizeLabel(size: string): string {
@@ -33,12 +35,13 @@ export const SizeChecklist: React.FC<SizeChecklistProps> = ({
   currentSize,
   variants,
   onSelect,
+  sizeMode = 'clothing',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
-  const options = getSizeOptionsForRow(currentSize);
+  const options = getSizeOptionsForRow(currentSize, sizeMode);
   const uniqueDisabled = isUniqueSizeOptionDisabled(variants);
 
   useEffect(() => {

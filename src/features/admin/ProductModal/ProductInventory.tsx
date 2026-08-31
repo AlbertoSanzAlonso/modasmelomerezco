@@ -21,8 +21,10 @@ import { ColorHexPicker } from './ColorHexPicker';
 import { ImageCropModal } from '@/components/ui/ImageCropModal';
 import {
   canAddMoreSizes,
+  isFootwearCategory,
   isUniqueSize,
   UNIQUE_SIZE_LABEL,
+  type AdminSizeMode,
 } from './sizeMode';
 
 /** Hex neutro para filas de estampado (la UI usa swatch_url). */
@@ -37,6 +39,8 @@ interface ProductInventoryProps {
   productId: string;
   /** Nombre del artículo: se usa en el nombre interno del color (amarillo_nombre-producto) */
   productName: string;
+  /** Nombre de categoría: si es Calzado, se ofrecen tallas EU */
+  categoryName?: string;
   onVariantsChange: (variants: ProductVariant[]) => void;
   onColorCreated: (color: Color) => void;
   onColorDeleted?: (colorId: number) => void;
@@ -72,11 +76,15 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
   productImages = [],
   productId,
   productName,
+  categoryName,
   onVariantsChange,
   onColorCreated,
   onColorDeleted,
 }) => {
   const openModal = useCartStore((s) => s.openModal);
+  const sizeMode: AdminSizeMode = isFootwearCategory(categoryName)
+    ? 'footwear'
+    : 'clothing';
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#8B4513');
   const [createMode, setCreateMode] = useState<ColorCreateMode>('solid');
@@ -758,6 +766,7 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                     <SizeChecklist
                       currentSize={group.size}
                       variants={variants}
+                      sizeMode={sizeMode}
                       onSelect={(size) => selectSize(group.size, size, group.items)}
                     />
                   </div>

@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Plus, Eye, Edit, Trash2, Search, Download, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/Button";
+import { api } from "@/lib/api";
 import type { Product } from "@/types";
 import { motion } from 'framer-motion';
 import { downloadProductImagesAsZip } from '@/utils/imageDownloader';
@@ -20,11 +22,13 @@ interface ProductsTabProps {
   statusFilter?: boolean;
   isNewFilter?: boolean;
   soldOutFilter?: boolean;
+  categoryFilter?: number;
   onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
   onStatusFilterChange: (status: boolean | undefined) => void;
   onIsNewFilterChange: (isNew: boolean | undefined) => void;
   onSoldOutFilterChange: (soldOut: boolean | undefined) => void;
+  onCategoryFilterChange: (categoryId: number | undefined) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
@@ -50,11 +54,13 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   statusFilter,
   isNewFilter,
   soldOutFilter,
+  categoryFilter,
   onSearchChange,
   onPageChange,
   onStatusFilterChange,
   onIsNewFilterChange,
   onSoldOutFilterChange,
+  onCategoryFilterChange,
   onToggleSelectAll,
   onToggleSelect,
   onBulkStatusChange,
@@ -68,6 +74,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
 }) => {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const totalPages = Math.ceil(totalProducts / pageSize);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: () => api.categories.getAll(),
+  });
 
   const selectedProducts =
     products?.filter((p) => selectedIds.includes(p.product_id)) ?? [];
@@ -126,6 +137,23 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         </div>
         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 w-full xl:w-auto">
           {/* Filters */}
+          <select
+            value={categoryFilter ?? ''}
+            onChange={(e) =>
+              onCategoryFilterChange(
+                e.target.value === '' ? undefined : parseInt(e.target.value, 10)
+              )
+            }
+            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
           <select 
             value={statusFilter === undefined ? '' : statusFilter.toString()}
             onChange={(e) => onStatusFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}

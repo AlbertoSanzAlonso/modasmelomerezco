@@ -53,7 +53,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
         <div className="bg-(--bg-main) border border-(--border-main) w-full max-w-4xl max-h-[90vh] min-h-0 rounded-[2.5rem] shadow-2xl shadow-primary/5 flex flex-col overflow-hidden">
           <header className="p-8 border-b border-(--border-main) flex justify-between items-center bg-(--bg-main) z-10">
             <h2 className="text-2xl font-display font-black uppercase tracking-tighter italic text-(--text-main)">
-              {product ? 'Editar Pieza' : 'Nueva Pieza Luxury'}
+              {product ? 'Editar Pieza' : 'Nueva Pieza'}
             </h2>
             <button
               onClick={onClose}

@@ -208,7 +208,7 @@ const CategoryPage: React.FC = () => {
           
           {subcategories && subcategories.length > 0 && (
             <div className="mt-12">
-              <div className="block md:hidden px-6 relative z-30">
+              <div className="block md:hidden px-6 relative z-50">
                 <div className="max-w-[280px] mx-auto">
                   <button
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -226,7 +226,7 @@ const CategoryPage: React.FC = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute left-6 right-6 mt-2 bg-white border border-gray-100 shadow-2xl z-40 overflow-hidden rounded-2xl"
+                        className="absolute left-6 right-6 mt-2 bg-white border border-gray-100 shadow-2xl z-50 overflow-hidden rounded-2xl"
                       >
                         <div className="max-h-[60vh] overflow-y-auto py-2 space-y-1 px-2">
                           <button 
@@ -279,7 +279,7 @@ const CategoryPage: React.FC = () => {
                 Filtrar por etiqueta
               </p>
 
-              <div className="block md:hidden px-6 relative z-20">
+              <div className="block md:hidden px-6 relative z-50">
                 <div className="max-w-[280px] mx-auto">
                   <button
                     type="button"
@@ -301,7 +301,7 @@ const CategoryPage: React.FC = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute left-6 right-6 mt-2 bg-white border shadow-2xl z-40 overflow-hidden rounded-2xl"
+                        className="absolute left-6 right-6 mt-2 bg-white border shadow-2xl z-50 overflow-hidden rounded-2xl"
                       >
                         <div className="max-h-[50vh] overflow-y-auto py-2 px-2 space-y-1">
                           <button
@@ -382,7 +382,7 @@ const CategoryPage: React.FC = () => {
             <p className="text-gray-500 uppercase tracking-[0.3em] font-bold">No hay artículos disponibles en esta categoría actualmente.</p>
           </div>
         ) : (
-          <div className="space-y-20">
+          <div className="space-y-20 relative z-0">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
               {allProducts.map((product: Product, index: number) => (
                 <motion.div 
@@ -395,6 +395,7 @@ const CategoryPage: React.FC = () => {
                     delay: (index % pageSize) * 0.05,
                     ease: [0.21, 0, 0.07, 1]
                   }}
+                  className="relative z-0"
                 >
                   <ProductCard product={product} />
                 </motion.div>

@@ -75,6 +75,8 @@ const ProductPage = () => {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const galleryTouchStartX = useRef<number | null>(null);
+  const galleryDidSwipe = useRef(false);
 
   // Auto-center the image when zooming in
   useEffect(() => {
@@ -395,8 +397,41 @@ const ProductPage = () => {
           {/* Left: Gallery */}
           <div className="lg:col-span-6 flex flex-col gap-6">
             <div 
-              className="relative aspect-3/4 overflow-hidden bg-black/20 cursor-pointer"
-              onClick={() => setShowFullscreen(true)}
+              className="relative aspect-3/4 overflow-hidden bg-black/20 cursor-pointer touch-pan-y"
+              onClick={() => {
+                if (galleryDidSwipe.current) {
+                  galleryDidSwipe.current = false;
+                  return;
+                }
+                setShowFullscreen(true);
+              }}
+              onTouchStart={(e) => {
+                galleryTouchStartX.current = e.touches[0].clientX;
+                galleryDidSwipe.current = false;
+              }}
+              onTouchMove={(e) => {
+                if (galleryTouchStartX.current === null) return;
+                if (Math.abs(e.touches[0].clientX - galleryTouchStartX.current) > 12) {
+                  galleryDidSwipe.current = true;
+                }
+              }}
+              onTouchEnd={(e) => {
+                if (galleryTouchStartX.current === null || displayImages.length <= 1) {
+                  galleryTouchStartX.current = null;
+                  return;
+                }
+                const delta = e.changedTouches[0].clientX - galleryTouchStartX.current;
+                const threshold = 40;
+                if (Math.abs(delta) > threshold) {
+                  galleryDidSwipe.current = true;
+                  if (delta < 0) {
+                    setActiveImage((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
+                  } else {
+                    setActiveImage((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
+                  }
+                }
+                galleryTouchStartX.current = null;
+              }}
             >
               {!imageLoaded && (
                 <div className="absolute inset-0 animate-pulse bg-secondary/10" />
@@ -415,7 +450,8 @@ const ProductPage = () => {
                     console.error("Error loading image in ProductPage");
                     setImageLoaded(true); // Still set to true to show the broken image icon or placeholder
                   }}
-                  className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'} ${soldOut ? 'grayscale-[0.25]' : ''}`}
+                  draggable={false}
+                  className={`w-full h-full object-cover transition-opacity duration-500 select-none ${imageLoaded ? 'opacity-100' : 'opacity-0'} ${soldOut ? 'grayscale-[0.25]' : ''}`}
                   loading="eager"
                   fetchPriority="high"
                 />
@@ -439,8 +475,16 @@ const ProductPage = () => {
                   />
                 </div>
               )}
+
+              {displayImages.length > 1 && (
+                <div className="lg:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                  <span className="text-white/90 text-[11px] font-medium tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                    {activeImage + 1}/{displayImages.length}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2">
+            <div className="hidden lg:flex gap-4 overflow-x-auto pb-2">
               {displayImages.map((img: string, idx: number) => (
                 <div 
                   key={idx}

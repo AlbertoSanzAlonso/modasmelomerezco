@@ -78,6 +78,11 @@ const ProductPage = () => {
   const galleryTouchStartX = useRef<number | null>(null);
   const galleryDidSwipe = useRef(false);
 
+  const changeActiveImage = (next: number | ((prev: number) => number)) => {
+    setImageLoaded(false);
+    setActiveImage(next);
+  };
+
   // Auto-center the image when zooming in
   useEffect(() => {
     if (showFullscreen && scrollRef.current) {
@@ -149,8 +154,7 @@ const ProductPage = () => {
   useEffect(() => {
     setSelectedSize('');
     setSelectedColorId(null);
-    setActiveImage(0);
-    setImageLoaded(false);
+    changeActiveImage(0);
   }, [id]);
 
   useEffect(() => {
@@ -188,8 +192,7 @@ const ProductPage = () => {
     if (selectedColorId == null) return;
     const imageIdx = findImageIndexForColor(product?.image_color_ids, selectedColorId);
     if (imageIdx < 0) return;
-    setActiveImage(imageIdx);
-    setImageLoaded(false);
+    changeActiveImage(imageIdx);
   }, [selectedColorId, product?.image_color_ids, product?.product_id]);
 
   // Save the last viewed product ID for scroll restoration
@@ -395,9 +398,9 @@ const ProductPage = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
           {/* Left: Gallery */}
-          <div className="lg:col-span-6 flex flex-col gap-6">
+          <div className="lg:col-span-6 flex flex-col gap-6 -mx-6 lg:mx-0">
             <div 
-              className="relative aspect-3/4 overflow-hidden bg-black/20 cursor-pointer touch-pan-y"
+              className="relative aspect-3/4 overflow-hidden bg-white cursor-pointer touch-pan-y"
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;
@@ -425,33 +428,46 @@ const ProductPage = () => {
                 if (Math.abs(delta) > threshold) {
                   galleryDidSwipe.current = true;
                   if (delta < 0) {
-                    setActiveImage((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
+                    changeActiveImage((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
                   } else {
-                    setActiveImage((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
+                    changeActiveImage((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
                   }
                 }
                 galleryTouchStartX.current = null;
               }}
             >
-              {!imageLoaded && (
-                <div className="absolute inset-0 animate-pulse bg-secondary/10" />
-              )}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <motion.img
+                  src="/assets/logo/logo-corona.png"
+                  alt=""
+                  className="w-14 h-14 object-contain"
+                  animate={{
+                    scale: [1, 1.12, 1],
+                    opacity: [0.12, 0.28, 0.12],
+                  }}
+                  transition={{
+                    duration: 1.8,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+              </div>
               <AnimatePresence mode="wait">
                 <motion.img 
                   key={activeImage}
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  animate={{ opacity: imageLoaded ? 1 : 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.35 }}
                   src={displayImages[activeImage]} 
                   alt={product.name} 
                   onLoad={() => setImageLoaded(true)}
                   onError={() => {
                     console.error("Error loading image in ProductPage");
-                    setImageLoaded(true); // Still set to true to show the broken image icon or placeholder
+                    setImageLoaded(true);
                   }}
                   draggable={false}
-                  className={`w-full h-full object-cover transition-opacity duration-500 select-none ${imageLoaded ? 'opacity-100' : 'opacity-0'} ${soldOut ? 'grayscale-[0.25]' : ''}`}
+                  className={`relative z-[1] w-full h-full object-cover select-none ${soldOut ? 'grayscale-[0.25]' : ''}`}
                   loading="eager"
                   fetchPriority="high"
                 />
@@ -478,7 +494,7 @@ const ProductPage = () => {
 
               {displayImages.length > 1 && (
                 <div className="lg:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-                  <span className="text-white/90 text-[11px] font-medium tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                  <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-white">
                     {activeImage + 1}/{displayImages.length}
                   </span>
                 </div>
@@ -488,7 +504,7 @@ const ProductPage = () => {
               {displayImages.map((img: string, idx: number) => (
                 <div 
                   key={idx}
-                  onClick={() => setActiveImage(idx)}
+                  onClick={() => changeActiveImage(idx)}
                   className={`shrink-0 w-20 h-24 cursor-pointer overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-75'}`}
                 >
                   <img src={img} alt="" loading="lazy" width={80} height={96} className="w-full h-full object-cover" />
@@ -730,13 +746,13 @@ const ProductPage = () => {
           {!isZoomed && product.images.length > 1 && (
             <>
               <button 
-                onClick={(e) => { e.stopPropagation(); setActiveImage(prev => prev === 0 ? product.images.length - 1 : prev - 1); }}
+                onClick={(e) => { e.stopPropagation(); changeActiveImage(prev => prev === 0 ? product.images.length - 1 : prev - 1); }}
                 className="fixed left-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-110"
               >
                 <ChevronRight className="w-8 h-8 rotate-180" />
               </button>
               <button 
-                onClick={(e) => { e.stopPropagation(); setActiveImage(prev => prev === product.images.length - 1 ? 0 : prev + 1); }}
+                onClick={(e) => { e.stopPropagation(); changeActiveImage(prev => prev === product.images.length - 1 ? 0 : prev + 1); }}
                 className="fixed right-6 top-1/2 -translate-y-1/2 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-110"
               >
                 <ChevronRight className="w-8 h-8" />
@@ -776,7 +792,7 @@ const ProductPage = () => {
               {product.images.map((img: string, idx: number) => (
                 <button
                   key={idx}
-                  onClick={(e) => { e.stopPropagation(); setActiveImage(idx); }}
+                  onClick={(e) => { e.stopPropagation(); changeActiveImage(idx); }}
                   className={`w-12 h-16 rounded-lg overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary scale-110 shadow-lg' : 'border-transparent opacity-40 hover:opacity-100'}`}
                 >
                   <img src={img} alt="" loading="lazy" width={48} height={64} className="w-full h-full object-cover" />

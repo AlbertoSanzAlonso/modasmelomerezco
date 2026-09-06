@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Users, ExternalLink, Menu, X, Mail, Tag, ClipboardList, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Users, ExternalLink, Menu, X, Mail, Tag, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useAdminStore } from "@/store/useAdminStore";
@@ -14,8 +14,7 @@ export type AdminTab =
   | 'orders'
   | 'customers'
   | 'newsletter'
-  | 'discounts'
-  | 'analytics';
+  | 'discounts';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -76,7 +75,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
               { id: 'customers' as const, icon: Users, label: 'Clientes' },
               { id: 'newsletter' as const, icon: Mail, label: 'Newsletter' },
               { id: 'discounts' as const, icon: Tag, label: 'Descuentos' },
-              { id: 'analytics' as const, icon: BarChart3, label: 'Analíticas' },
             ].map((item) => (
               <button 
                 key={item.id}

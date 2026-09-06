@@ -17,6 +17,7 @@ import { categories } from './categories';
 import { colors } from './colors';
 import { labels } from './labels';
 import { discountCodes } from './discountCodes';
+import { analytics } from './analytics';
 
 export const api = {
   products,
@@ -37,6 +38,7 @@ export const api = {
   colors,
   labels,
   discountCodes,
+  analytics,
 };
 
 

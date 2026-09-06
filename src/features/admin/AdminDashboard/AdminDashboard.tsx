@@ -10,6 +10,7 @@ import { OrdersTab } from "@/features/admin/AdminDashboard/components/OrdersTab"
 import { NewsletterTab } from "@/features/admin/AdminDashboard/components/NewsletterTab";
 import { CustomersTab } from "@/features/admin/AdminDashboard/components/CustomersTab";
 import { DiscountCodesTab } from "@/features/admin/AdminDashboard/components/DiscountCodesTab";
+import { AnalyticsTab } from "@/features/admin/AdminDashboard/components/AnalyticsTab";
 import { OrderDetailsModal } from "@/features/admin/AdminDashboard/components/OrderDetailsModal";
 import { RestockSizesModal } from "@/features/admin/AdminDashboard/components/RestockSizesModal";
 import { useAdminData } from './useAdminData';
@@ -519,6 +520,8 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === 'discounts' && <DiscountCodesTab />}
+
+        {activeTab === 'analytics' && <AnalyticsTab />}
 
         {activeTab === 'customers' && (
           <CustomersTab 

@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 /** URL canónica del sitio (www). El apex sin www aún apunta al WordPress antiguo. */
 export function getCanonicalSiteUrl(): string {
   const raw = (

@@ -18,6 +18,8 @@
     "../src/lib/orderContact.ts",
     "../src/lib/orderEmailHtml.ts",
     "../src/lib/orderPricing.ts",
+    "../src/lib/orderPayment.ts",
+    "../src/lib/productVariants.ts",
     "../src/lib/emails/**/*.ts"
   ]
 }

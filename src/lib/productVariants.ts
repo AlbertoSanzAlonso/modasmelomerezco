@@ -1,4 +1,4 @@
-import type { Color, ProductVariant } from '@/types';
+import type { Color, ProductVariant } from '../types/index.js';
 
 /** @deprecated Solo pedidos legacy con texto "Único"/"Neutro" */
 export const DEFAULT_COLOR = 'Neutro';

@@ -1,4 +1,4 @@
-import type { Order } from '@/types';
+import type { Order } from '../types/index.js';
 
 type OrderPaymentFields = Pick<Order, 'order_status' | 'payment_status'>;
 

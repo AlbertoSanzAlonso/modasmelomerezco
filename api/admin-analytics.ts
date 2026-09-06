@@ -115,9 +115,11 @@ async function queryVercelAnalytics<T>(
   path: 'visits/count' | 'visits/aggregate',
   params: Record<string, string | number>
 ): Promise<T> {
-  const token = process.env.VERCEL_TOKEN;
+  // No usar VERCEL_TOKEN: choca con la CLI/sistema de Vercel.
+  const token = process.env.WEB_ANALYTICS_TOKEN;
+  // VERCEL_PROJECT_ID lo inyecta Vercel automáticamente en runtime.
   const projectId = process.env.VERCEL_PROJECT_ID;
-  const teamId = process.env.VERCEL_TEAM_ID;
+  const teamId = process.env.WEB_ANALYTICS_TEAM_ID;
 
   if (!token || !projectId) {
     throw Object.assign(new Error('Vercel Analytics no configurado'), {
@@ -172,11 +174,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(auth.status).json({ message: auth.message });
   }
 
-  if (!process.env.VERCEL_TOKEN || !process.env.VERCEL_PROJECT_ID) {
+  if (!process.env.WEB_ANALYTICS_TOKEN || !process.env.VERCEL_PROJECT_ID) {
     return res.status(503).json({
       code: 'NOT_CONFIGURED',
       message:
-        'Configura VERCEL_TOKEN y VERCEL_PROJECT_ID en las variables de entorno de Vercel',
+        'Configura WEB_ANALYTICS_TOKEN en las variables de entorno de Vercel (VERCEL_PROJECT_ID lo aporta el sistema)',
     });
   }
 

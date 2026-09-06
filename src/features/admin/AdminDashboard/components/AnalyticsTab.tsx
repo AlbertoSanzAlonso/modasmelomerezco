@@ -94,11 +94,10 @@ export const AnalyticsTab: React.FC = () => {
             <h3 className="text-sm font-black uppercase tracking-[0.25em]">Configuración pendiente</h3>
           </div>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
-            Añade en Vercel (Production) las variables{' '}
-            <code className="text-primary">VERCEL_TOKEN</code>,{' '}
-            <code className="text-primary">VERCEL_PROJECT_ID</code> y, si aplica,{' '}
-            <code className="text-primary">VERCEL_TEAM_ID</code>. El token se crea en Account Settings → Tokens;
-            el project ID está en Project Settings → General.
+            Añade en Vercel (Production) la variable{' '}
+            <code className="text-primary">WEB_ANALYTICS_TOKEN</code> (token de Account Settings → Tokens).
+            No crees <code className="text-primary">VERCEL_TOKEN</code> ni{' '}
+            <code className="text-primary">VERCEL_PROJECT_ID</code> a mano: el project ID lo aporta el sistema.
           </p>
         </div>
       )}

@@ -208,10 +208,13 @@ const CategoryPage: React.FC = () => {
           
           {subcategories && subcategories.length > 0 && (
             <div className="mt-12">
-              <div className="block md:hidden px-6 relative z-50">
+              <div className="block md:hidden px-6 relative z-20">
                 <div className="max-w-[280px] mx-auto">
                   <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    onClick={() => {
+                      setIsMobileMenuOpen((open) => !open);
+                      setIsMobileLabelMenuOpen(false);
+                    }}
                     className="w-full bg-accent-dark border border-secondary/10 px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-between group hover:border-primary/50 transition-all rounded-xl"
                   >
                     <span className="flex-1 text-center">
@@ -223,10 +226,10 @@ const CategoryPage: React.FC = () => {
                   <AnimatePresence>
                     {isMobileMenuOpen && (
                       <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute left-6 right-6 mt-2 bg-white border border-gray-100 shadow-2xl z-50 overflow-hidden rounded-2xl"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-2 bg-white border border-gray-100 shadow-2xl overflow-hidden rounded-2xl"
                       >
                         <div className="max-h-[60vh] overflow-y-auto py-2 space-y-1 px-2">
                           <button 
@@ -279,11 +282,14 @@ const CategoryPage: React.FC = () => {
                 Filtrar por etiqueta
               </p>
 
-              <div className="block md:hidden px-6 relative z-50">
+              <div className="block md:hidden px-6 relative z-10">
                 <div className="max-w-[280px] mx-auto">
                   <button
                     type="button"
-                    onClick={() => setIsMobileLabelMenuOpen(!isMobileLabelMenuOpen)}
+                    onClick={() => {
+                      setIsMobileLabelMenuOpen((open) => !open);
+                      setIsMobileMenuOpen(false);
+                    }}
                     className="w-full bg-accent-dark border border-secondary/10 px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-between rounded-xl"
                   >
                     <span className="flex-1 text-center">
@@ -298,10 +304,10 @@ const CategoryPage: React.FC = () => {
                   <AnimatePresence>
                     {isMobileLabelMenuOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute left-6 right-6 mt-2 bg-white border shadow-2xl z-50 overflow-hidden rounded-2xl"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-2 bg-white border shadow-2xl overflow-hidden rounded-2xl"
                       >
                         <div className="max-h-[50vh] overflow-y-auto py-2 px-2 space-y-1">
                           <button

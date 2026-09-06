@@ -59,30 +59,32 @@ export const SearchOverlay: FC<SearchOverlayProps> = ({ isOpen, onClose }) => {
           >
             <form
               onSubmit={handleSubmit}
-              className="max-w-2xl mx-auto bg-accent border border-secondary/10 rounded-2xl shadow-2xl p-3 flex items-center gap-3"
+              className="max-w-2xl mx-auto bg-accent border border-secondary/10 rounded-2xl shadow-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-3"
             >
-              <Search className="w-5 h-5 text-secondary/40 shrink-0 ml-2" />
-              <input
-                ref={inputRef}
-                type="search"
-                value={term}
-                onChange={(e) => setTerm(e.target.value)}
-                placeholder="Buscar piezas…"
-                autoComplete="off"
-                className="flex-1 bg-transparent py-3 text-sm font-bold uppercase tracking-wider text-secondary placeholder:text-secondary/30 outline-none"
-              />
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-2 text-secondary/40 hover:text-primary transition-colors"
-                aria-label="Cerrar"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Search className="w-5 h-5 text-secondary/40 shrink-0 ml-1 sm:ml-2" />
+                <input
+                  ref={inputRef}
+                  type="search"
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  placeholder="Buscar piezas…"
+                  autoComplete="off"
+                  className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold uppercase tracking-wider text-secondary placeholder:text-secondary/30 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-2 text-secondary/40 hover:text-primary transition-colors shrink-0"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
               <button
                 type="submit"
                 disabled={!term.trim()}
-                className="px-5 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40"
+                className="w-full sm:w-auto shrink-0 px-5 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40"
               >
                 Buscar
               </button>

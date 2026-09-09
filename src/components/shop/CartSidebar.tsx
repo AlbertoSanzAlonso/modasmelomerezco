@@ -74,7 +74,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   return (
                     <div key={cartItemId} className="flex gap-6 group">
                       <Link
-                        to={getProductUrlWithVariant(item.product_id, item.selectedVariant)}
+                        to={getProductUrlWithVariant(item, item.selectedVariant)}
                         onClick={onClose}
                         className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
                         aria-label={`Ver detalle de ${item.name}`}

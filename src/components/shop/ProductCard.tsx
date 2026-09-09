@@ -8,6 +8,7 @@ import { ProductImage } from "./ProductImage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { isProductSoldOut } from '@/lib/productVariants';
+import { getProductPath } from '@/lib/productSlug';
 
 interface ProductCardProps {
   product: Product;
@@ -67,7 +68,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <div className={`group relative flex flex-col bg-transparent ${soldOut ? 'opacity-90' : ''}`}>
-      <Link to={`/producto/${product.product_id}`}>
+      <Link to={getProductPath(product)}>
         <div className="relative">
           <ProductImage 
             src={product.images?.[0]} 

@@ -1,4 +1,5 @@
-import type { Color, ProductVariant } from '../types/index.js';
+import type { Color, Product, ProductVariant } from '../types/index.js';
+import { getProductPath } from './productSlug';
 
 /** @deprecated Solo pedidos legacy con texto "Único"/"Neutro" */
 export const DEFAULT_COLOR = 'Neutro';
@@ -334,14 +335,15 @@ export function getCartItemKey(
 
 /** URL de ficha con talla y color preseleccionados (p. ej. desde el carrito). */
 export function getProductUrlWithVariant(
-  productId: string,
+  product: Pick<Product, 'product_id'> & { slug?: string | null },
   variant: Pick<ProductVariant, 'size' | 'color_id'>,
 ): string {
   const params = new URLSearchParams();
   if (variant.size) params.set('talla', variant.size);
   if (variant.color_id != null) params.set('color', String(variant.color_id));
   const qs = params.toString();
-  return `/producto/${productId}${qs ? `?${qs}` : ''}`;
+  const path = getProductPath(product);
+  return `${path}${qs ? `?${qs}` : ''}`;
 }
 
 /** Slug estable para ligar nombres de color al artículo (p. ej. amarillo_vestido-lino). */

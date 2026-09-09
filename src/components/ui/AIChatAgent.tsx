@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from "@/lib/supabase";
+import { getProductPath } from '@/lib/productSlug';
 // Eliminamos Xenova/Transformers para usar OpenAI directamente (más preciso)
 const getQueryEmbedding = async (text: string): Promise<number[]> => {
   const response = await fetch('/api/chat', {
@@ -135,7 +136,7 @@ export const AIChatAgent = () => {
                 return `${label}: ${v.stock}uds`;
               }).join(', ') || 'Sin info de stock';
               const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
-              return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: /producto/${p.product_id}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
+              return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${getProductPath(p)}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
             }).join('\n---\n')
           : 'No hay artículos específicos en el catálogo que coincidan.';
       } catch {

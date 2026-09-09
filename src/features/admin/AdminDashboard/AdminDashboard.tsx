@@ -18,10 +18,14 @@ import { api } from "@/lib/api";
 import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
 import { useCartStore } from "@/store/useCartStore";
+import { getProductPath } from '@/lib/productSlug';
 import type { Product, Order } from "@/types";
 
 function refreshProductCaches(queryClient: QueryClient, product: Product) {
   queryClient.setQueryData(['product', product.product_id], product);
+  if (product.slug) {
+    queryClient.setQueryData(['product', product.slug], product);
+  }
   queryClient.invalidateQueries({ queryKey: ['products'] });
   queryClient.invalidateQueries({ queryKey: ['admin-products'] });
   queryClient.invalidateQueries({ queryKey: ['new-arrivals'] });
@@ -117,7 +121,7 @@ export const AdminDashboard: React.FC = () => {
               is_published: true,
             });
             refreshProductCaches(queryClient, published);
-            window.open(`/producto/${product.product_id}`, '_blank');
+            window.open(getProductPath(published), '_blank');
           },
           secondaryActionLabel: 'Dejar en Borrador',
           onSecondaryAction: async () => {
@@ -133,7 +137,7 @@ export const AdminDashboard: React.FC = () => {
           type: 'success',
           actionLabel: 'Ver el producto',
           onAction: () => {
-            window.open(`/producto/${product.product_id}`, '_blank');
+            window.open(getProductPath(product), '_blank');
           }
         });
       }

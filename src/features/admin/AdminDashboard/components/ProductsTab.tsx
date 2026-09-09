@@ -8,6 +8,7 @@ import type { Product } from "@/types";
 import { motion } from 'framer-motion';
 import { downloadProductImagesAsZip } from '@/utils/imageDownloader';
 import { getProductTotalStock, isProductSoldOut } from '@/lib/productVariants';
+import { getProductPath } from '@/lib/productSlug';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
@@ -383,7 +384,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                         title="Ver en la web"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(`/producto/${product.product_id}`, '_blank');
+                          window.open(getProductPath(product), '_blank');
                         }}
                       >
                         <Eye className="w-4 h-4" />
@@ -551,7 +552,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                  </div>
                  <div className="flex gap-1">
                    <button 
-                     onClick={(e) => { e.stopPropagation(); window.open(`/producto/${product.product_id}`, '_blank'); }}
+                     onClick={(e) => { e.stopPropagation(); window.open(getProductPath(product), '_blank'); }}
                      className="p-2 text-gray-400 hover:text-primary"
                    >
                      <Eye className="w-4 h-4" />

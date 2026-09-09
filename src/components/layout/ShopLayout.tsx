@@ -2,6 +2,7 @@ import { type FC, type ReactNode, useEffect } from 'react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { RouteSeo } from '@/components/seo/RouteSeo';
+import { GoogleCustomerReviewsBadge } from '@/features/shop/components/GoogleCustomerReviewsBadge';
 
 interface ShopLayoutProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export const ShopLayout: FC<ShopLayoutProps> = ({ children, setIsCartOpen, isMen
   return (
     <div className="min-h-screen bg-accent text-secondary selection:bg-primary selection:text-white flex flex-col overflow-x-hidden">
       <RouteSeo />
+      <GoogleCustomerReviewsBadge />
       <Navbar
         setIsCartOpen={setIsCartOpen} 
         isMenuOpen={isMenuOpen} 

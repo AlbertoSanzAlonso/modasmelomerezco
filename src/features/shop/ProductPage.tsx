@@ -22,6 +22,7 @@ import {
   getColorDisplayName,
   findImageIndexForColor,
 } from '@/lib/productVariants';
+import { getProductPath, isProductUuid } from '@/lib/productSlug';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import {
@@ -98,11 +99,21 @@ const ProductPage = () => {
   const { user, isAuthenticated, setPendingFavorite } = useAuthStore();
   const { addItem, openModal } = useCartStore();
 
-  const isFavorite = user?.favorites?.includes(id || '') || false;
+  const { data: product, isLoading } = useQuery({
+    queryKey: ['product', id],
+    queryFn: () => api.products.getBySlugOrId(id!),
+    enabled: !!id,
+    staleTime: 0,
+  });
+
+  const productId = product?.product_id;
+  const isFavorite = !!(productId && user?.favorites?.includes(productId));
 
   const toggleFavorite = async () => {
+    if (!productId) return;
+
     if (!isAuthenticated) {
-      setPendingFavorite(id || null);
+      setPendingFavorite(productId);
       openModal({
         title: 'Inicia sesión',
         message: 'Inicia sesión para guardar tus favoritos y acceder a ellos desde cualquier dispositivo.',
@@ -112,20 +123,20 @@ const ProductPage = () => {
     }
 
     const currentFavorites = user?.favorites || [];
-    const isFav = currentFavorites.includes(id || '');
-    const newFavorites = isFav 
-      ? currentFavorites.filter(favId => favId !== id)
-      : [...currentFavorites, id || ''];
+    const isFav = currentFavorites.includes(productId);
+    const newFavorites = isFav
+      ? currentFavorites.filter((favId) => favId !== productId)
+      : [...currentFavorites, productId];
 
     try {
       if (isFav) {
-        await api.favorites.remove(user!.customer_id, id!);
+        await api.favorites.remove(user!.customer_id, productId);
       } else {
-        await api.favorites.add(user!.customer_id, id!);
+        await api.favorites.add(user!.customer_id, productId);
       }
-      
+
       useAuthStore.getState().updateUser({ favorites: newFavorites });
-      
+
       if (!isFav) {
         openModal({
           title: 'Añadido a favoritos',
@@ -138,18 +149,25 @@ const ProductPage = () => {
     }
   };
 
-  const { data: product, isLoading } = useQuery({
-    queryKey: ['product', id],
-    queryFn: () => api.products.getById(id!),
-    enabled: !!id,
-    staleTime: 0,
+  const { data: siblings } = useQuery({
+    queryKey: ['product-siblings', productId, product?.category_id, product?.subcategory_id],
+    queryFn: () =>
+      api.products.getSiblings(
+        productId!,
+        product?.category_id?.toString(),
+        product?.subcategory_id?.toString(),
+      ),
+    enabled: !!product && !!productId,
   });
 
-  const { data: siblings } = useQuery({
-    queryKey: ['product-siblings', id, product?.category_id, product?.subcategory_id],
-    queryFn: () => api.products.getSiblings(id!, product?.category_id?.toString(), product?.subcategory_id?.toString()),
-    enabled: !!product
-  });
+  // Redirect UUID URLs antiguas → slug canónico (preserva query talla/color)
+  useEffect(() => {
+    if (!product?.slug || !id) return;
+    if (!isProductUuid(id)) return;
+    if (id === product.slug) return;
+    const search = searchParams.toString();
+    navigate(`${getProductPath(product)}${search ? `?${search}` : ''}`, { replace: true });
+  }, [product, id, navigate, searchParams]);
 
   useEffect(() => {
     setSelectedSize('');
@@ -236,7 +254,7 @@ const ProductPage = () => {
         <SeoHelmet
           title="Producto no encontrado"
           description="El producto que buscas no está disponible en Modas Me lo Merezco."
-          path={`/producto/${id}`}
+          path={id ? `/producto/${id}` : '/'}
           noindex
         />
         <p>Producto no encontrado</p>
@@ -244,6 +262,7 @@ const ProductPage = () => {
     );
   }
 
+  const productPath = getProductPath(product);
   const displayImages = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
   const availableSizes = getUniqueSizes(product.variants);
   const oneSizeOnly = isOneSizeOnlyProduct(product.variants);
@@ -265,7 +284,7 @@ const ProductPage = () => {
       <SeoHelmet
         title={product.name}
         description={productDescription}
-        path={`/producto/${product.product_id}`}
+        path={productPath}
         image={displayImages[0]}
         type="product"
         jsonLd={[
@@ -299,7 +318,7 @@ const ProductPage = () => {
                       '@type': 'ListItem',
                       position: 4,
                       name: product.name,
-                      item: absoluteUrl(`/producto/${product.product_id}`),
+                      item: absoluteUrl(productPath),
                     },
                   ]
                 : [
@@ -307,7 +326,7 @@ const ProductPage = () => {
                       '@type': 'ListItem',
                       position: 3,
                       name: product.name,
-                      item: absoluteUrl(`/producto/${product.product_id}`),
+                      item: absoluteUrl(productPath),
                     },
                   ]),
             ],
@@ -329,7 +348,7 @@ const ProductPage = () => {
               priceCurrency: 'EUR',
               price: product.price,
               availability: availabilitySchema,
-              url: absoluteUrl(`/producto/${product.product_id}`),
+              url: absoluteUrl(productPath),
               shippingDetails: OFFER_SHIPPING_DETAILS,
               hasMerchantReturnPolicy: MERCHANT_RETURN_POLICY,
             },
@@ -368,17 +387,17 @@ const ProductPage = () => {
           <div className="flex items-center gap-4 sm:gap-8">
             <div className="flex items-center gap-2 border-r border-secondary/10 pr-4 sm:pr-8">
               <Link 
-                to={siblings?.prevId ? `/producto/${siblings.prevId}` : '#'}
+                to={siblings?.prevSlug ? `/producto/${siblings.prevSlug}` : '#'}
                 replace={true}
-                className={`p-2 transition-all ${!siblings?.prevId ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
+                className={`p-2 transition-all ${!siblings?.prevSlug ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
                 title="Producto Anterior"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Link>
               <Link 
-                to={siblings?.nextId ? `/producto/${siblings.nextId}` : '#'}
+                to={siblings?.nextSlug ? `/producto/${siblings.nextSlug}` : '#'}
                 replace={true}
-                className={`p-2 transition-all ${!siblings?.nextId ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
+                className={`p-2 transition-all ${!siblings?.nextSlug ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
                 title="Siguiente Producto"
               >
                 <ChevronRight className="w-5 h-5" />

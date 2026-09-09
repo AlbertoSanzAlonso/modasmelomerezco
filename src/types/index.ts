@@ -38,6 +38,8 @@ export interface Label {
 
 export interface Product {
   product_id: string;
+  /** Segmento SEO de la URL: /producto/{slug} */
+  slug: string;
   name: string;
   description: string;
   details?: string | null;

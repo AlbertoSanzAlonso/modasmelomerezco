@@ -5,6 +5,20 @@ import { getCanonicalSiteUrl } from './_siteUrl.js';
 const SITE_URL = getCanonicalSiteUrl();
 const SITE_NAME = 'Modas Me lo Merezco';
 
+/** IDs de la taxonomía de Google Product Category (Apparel & Accessories). */
+const GPC = {
+  clothing: '1604',
+  clothingAccessories: '167',
+  dresses: '2271',
+  shirtsTops: '212',
+  pants: '204',
+  skirts: '1581',
+  outerwear: '203',
+  shoes: '187',
+  handbags: '3032',
+  necklaces: '196',
+} as const;
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -18,6 +32,40 @@ function truncate(text: string, maxLength = 5000): string {
   const cleaned = text.replace(/\s+/g, ' ').trim();
   if (cleaned.length <= maxLength) return cleaned;
   return `${cleaned.slice(0, maxLength - 1).trim()}…`;
+}
+
+/** Categoriza para Merchant Center y evita requisitos erróneos (p. ej. unit_pricing). */
+function resolveGoogleProductCategory(
+  name: string,
+  category?: string | null,
+  subcategory?: string | null,
+): string {
+  const haystack = `${name} ${category || ''} ${subcategory || ''}`.toLowerCase();
+
+  if (/zapat|bailarina|calzado/.test(haystack)) return GPC.shoes;
+  if (/bolso/.test(haystack)) return GPC.handbags;
+  if (/collar/.test(haystack)) return GPC.necklaces;
+  if (/vestido/.test(haystack)) return GPC.dresses;
+  if (/falda/.test(haystack)) return GPC.skirts;
+  if (/pantalon|mallas/.test(haystack)) return GPC.pants;
+  if (/chaqueta|gabardina|blazer|chaleco/.test(haystack)) return GPC.outerwear;
+  if (/blusa|camiseta|top|body|sudadera|camisa/.test(haystack)) return GPC.shirtsTops;
+  if (/lencer|conjunto/.test(haystack)) return GPC.clothing;
+
+  const cat = (category || '').toLowerCase();
+  if (cat === 'calzado') return GPC.shoes;
+  if (cat === 'complementos') return GPC.clothingAccessories;
+  if (cat === 'ropa') return GPC.clothing;
+
+  return GPC.clothing;
+}
+
+function resolveProductType(
+  category?: string | null,
+  subcategory?: string | null,
+): string {
+  const parts = [category, subcategory].map((p) => (p || '').trim()).filter(Boolean);
+  return parts.length > 0 ? parts.join(' > ') : 'Ropa';
 }
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
@@ -37,6 +85,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       name,
       description,
       price,
+      category,
+      subcategory,
       created_at,
       product_images(image_url),
       product_variants(stock)
@@ -74,6 +124,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
           : `${SITE_URL}${firstImage}`
         : `${SITE_URL}/logo.png`;
 
+      const googleCategory = resolveGoogleProductCategory(p.name || '', p.category, p.subcategory);
+      const productType = resolveProductType(p.category, p.subcategory);
+
       const safeTitle = escapeXml(p.name || 'Producto');
       const safeDescription = escapeXml(
         truncate(p.description || `${p.name} - Compra online en ${SITE_NAME}`),
@@ -82,6 +135,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       const safePrice = Number(p.price).toFixed(2);
       const safeImageLink = escapeXml(imageLink);
       const safeBrand = escapeXml(SITE_NAME);
+      const safeProductType = escapeXml(productType);
 
       const parts = ['    <item>'];
       parts.push(`      <g:id>${safeId}</g:id>`);
@@ -97,6 +151,11 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       parts.push(`      <g:brand>${safeBrand}</g:brand>`);
       parts.push(`      <g:condition>new</g:condition>`);
       parts.push(`      <g:mpn>${safeId}</g:mpn>`);
+      parts.push(`      <g:google_product_category>${googleCategory}</g:google_product_category>`);
+      parts.push(`      <g:product_type>${safeProductType}</g:product_type>`);
+      // Catálogo vendido por unidades (pieza). Cumple el requisito legal de precio unitario en ES.
+      parts.push(`      <g:unit_pricing_measure>1 ct</g:unit_pricing_measure>`);
+      parts.push(`      <g:unit_pricing_base_measure>1 ct</g:unit_pricing_base_measure>`);
       parts.push(`      <g:shipping>`);
       parts.push(`        <g:country>ES</g:country>`);
       parts.push(`        <g:price>5.50 EUR</g:price>`);

@@ -10,6 +10,7 @@ import {
   variantHasColor,
   alignImageColorIds,
 } from '@/lib/productVariants';
+import { toWebpBlob } from '@/utils/toWebp';
 
 function newDraftProductId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -216,10 +217,12 @@ export const useProductForm = (
       const currentImages = formData.images || [];
       
       const targetIndex = editingImageIndex !== null ? editingImageIndex : currentImages.length;
+      // Siempre convertir a WebP real (cabecera RIFF/WEBP) antes de subir
+      const webpBlob = await toWebpBlob(croppedBlob);
       const fileName = buildImageFileName(productName, targetIndex);
-      const webpFile = new File([croppedBlob], fileName, { type: 'image/webp' });
+      const imageFile = new File([webpBlob], fileName, { type: 'image/webp' });
 
-      const publicUrl = await api.storage.upload(webpFile, fileName);
+      const publicUrl = await api.storage.upload(imageFile, fileName);
       const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
 
       if (editingImageIndex !== null) {

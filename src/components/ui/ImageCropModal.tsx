@@ -198,9 +198,20 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       return;
     }
 
+    // Preferir WebP; si el navegador no puede, entregar PNG y toWebpBlob lo convertirá al subir
     canvas.toBlob(
       (blob) => {
-        if (blob) onConfirm(blob);
+        if (blob) {
+          onConfirm(blob);
+          return;
+        }
+        canvas.toBlob(
+          (pngBlob) => {
+            if (pngBlob) onConfirm(pngBlob);
+          },
+          'image/png',
+          1
+        );
       },
       'image/webp',
       0.95

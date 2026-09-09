@@ -11,6 +11,7 @@ import {
   isUniqueSize,
   UNIQUE_SIZE_LABEL,
 } from '../productVariants';
+import { isProductUuid, slugifyProductName } from '../productSlug';
 import type { Color, ProductVariant } from '@/types';
 
 const PRODUCT_SELECT_BASE =
@@ -50,6 +51,7 @@ const PRODUCT_SELECT_FILTER_BY_LABEL = `${PRODUCT_SELECT_BASE}, product_labels!i
 
 const PRODUCT_TABLE_COLUMNS = new Set([
   'product_id',
+  'slug',
   'name',
   'description',
   'details',
@@ -60,6 +62,69 @@ const PRODUCT_TABLE_COLUMNS = new Set([
   'category_id',
   'subcategory_id',
 ]);
+
+/** Genera un slug único consultando productos existentes. */
+async function ensureUniqueProductSlug(
+  baseName: string,
+  excludeProductId?: string,
+): Promise<string> {
+  const base = slugifyProductName(baseName);
+  let candidate = base;
+  let n = 2;
+
+  while (true) {
+    let query = supabase
+      .from('products')
+      .select('product_id')
+      .eq('slug', candidate)
+      .limit(1);
+
+    if (excludeProductId) {
+      query = query.neq('product_id', excludeProductId);
+    }
+
+    const { data, error } = await query.maybeSingle();
+    if (error && error.code !== 'PGRST116') throw error;
+    if (!data) return candidate;
+    candidate = `${base}-${n}`;
+    n += 1;
+  }
+}
+
+async function fetchProductByColumn(
+  column: 'slug' | 'product_id',
+  value: string,
+): Promise<Product> {
+  const selects = [
+    PRODUCT_SELECT_FULL,
+    PRODUCT_SELECT_WITH_LABELS,
+    PRODUCT_SELECT_WITH_DISCOUNTS,
+    PRODUCT_SELECT_BASE,
+  ];
+  let lastError: { code?: string; message?: string } | null = null;
+
+  for (const select of selects) {
+    const { data, error } = await supabase
+      .from('products')
+      .select(select)
+      .eq(column, value)
+      .maybeSingle();
+
+    if (!error) {
+      if (!data) throw new Error('Producto no encontrado');
+      return normalise(data);
+    }
+    lastError = error;
+    if (
+      !isMissingRelation(error, 'product_labels') &&
+      !isMissingRelation(error, 'product_discount_codes')
+    ) {
+      throw error;
+    }
+  }
+  if (lastError) throw lastError;
+  throw new Error('Producto no encontrado');
+}
 
 function cleanProductTablePayload(input: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -364,6 +429,7 @@ async function syncProductDiscountCodes(
 // Helper para normalizar los datos de Supabase al tipo Product de nuestra app
 const normalise = (p: any): Product => ({
   ...p,
+  slug: (typeof p.slug === 'string' && p.slug.trim()) || p.product_id,
   is_published: p.is_published ?? true,
   is_sold_out: p.is_sold_out === true,
   stock: (() => {
@@ -502,11 +568,19 @@ export const products = {
     throw lastError;
   },
 
-  getSiblings: async (productId: string, categoryId?: string, subcategoryId?: string): Promise<{ nextId: string | null, prevId: string | null }> => {
-    // Fetch all IDs in order to find siblings (simplest way to ensure correct sorting logic)
+  getSiblings: async (
+    productId: string,
+    categoryId?: string,
+    subcategoryId?: string,
+  ): Promise<{
+    nextId: string | null;
+    prevId: string | null;
+    nextSlug: string | null;
+    prevSlug: string | null;
+  }> => {
     let query = supabase
       .from('products')
-      .select('product_id')
+      .select('product_id, slug')
       .eq('is_published', true);
 
     if (categoryId) query = query.eq('category_id', categoryId);
@@ -518,42 +592,36 @@ export const products = {
 
     if (error) throw error;
 
-    const ids = data.map(p => p.product_id);
-    const currentIndex = ids.indexOf(productId);
+    const rows = data || [];
+    const currentIndex = rows.findIndex((p) => p.product_id === productId);
+    const prev = currentIndex > 0 ? rows[currentIndex - 1] : null;
+    const next = currentIndex >= 0 && currentIndex < rows.length - 1 ? rows[currentIndex + 1] : null;
 
     return {
-      prevId: currentIndex > 0 ? ids[currentIndex - 1] : null,
-      nextId: currentIndex < ids.length - 1 ? ids[currentIndex + 1] : null
+      prevId: prev?.product_id ?? null,
+      nextId: next?.product_id ?? null,
+      prevSlug: prev?.slug ?? prev?.product_id ?? null,
+      nextSlug: next?.slug ?? next?.product_id ?? null,
     };
   },
 
   getById: async (product_id: string): Promise<Product> => {
-    const selects = [
-      PRODUCT_SELECT_FULL,
-      PRODUCT_SELECT_WITH_LABELS,
-      PRODUCT_SELECT_WITH_DISCOUNTS,
-      PRODUCT_SELECT_BASE,
-    ];
-    let lastError: { code?: string; message?: string } | null = null;
+    return fetchProductByColumn('product_id', product_id);
+  },
 
-    for (const select of selects) {
-      const { data, error } = await supabase
-        .from('products')
-        .select(select)
-        .eq('product_id', product_id)
-        .maybeSingle();
+  /** Resuelve ficha por slug SEO o por UUID (URLs antiguas). */
+  getBySlugOrId: async (slugOrId: string): Promise<Product> => {
+    const param = slugOrId.trim();
+    if (!param) throw new Error('Producto no encontrado');
 
-      if (!error) return normalise(data);
-      lastError = error;
-      if (
-        !isMissingRelation(error, 'product_labels') &&
-        !isMissingRelation(error, 'product_discount_codes')
-      ) {
-        throw error;
-      }
+    try {
+      return await fetchProductByColumn('slug', param);
+    } catch (slugError) {
+      const notFound =
+        slugError instanceof Error && slugError.message === 'Producto no encontrado';
+      if (!notFound || !isProductUuid(param)) throw slugError;
+      return fetchProductByColumn('product_id', param);
     }
-    if (lastError) throw lastError;
-    throw new Error('Producto no encontrado');
   },
 
   getNewArrivals: async (publishedOnly = true): Promise<Product[]> => {
@@ -629,13 +697,20 @@ export const products = {
     }
   },
 
-  create: async (productData: Omit<Product, 'product_id'> & { product_id?: string }): Promise<Product> => {
+  create: async (
+    productData: Omit<Product, 'product_id' | 'slug'> & { product_id?: string; slug?: string },
+  ): Promise<Product> => {
     const { variants, images, image_color_ids, colors, labels, discountCodes, ...pData } = productData as any;
+    const productId = pData.product_id || createProductId();
+    const slug =
+      (typeof pData.slug === 'string' && pData.slug.trim()) ||
+      (await ensureUniqueProductSlug(pData.name || 'producto'));
     const productPayload = cleanProductTablePayload({
-      product_id: pData.product_id || createProductId(),
       ...pData,
+      product_id: productId,
+      slug,
     });
-    
+
     // 1. Create product
     const { data: product, error } = await supabase
       .from('products')
@@ -689,7 +764,11 @@ export const products = {
 
     // 1. Update product table
     const filteredUpdates = cleanProductTablePayload(pUpdates);
-    
+
+    if (typeof updates.name === 'string' && updates.name.trim() && updates.slug === undefined) {
+      filteredUpdates.slug = await ensureUniqueProductSlug(updates.name, product_id);
+    }
+
     const { data: product, error } = await supabase
       .from('products')
       .update(filteredUpdates)

@@ -58,10 +58,13 @@ function base64ToBytes(base64: string): Uint8Array {
 
 async function encodeWebpViaApi(source: Blob): Promise<Blob> {
   const bytes = new Uint8Array(await source.arrayBuffer());
-  const response = await fetch('/api/convert-webp', {
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageBase64: bytesToBase64(bytes) }),
+    body: JSON.stringify({
+      action: 'convert-webp',
+      imageBase64: bytesToBase64(bytes),
+    }),
   });
 
   if (!response.ok) {
@@ -83,7 +86,7 @@ async function encodeWebpViaApi(source: Blob): Promise<Blob> {
 
 /**
  * Garantiza un Blob WebP real (cabecera RIFF/WEBP).
- * Primero intenta el encoder del navegador; si falla, usa /api/convert-webp (sharp).
+ * Primero intenta el encoder del navegador; si falla, usa /api/chat (sharp).
  */
 export async function toWebpBlob(
   source: Blob,

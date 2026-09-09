@@ -4,6 +4,11 @@ import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { GoogleCustomerReviewsOptIn } from './components/GoogleCustomerReviewsOptIn';
+import {
+  consumeGoogleCustomerReviewsPending,
+  type GoogleCustomerReviewsPending,
+} from '@/lib/googleCustomerReviews';
 
 type Result = 'success' | 'error' | null;
 
@@ -22,11 +27,17 @@ const PaymentConfirmationPage = () => {
     if (payment === 'error') return 'error';
     return null;
   });
+  const [reviewOptIn, setReviewOptIn] = useState<GoogleCustomerReviewsPending | null>(null);
 
   useEffect(() => {
     if (handled.current) return;
     if (result !== 'success' && result !== 'error') return;
     handled.current = true;
+
+    const orderFromUrl = searchParams.get('order');
+    if (result === 'success') {
+      setReviewOptIn(consumeGoogleCustomerReviewsPending(orderFromUrl));
+    }
 
     window.history.replaceState({}, '', window.location.pathname);
 
@@ -51,7 +62,7 @@ const PaymentConfirmationPage = () => {
       actionLabel: 'Entendido',
       onAction: () => closeModal(),
     });
-  }, [result, clearCart, openModal, closeModal]);
+  }, [result, clearCart, openModal, closeModal, searchParams]);
 
   if (!result) {
     return (
@@ -73,6 +84,12 @@ const PaymentConfirmationPage = () => {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-6 py-20 bg-accent">
+      {isSuccess && reviewOptIn ? (
+        <GoogleCustomerReviewsOptIn
+          orderId={reviewOptIn.orderId}
+          email={reviewOptIn.email}
+        />
+      ) : null}
       <div className="max-w-md w-full bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl text-center border border-gray-100 space-y-8">
         {isSuccess ? (
           <>

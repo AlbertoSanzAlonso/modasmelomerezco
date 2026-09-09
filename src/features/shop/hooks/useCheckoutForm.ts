@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { CITIES_BY_PROVINCE } from "@/constants/locations";
 import { fetchRedsysParameters, REDSYS_URL_TEST, REDSYS_URL_PROD } from "@/lib/redsys";
+import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
 import type { Address } from '@/types';
 
 export const useCheckoutForm = () => {
@@ -311,6 +312,11 @@ export const useCheckoutForm = () => {
           paymentMethod: paymentMethod
         }
       );
+
+      saveGoogleCustomerReviewsPending({
+        orderId: createdOrder.order_id,
+        email: orderData.customer_email,
+      });
 
       const form = document.createElement('form');
       form.method = 'POST';

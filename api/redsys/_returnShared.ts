@@ -24,9 +24,42 @@ function resolveOrigin(req: VercelRequest): string {
   return `${proto}://${host}`.replace(/\/$/, '');
 }
 
+function firstString(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (Array.isArray(value) && typeof value[0] === 'string' && value[0].trim()) {
+    return value[0].trim();
+  }
+  return null;
+}
+
+/** Extrae el UUID del pedido (Ds_MerchantData) del POST/GET de retorno de Redsys. */
+function extractOrderUuidFromRedsysRequest(req: VercelRequest): string | null {
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const query = (req.query ?? {}) as Record<string, unknown>;
+    const merchantParamsB64 =
+      firstString(body.Ds_MerchantParameters) ||
+      firstString(body.DS_MERCHANTPARAMETERS) ||
+      firstString(query.Ds_MerchantParameters);
+
+    if (!merchantParamsB64) return null;
+
+    const json = Buffer.from(merchantParamsB64, 'base64').toString('utf8');
+    const params = JSON.parse(json) as Record<string, unknown>;
+    const uuid = firstString(params.Ds_MerchantData);
+    return uuid;
+  } catch {
+    return null;
+  }
+}
+
 function redirectToConfirmation(req: VercelRequest, res: VercelResponse, payment: 'success' | 'error') {
   const origin = resolveOrigin(req);
-  const location = `${origin}/pedido-confirmado?payment=${payment}`;
+  const params = new URLSearchParams({ payment });
+  const orderId = extractOrderUuidFromRedsysRequest(req);
+  if (orderId) params.set('order', orderId);
+
+  const location = `${origin}/pedido-confirmado?${params.toString()}`;
   res.statusCode = 303;
   res.setHeader('Location', location);
   res.setHeader('Cache-Control', 'no-store');

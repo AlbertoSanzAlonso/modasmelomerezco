@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { fetchRedsysParameters, REDSYS_URL_PROD, REDSYS_URL_TEST } from '@/lib/redsys';
 import { isOrderPaid } from '@/lib/orderPayment';
 import { getOrderContact } from '@/lib/orderContact';
+import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
 import { Button } from '@/components/ui/Button';
 import type { Order } from '@/types';
 
@@ -15,7 +16,18 @@ function paymentMethodFromOrder(order: Order): 'card' | 'bizum' {
   return method.includes('bizum') ? 'bizum' : 'card';
 }
 
-function submitRedsysForm(params: Record<string, string>) {
+function submitRedsysForm(params: Record<string, string>, order?: Order | null) {
+  if (order?.order_id) {
+    const email =
+      order.customer_email ||
+      order.customer?.email ||
+      getOrderContact(order).email ||
+      '';
+    if (email) {
+      saveGoogleCustomerReviewsPending({ orderId: order.order_id, email });
+    }
+  }
+
   const form = document.createElement('form');
   form.method = 'POST';
   form.action = import.meta.env.PROD ? REDSYS_URL_PROD : REDSYS_URL_TEST;
@@ -105,15 +117,15 @@ const ResumePaymentPage = () => {
     // Pequeña pausa para que el usuario vea el resumen; el botón queda como respaldo
     const timer = window.setTimeout(() => {
       setStatus('redirecting');
-      submitRedsysForm(redsysParams);
+      submitRedsysForm(redsysParams, order);
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [status, redsysParams]);
+  }, [status, redsysParams, order]);
 
   const handleManualPay = () => {
     if (!redsysParams) return;
     setStatus('redirecting');
-    submitRedsysForm(redsysParams);
+    submitRedsysForm(redsysParams, order);
   };
 
   const shortId = order?.order_id?.split('-')[0].toUpperCase();

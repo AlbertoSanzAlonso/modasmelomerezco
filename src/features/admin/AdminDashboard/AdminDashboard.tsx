@@ -97,7 +97,7 @@ export const AdminDashboard: React.FC = () => {
   const saveMutation = useMutation({
     mutationFn: (data: Partial<Product>) => {
       if (editingProduct) return api.products.update(editingProduct.product_id, data);
-      return api.products.create(data as Omit<Product, 'product_id'>);
+      return api.products.create(data as Omit<Product, 'product_id' | 'slug'>);
     },
     onSuccess: (product: Product, variables: Partial<Product>) => {
       refreshProductCaches(queryClient, product);

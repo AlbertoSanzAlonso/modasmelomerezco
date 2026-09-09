@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { createClient } from '@supabase/supabase-js';
 import { getCanonicalSiteUrl } from './_siteUrl.js';
+import { isProductUuid } from '../src/lib/productSlug.js';
 
 const SITE_URL = getCanonicalSiteUrl();
 const SITE_NAME = 'Modas Me lo Merezco';
@@ -17,6 +18,8 @@ export type SeoPageMeta = {
   noindex: boolean;
   type: 'website' | 'product';
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Si está definido, el middleware debe responder 301 a esta path (p. ej. UUID → slug). */
+  redirectTo?: string;
 };
 
 const STATIC_PAGES: Record<string, { title?: string; description: string }> = {
@@ -109,16 +112,41 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-async function getProductMeta(productId: string): Promise<SeoPageMeta | null> {
+async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const { data: product } = await supabase
+  const select =
+    'product_id, slug, name, description, price, is_published, product_images(image_url)';
+
+  let product: {
+    product_id: string;
+    slug?: string | null;
+    name?: string | null;
+    description?: string | null;
+    price?: number | null;
+    is_published?: boolean;
+    product_images?: { image_url?: string }[] | null;
+  } | null = null;
+
+  const bySlug = await supabase
     .from('products')
-    .select('product_id, name, description, price, is_published, product_images(image_url)')
-    .eq('product_id', productId)
+    .select(select)
+    .eq('slug', slugOrId)
     .eq('is_published', true)
     .maybeSingle();
+
+  if (bySlug.data) {
+    product = bySlug.data;
+  } else if (isProductUuid(slugOrId)) {
+    const byId = await supabase
+      .from('products')
+      .select(select)
+      .eq('product_id', slugOrId)
+      .eq('is_published', true)
+      .maybeSingle();
+    product = byId.data;
+  }
 
   if (!product) return null;
 
@@ -138,7 +166,8 @@ async function getProductMeta(productId: string): Promise<SeoPageMeta | null> {
       `${product.name}. Precio ${Number(product.price).toFixed(2)} €. Compra online en Modas Me lo Merezco.`,
   );
 
-  const path = `/producto/${product.product_id}`;
+  const slug = (product.slug || '').trim() || product.product_id;
+  const path = `/producto/${slug}`;
   const canonical = absoluteUrl(path);
   const productName = product.name || 'Producto';
   const price = Number(product.price);
@@ -203,14 +232,18 @@ async function getProductMeta(productId: string): Promise<SeoPageMeta | null> {
     },
   };
 
+  const redirectTo =
+    isProductUuid(slugOrId) && slug !== slugOrId ? path : undefined;
+
   return {
-    title: buildTitle(product.name),
+    title: buildTitle(product.name || undefined),
     description,
     canonical,
     ogImage,
     noindex: false,
     type: 'product',
     jsonLd,
+    redirectTo,
   };
 }
 

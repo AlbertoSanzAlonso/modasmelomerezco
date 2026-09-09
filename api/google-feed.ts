@@ -82,6 +82,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     .from('products')
     .select(`
       product_id,
+      slug,
       name,
       description,
       price,
@@ -141,7 +142,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       parts.push(`      <g:id>${safeId}</g:id>`);
       parts.push(`      <g:title>${safeTitle}</g:title>`);
       parts.push(`      <g:description>${safeDescription}</g:description>`);
-      parts.push(`      <g:link>${SITE_URL}/producto/${encodeURIComponent(p.product_id)}</g:link>`);
+      const linkSlug = encodeURIComponent((p.slug || '').trim() || p.product_id);
+      parts.push(`      <g:link>${SITE_URL}/producto/${linkSlug}</g:link>`);
       parts.push(`      <g:image_link>${safeImageLink}</g:image_link>`);
       for (const addImg of additionalImages) {
         parts.push(`      <g:additional_image_link>${escapeXml(addImg)}</g:additional_image_link>`);

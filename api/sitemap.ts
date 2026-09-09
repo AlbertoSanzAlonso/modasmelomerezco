@@ -71,7 +71,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       const supabase = createClient(supabaseUrl, serviceKey);
       const { data: products } = await supabase
         .from('products')
-        .select('product_id, created_at, name')
+        .select('product_id, slug, created_at, name')
         .eq('is_published', true)
         .order('created_at', { ascending: false });
 
@@ -79,8 +79,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         const name = (product.name || '').toLowerCase();
         if (name.includes('test') || name.includes('prueba')) continue;
 
+        const slug = (product.slug || '').trim() || product.product_id;
         entries.push({
-          loc: `/producto/${product.product_id}`,
+          loc: `/producto/${slug}`,
           changefreq: 'weekly',
           priority: '0.8',
           lastmod: toLastmod(product.created_at),

@@ -20,7 +20,6 @@
     "../src/lib/orderPricing.ts",
     "../src/lib/orderPayment.ts",
     "../src/lib/productVariants.ts",
-    "../src/lib/productSlug.ts",
     "../src/lib/emails/**/*.ts"
   ]
 }

@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { createClient } from '@supabase/supabase-js';
 import { getCanonicalSiteUrl } from './_siteUrl.js';
-import { isProductUuid } from '../src/lib/productSlug.js';
+import { isProductUuid } from './_productUuid.js';
 
 const SITE_URL = getCanonicalSiteUrl();
 const SITE_NAME = 'Modas Me lo Merezco';

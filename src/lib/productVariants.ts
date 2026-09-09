@@ -1,5 +1,5 @@
 import type { Color, Product, ProductVariant } from '../types/index.js';
-import { getProductPath } from './productSlug.js';
+import { getProductPath } from './productSlug';
 
 /** @deprecated Solo pedidos legacy con texto "Único"/"Neutro" */
 export const DEFAULT_COLOR = 'Neutro';

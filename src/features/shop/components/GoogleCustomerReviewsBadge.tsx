@@ -14,14 +14,14 @@ const SCRIPT_SRC = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js'
 const WRAPPER_ID = 'google-merchantwidget-iframe-wrapper';
 const IFRAME_ID = 'merchantwidgetiframe';
 
-/** Ancho mínimo del toast intro (copy ES más largo que el cálculo de Google). */
-const MIN_EXPANDED_TOAST_WIDTH_PX = 400;
-
 /**
- * El script de Google pone el iframe a ~viewport y recorta con el wrapper
- * (`overflow: hidden` + width/height vía postMessage). Si el width llega corto
- * (típico con el texto en español), el pop-up se corta a la derecha.
+ * El toast intro en ES mide más de lo que Google reporta por postMessage
+ * (~324–400×84). Sin holgura, overflow:hidden del wrapper corta derecha y abajo.
+ * Valores contrastados en viewport real (520×120 muestra el pill completo).
  */
+const MIN_EXPANDED_TOAST_WIDTH_PX = 520;
+const MIN_EXPANDED_TOAST_HEIGHT_PX = 120;
+
 function preventMerchantToastClipping(wrapper: HTMLElement) {
   const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | null;
   iframe?.style.setProperty('max-width', 'none', 'important');
@@ -35,9 +35,13 @@ function preventMerchantToastClipping(wrapper: HTMLElement) {
 
   // FAB colapsado (~48–64px): no tocar. Toast/panel expandido: dar holgura.
   if (height <= 70 || width < 180) return;
-  if (width >= MIN_EXPANDED_TOAST_WIDTH_PX) return;
 
-  wrapper.style.width = `${MIN_EXPANDED_TOAST_WIDTH_PX}px`;
+  if (width < MIN_EXPANDED_TOAST_WIDTH_PX) {
+    wrapper.style.width = `${MIN_EXPANDED_TOAST_WIDTH_PX}px`;
+  }
+  if (height < MIN_EXPANDED_TOAST_HEIGHT_PX) {
+    wrapper.style.height = `${MIN_EXPANDED_TOAST_HEIGHT_PX}px`;
+  }
 }
 
 /**
@@ -50,15 +54,28 @@ export function GoogleCustomerReviewsBadge() {
     let observer: MutationObserver | null = null;
     let pollId = 0;
 
+    const applyFix = () => {
+      const wrapper = document.getElementById(WRAPPER_ID);
+      if (wrapper) preventMerchantToastClipping(wrapper);
+    };
+
     const watchWrapper = () => {
       const wrapper = document.getElementById(WRAPPER_ID);
       if (!wrapper || cancelled) return false;
 
-      preventMerchantToastClipping(wrapper);
-      observer = new MutationObserver(() => preventMerchantToastClipping(wrapper));
+      applyFix();
+      observer?.disconnect();
+      observer = new MutationObserver(applyFix);
       observer.observe(wrapper, { attributes: true, attributeFilter: ['style', 'hidden'] });
       return true;
     };
+
+    // Google redimensiona por postMessage; reforzamos tras su handler.
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://www.google.com') return;
+      requestAnimationFrame(applyFix);
+    };
+    window.addEventListener('message', onMessage);
 
     const startWidget = () => {
       if (cancelled) return;
@@ -68,6 +85,7 @@ export function GoogleCustomerReviewsBadge() {
           position: 'LEFT_BOTTOM',
           region: 'ES',
           language: 'es',
+          bottomMargin: 24,
         });
       } catch {
         // Ya montado tras navegación SPA: seguimos observando el wrapper existente.
@@ -93,6 +111,7 @@ export function GoogleCustomerReviewsBadge() {
       return () => {
         cancelled = true;
         existing.removeEventListener('load', startWidget);
+        window.removeEventListener('message', onMessage);
         window.clearInterval(pollId);
         observer?.disconnect();
       };
@@ -108,6 +127,7 @@ export function GoogleCustomerReviewsBadge() {
     return () => {
       cancelled = true;
       script.removeEventListener('load', startWidget);
+      window.removeEventListener('message', onMessage);
       window.clearInterval(pollId);
       observer?.disconnect();
     };

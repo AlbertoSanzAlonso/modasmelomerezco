@@ -280,7 +280,7 @@ const ProductPage = () => {
   const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   return (
-    <div className="bg-accent min-h-screen pt-4 pb-32 text-secondary lg:pt-1 lg:pb-16">
+    <div className="bg-accent min-h-screen pt-6 pb-32 text-secondary lg:pt-6 lg:pb-16">
       <SeoHelmet
         title={product.name}
         description={productDescription}
@@ -419,7 +419,7 @@ const ProductPage = () => {
           {/* Left: Gallery */}
           <div className="flex flex-col gap-6 -mx-6 lg:col-span-6 lg:mx-0 lg:gap-3">
             <div 
-              className="relative aspect-3/4 cursor-pointer overflow-hidden bg-white touch-pan-y lg:aspect-[3/4] lg:h-[min(68vh,calc(100dvh-10.5rem))] lg:w-auto lg:max-w-full"
+              className="relative aspect-3/4 cursor-pointer overflow-hidden bg-white touch-pan-y lg:aspect-[3/4] lg:h-[min(65vh,calc(100dvh-12rem))] lg:w-auto lg:max-w-full"
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;

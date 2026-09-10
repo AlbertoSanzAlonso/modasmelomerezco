@@ -280,7 +280,7 @@ const ProductPage = () => {
   const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   return (
-    <div className="bg-accent min-h-screen pt-6 pb-32 text-secondary lg:pt-6 lg:pb-16">
+    <div className="bg-accent min-h-screen pt-8 pb-32 text-secondary lg:pt-10 lg:pb-16">
       <SeoHelmet
         title={product.name}
         description={productDescription}
@@ -417,9 +417,9 @@ const ProductPage = () => {
         
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-10 xl:gap-14">
           {/* Left: Gallery */}
-          <div className="flex flex-col gap-6 -mx-6 lg:col-span-6 lg:mx-0 lg:gap-3">
+          <div className="flex flex-col gap-6 -mx-6 lg:col-span-5 lg:mx-0 lg:gap-3">
             <div 
-              className="relative aspect-3/4 cursor-pointer overflow-hidden bg-white touch-pan-y lg:aspect-[3/4] lg:h-[min(65vh,calc(100dvh-12rem))] lg:w-auto lg:max-w-full"
+              className="relative aspect-3/4 cursor-pointer overflow-hidden bg-white touch-pan-y lg:aspect-[3/4] lg:h-[min(52vh,calc(100dvh-15rem))] lg:max-h-[520px] lg:w-auto lg:max-w-full"
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;
@@ -533,7 +533,7 @@ const ProductPage = () => {
           </div>
 
           {/* Right: Info */}
-          <div className="flex flex-col justify-center lg:col-span-6 lg:justify-start">
+          <div className="flex flex-col justify-center lg:col-span-7 lg:justify-start">
             <div className="mb-10 border-b border-secondary/5 pb-10 lg:mb-5 lg:pb-5">
               <span className="mb-3 block text-xs font-black tracking-[0.4em] text-primary uppercase lg:mb-2">{product.category}</span>
               <h1 className="mb-4 text-3xl leading-none font-black tracking-tighter uppercase italic sm:text-4xl lg:mb-3 lg:text-4xl xl:text-5xl">{product.name}</h1>

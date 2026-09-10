@@ -417,9 +417,9 @@ const ProductPage = () => {
         
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-16 xl:gap-20">
           {/* Left: Gallery */}
-          <div className="flex flex-col gap-6 -mx-6 lg:col-span-5 lg:mx-0 lg:gap-3">
+          <div className="flex flex-col gap-6 -mx-6 lg:col-span-5 lg:mx-0 lg:items-center lg:gap-3">
             <div 
-              className="relative aspect-3/4 w-full cursor-pointer overflow-hidden bg-white touch-pan-y lg:max-w-[min(100%,380px)]"
+              className="relative aspect-3/4 w-full cursor-pointer overflow-hidden bg-white touch-pan-y lg:max-w-[min(100%,440px)]"
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;
@@ -519,7 +519,7 @@ const ProductPage = () => {
                 </div>
               )}
             </div>
-            <div className="hidden gap-2 overflow-x-auto pb-1 lg:flex">
+            <div className="hidden w-full max-w-[min(100%,440px)] gap-2 overflow-x-auto pb-1 lg:flex lg:justify-center">
               {displayImages.map((img: string, idx: number) => (
                 <div 
                   key={idx}

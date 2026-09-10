@@ -477,12 +477,12 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
       </button>
 
       <div
-        className={`fixed z-50 bg-white shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${
+        className={`fixed bg-white shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${
           isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
         } ${
           isExpanded
-            ? 'inset-3 sm:inset-4 rounded-2xl w-auto h-auto max-h-none'
-            : 'bottom-6 right-6 w-[90vw] sm:w-[380px] rounded-3xl'
+            ? 'top-24 left-3 right-3 bottom-3 sm:left-4 sm:right-4 sm:bottom-4 z-[80] rounded-2xl w-auto h-auto max-h-none'
+            : 'bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] rounded-3xl'
         }`}
         style={
           isExpanded

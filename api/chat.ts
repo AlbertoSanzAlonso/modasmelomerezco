@@ -173,7 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (action === 'chat') {
-    const { messages, systemPrompt, model = 'llama-3.1-8b-instant' } = req.body as {
+    const { messages, systemPrompt, model = 'openai/gpt-oss-20b' } = req.body as {
       messages?: { role: string; content: string }[];
       systemPrompt?: string;
       model?: string;

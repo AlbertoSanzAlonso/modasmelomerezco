@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Maximize2, Minimize2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from "@/lib/supabase";
 import { getProductPath } from '@/lib/productSlug';
+import { useChatStore } from "@/store/useChatStore";
 // Eliminamos Xenova/Transformers para usar OpenAI directamente (más preciso)
 const getQueryEmbedding = async (text: string): Promise<number[]> => {
   const response = await fetch('/api/chat', {
@@ -63,7 +64,7 @@ const ProductLinkButton = ({
 }) => (
   <a
     href={href}
-    className="flex items-center justify-between mt-3 px-5 py-3.5 bg-secondary text-white text-[10px] font-black uppercase tracking-[0.18em] italic rounded-2xl hover:bg-primary transition-all group shadow-lg shadow-secondary/10 active:scale-[0.98]"
+    className="flex items-center justify-between mt-2 mb-5 px-5 py-3.5 bg-secondary text-white text-[10px] font-black uppercase tracking-[0.18em] italic rounded-2xl hover:bg-primary transition-all group shadow-lg shadow-secondary/10 active:scale-[0.98]"
   >
     <span className="truncate pr-3">{label || 'Ver producto'}</span>
     <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors shrink-0">
@@ -100,7 +101,7 @@ const formatMessage = (text: string) => {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-3 px-5 py-2.5 bg-[#25D366] text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-[#20BD5A] transition-all hover:scale-105 shadow-md shadow-green-500/20 active:scale-95"
+            className="inline-flex items-center gap-2 mt-3 mb-2 px-5 py-2.5 bg-[#25D366] text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-[#20BD5A] transition-all hover:scale-105 shadow-md shadow-green-500/20 active:scale-95"
           >
             <span>Hablar por WhatsApp</span>
           </a>
@@ -116,7 +117,7 @@ const formatMessage = (text: string) => {
           <a
             key={index}
             href={href}
-            className="inline-flex mt-3 px-5 py-2.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:opacity-90 transition-all"
+            className="inline-flex mt-3 mb-4 px-5 py-2.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:opacity-90 transition-all"
           >
             {label || 'Ver sección'}
           </a>
@@ -139,26 +140,19 @@ const formatMessage = (text: string) => {
     const plain = formatPlainText(part);
     if (!plain) return null;
     return (
-      <span key={index} className="leading-relaxed whitespace-pre-wrap">
+      <span key={index} className="leading-relaxed whitespace-pre-wrap block">
         {plain}
       </span>
     );
   });
 };
 
-interface Message {
-  id: string;
-  text: string;
-  isBot: boolean;
-}
-
-import { useChatStore } from "@/store/useChatStore";
-
 export const AIChatAgent = () => {
   const { pathname } = useLocation();
-  const { messages, isOpen, setIsOpen, addMessage, isLoading: isChatLoading } = useChatStore();
+  const { messages, isOpen, setIsOpen, addMessage } = useChatStore();
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -170,6 +164,10 @@ export const AIChatAgent = () => {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) setIsExpanded(false);
+  }, [isOpen]);
 
   if (pathname.startsWith('/admin') || pathname.startsWith('/cuenta')) {
     return null;
@@ -320,7 +318,9 @@ REGLAS CRÍTICAS DE RESPUESTA:
 5. Si un producto es "NOVEDAD", menciónalo con entusiasmo. Si el inventario trae artículos marcados como NOVEDAD (p. ej. la clienta preguntó por novedades), recomiéndalos; NUNCA digas que no hay novedades si aparecen en el inventario.
 6. NUNCA digas "Excelente elección" ni frases similares si la clienta solo preguntó o pidió recomendaciones. Responde de forma natural como una dependienta de boutique. Si la clienta aún no ha elegido nada, no finjas que ya lo hizo.
 7. NO compartas la URL completa del sitio web (https://www.modasmelomerezco.es) porque la usuaria ya está en él. Si quieres dirigir a una sección, usa solo el enlace relativo (ej: /#novedades).
-8. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:
+8. Empieza SIEMPRE con 1 o 2 frases cortas y cercanas respondiendo a la clienta ANTES de listar productos. Nunca empieces la respuesta directamente con el nombre de un artículo.
+9. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Tras la intro, para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:
+¡Claro! Aquí tienes unas opciones a buen precio:
 COLLARES COLORINES — 15€
 /producto/collares-colorines`
         : `
@@ -332,7 +332,7 @@ NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. 
 - Calzado: /categoria/calzado
 - Novedades: /#novedades
 
-Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enlaces que no estén en esta lista. NUNCA incluyas el dominio completo (https://...) en los enlaces, usa siempre la forma relativa como se muestra arriba. NUNCA uses tablas markdown ni sintaxis [texto](url): pon la ruta relativa sola en su propia línea.`;
+Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enlaces que no estén en esta lista. NUNCA incluyas el dominio completo (https://...) en los enlaces, usa siempre la forma relativa como se muestra arriba. NUNCA uses tablas markdown ni sintaxis [texto](url): pon la ruta relativa sola en su propia línea. Empieza siempre con una frase amable antes de los enlaces.`;
 
       const systemPrompt = baseInfo + inventoryBlock;
 
@@ -368,33 +368,64 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
       <button
         onClick={() => setIsOpen(true)}
         className={`fixed bottom-6 right-6 z-50 p-4 bg-primary text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
+        aria-label="Abrir chat"
       >
         <MessageCircle className="w-7 h-7" />
       </button>
 
       <div
-        className={`fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
-        style={{ height: '550px', maxHeight: '85vh' }}
+        className={`fixed z-50 bg-white shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${
+          isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
+        } ${
+          isExpanded
+            ? 'inset-3 sm:inset-4 rounded-2xl w-auto h-auto max-h-none'
+            : 'bottom-6 right-6 w-[90vw] sm:w-[380px] rounded-3xl'
+        }`}
+        style={
+          isExpanded
+            ? undefined
+            : { height: '550px', maxHeight: '85vh' }
+        }
       >
-        <div className="bg-primary p-5 flex justify-between items-center text-white relative">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-full">
+        <div className="bg-primary p-5 flex justify-between items-center text-white relative shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="bg-white/20 p-2 rounded-full shrink-0">
               <Bot className="w-6 h-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-bold text-sm tracking-wide">MeloMe AI</h3>
               <p className="text-[10px] opacity-80 uppercase tracking-widest">Asistente Virtual</p>
             </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsExpanded((v) => !v)}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              aria-label={isExpanded ? 'Reducir chat' : 'Ampliar chat'}
+              title={isExpanded ? 'Vista normal' : 'Pantalla completa'}
+            >
+              {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              aria-label="Cerrar chat"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50 min-h-0">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
-              <div className={`p-3 text-sm rounded-2xl max-w-[85%] ${msg.isBot ? 'bg-white border border-gray-100 shadow-sm' : 'bg-secondary text-white shadow-md'}`}>
+              <div
+                className={`p-3 text-sm rounded-2xl ${
+                  isExpanded ? 'max-w-[min(100%,42rem)]' : 'max-w-[85%]'
+                } ${msg.isBot ? 'bg-white border border-gray-100 shadow-sm' : 'bg-secondary text-white shadow-md'}`}
+              >
                 {msg.isBot ? formatMessage(msg.text) : msg.text}
               </div>
             </div>
@@ -409,7 +440,7 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 bg-white border-t border-gray-100">
+        <div className="p-4 bg-white border-t border-gray-100 shrink-0">
           <form onSubmit={handleSend} className="relative flex items-center">
             <input
               type="text"

@@ -636,7 +636,13 @@ export const products = {
     return [];
   },
 
-  syncEmbedding: async (productId: string, name: string, description: string, categoryId?: string): Promise<void> => {
+  syncEmbedding: async (
+    productId: string,
+    name: string,
+    description: string,
+    categoryId?: string,
+    isNew?: boolean,
+  ): Promise<void> => {
     try {
       let categoryName = '';
       if (categoryId) {
@@ -648,7 +654,10 @@ export const products = {
         categoryName = cat?.name || '';
       }
 
-      const content = `Producto: ${name}. Categoría: ${categoryName}. Descripción: ${description || ''}`;
+      const noveltyTag = isNew
+        ? ' Etiqueta: NOVEDAD, artículo nuevo, recién llegado.'
+        : '';
+      const content = `Producto: ${name}. Categoría: ${categoryName}.${noveltyTag} Descripción: ${description || ''}`;
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -754,7 +763,13 @@ export const products = {
     await syncProductDiscountCodes(product.product_id, discountCodes);
 
     // 6. Sync Embedding (Background)
-    products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
+    products.syncEmbedding(
+      product.product_id,
+      product.name,
+      product.description,
+      product.category_id,
+      product.is_new,
+    );
 
     return products.getById(product.product_id);
   },
@@ -821,9 +836,20 @@ export const products = {
     await syncProductLabels(product_id, labels);
     await syncProductDiscountCodes(product_id, discountCodes);
 
-    // 6. Sync Embedding (Background) - Solo si cambió nombre, descripción o categoría
-    if (updates.name || updates.description || updates.category_id) {
-      products.syncEmbedding(product.product_id, product.name, product.description, product.category_id);
+    // 6. Sync Embedding (Background) - si cambió texto indexable o flag de novedad
+    if (
+      updates.name ||
+      updates.description ||
+      updates.category_id ||
+      updates.is_new !== undefined
+    ) {
+      products.syncEmbedding(
+        product.product_id,
+        product.name,
+        product.description,
+        product.category_id,
+        product.is_new,
+      );
     }
 
     return products.getById(product_id);

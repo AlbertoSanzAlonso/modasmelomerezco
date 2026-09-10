@@ -193,17 +193,80 @@ export const AIChatAgent = () => {
       let productsInfo = '';
       let useProductSearch = true;
 
+      const isNoveltyQuery = (text: string) => {
+        const t = text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+        return /\b(novedad(es)?|nuevo[as]?|nuevos|recien(\s+llegad\w*)?|lo\s+ultimo|ultima\s+coleccion)\b/.test(
+          t,
+        );
+      };
+
+      const formatProductsForPrompt = (
+        items: Array<{
+          product_id: string;
+          name: string;
+          description?: string | null;
+          price?: number;
+          is_new?: boolean;
+          slug?: string | null;
+          variants?: Array<{ size?: string; color?: string | null; stock?: number }>;
+        }>,
+        slugById: Record<string, string | null> = {},
+      ) =>
+        items
+          .map((p) => {
+            const stockInfo =
+              p.variants
+                ?.map((v) => {
+                  const label = v.color ? `${v.size}/${v.color}` : v.size;
+                  return `${label}: ${v.stock ?? 0}uds`;
+                })
+                .join(', ') || 'Sin info de stock';
+            const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
+            const path = getProductPath({
+              product_id: p.product_id,
+              slug: slugById[p.product_id] ?? p.slug,
+            });
+            return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${path}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description || ''}`;
+          })
+          .join('\n---\n');
+
       try {
-        const embedding = await getQueryEmbedding(userMsg);
-        const { data, error: rpcError } = await supabase.rpc('match_products', {
-          query_embedding: embedding,
-          match_threshold: 0.35,
-          match_count: 12
-        });
+        let matchedProducts: any[] = [];
 
-        if (rpcError) throw rpcError;
+        if (isNoveltyQuery(userMsg)) {
+          const { data: news, error: newsError } = await supabase
+            .from('products')
+            .select(
+              'product_id, name, description, price, is_new, slug, product_variants(size, stock, colors(name))',
+            )
+            .eq('is_new', true)
+            .eq('is_published', true)
+            .order('created_at', { ascending: false })
+            .limit(12);
 
-        const matchedProducts = data || [];
+          if (newsError) throw newsError;
+
+          matchedProducts = (news || []).map((p: any) => ({
+            ...p,
+            variants: (p.product_variants || []).map((v: any) => ({
+              size: v.size,
+              color: v.colors?.name || null,
+              stock: v.stock ?? 0,
+            })),
+          }));
+        } else {
+          const embedding = await getQueryEmbedding(userMsg);
+          const { data, error: rpcError } = await supabase.rpc('match_products', {
+            query_embedding: embedding,
+            match_threshold: 0.35,
+            match_count: 12,
+          });
+          if (rpcError) throw rpcError;
+          matchedProducts = data || [];
+        }
 
         let slugById: Record<string, string | null> = {};
         if (matchedProducts.length > 0) {
@@ -220,20 +283,10 @@ export const AIChatAgent = () => {
           );
         }
 
-        productsInfo = matchedProducts.length > 0
-          ? matchedProducts.map((p: any) => {
-              const stockInfo = p.variants?.map((v: any) => {
-                const label = v.color ? `${v.size}/${v.color}` : v.size;
-                return `${label}: ${v.stock}uds`;
-              }).join(', ') || 'Sin info de stock';
-              const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
-              const path = getProductPath({
-                product_id: p.product_id,
-                slug: slugById[p.product_id],
-              });
-              return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${path}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
-            }).join('\n---\n')
-          : 'No hay artículos específicos en el catálogo que coincidan.';
+        productsInfo =
+          matchedProducts.length > 0
+            ? formatProductsForPrompt(matchedProducts, slugById)
+            : 'No hay artículos específicos en el catálogo que coincidan.';
       } catch {
         useProductSearch = false;
         productsInfo = '';
@@ -264,7 +317,7 @@ REGLAS CRÍTICAS DE RESPUESTA:
 2. Si la clienta pide una categoría (ej: Pantalón) y no hay ninguno en el inventario real, NO inventes ni recomiendes otra cosa de distinta categoría. Di amablemente que no tienes stock de eso ahora mismo y ofrece mirar las "Novedades" o contactar por WhatsApp.
 3. Los enlaces a producto DEBEN ser copiados EXACTAMENTE del inventario real. No modifiques ni inventes URLs. Usa siempre la forma relativa (/producto/...) NUNCA con dominio completo.
 4. Sé persuasiva pero muy concisa. Máximo 3 productos por respuesta.
-5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
+5. Si un producto es "NOVEDAD", menciónalo con entusiasmo. Si el inventario trae artículos marcados como NOVEDAD (p. ej. la clienta preguntó por novedades), recomiéndalos; NUNCA digas que no hay novedades si aparecen en el inventario.
 6. NUNCA digas "Excelente elección" ni frases similares si la clienta solo preguntó o pidió recomendaciones. Responde de forma natural como una dependienta de boutique. Si la clienta aún no ha elegido nada, no finjas que ya lo hizo.
 7. NO compartas la URL completa del sitio web (https://www.modasmelomerezco.es) porque la usuaria ya está en él. Si quieres dirigir a una sección, usa solo el enlace relativo (ej: /#novedades).
 8. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:

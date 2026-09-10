@@ -4,10 +4,11 @@
  * Uso:
  *   node --env-file=.env scripts/backfill-product-embeddings.mjs
  *   node --env-file=.env scripts/backfill-product-embeddings.mjs --all
+ *   node --env-file=.env scripts/backfill-product-embeddings.mjs --new
  *   node --env-file=.env scripts/backfill-product-embeddings.mjs --only=missing
  *
  * Por defecto solo rellena productos sin embedding (`--only=missing`).
- * Con `--all` regenera todos (útil si cambió el modelo o el texto indexado).
+ * Con `--all` regenera todos; con `--new` regenera los marcados is_new.
  */
 import { createClient } from '@supabase/supabase-js';
 
@@ -17,6 +18,7 @@ const openaiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
 
 const args = new Set(process.argv.slice(2));
 const reindexAll = args.has('--all');
+const reindexNew = args.has('--new');
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('Faltan VITE_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.');
@@ -48,7 +50,10 @@ async function embed(input) {
 }
 
 async function syncOne(product, categoryName) {
-  const content = `Producto: ${product.name}. Categoría: ${categoryName || ''}. Descripción: ${product.description || ''}`;
+  const noveltyTag = product.is_new
+    ? ' Etiqueta: NOVEDAD, artículo nuevo, recién llegado.'
+    : '';
+  const content = `Producto: ${product.name}. Categoría: ${categoryName || ''}.${noveltyTag} Descripción: ${product.description || ''}`;
   const embedding = await embed(content);
 
   const { error: deleteErr } = await supabase
@@ -68,7 +73,7 @@ async function syncOne(product, categoryName) {
 async function main() {
   const { data: products, error: productsError } = await supabase
     .from('products')
-    .select('product_id, name, description, category_id, is_published, created_at')
+    .select('product_id, name, description, category_id, is_published, is_new, created_at')
     .order('created_at', { ascending: false });
   if (productsError) throw productsError;
 
@@ -84,11 +89,15 @@ async function main() {
   if (embError) throw embError;
 
   const withEmb = new Set((embeddings || []).map((e) => e.product_id));
-  const targets = (products || []).filter((p) => reindexAll || !withEmb.has(p.product_id));
+  const targets = (products || []).filter((p) => {
+    if (reindexAll) return true;
+    if (reindexNew) return !!p.is_new;
+    return !withEmb.has(p.product_id);
+  });
 
   console.log(
     `Productos: ${products?.length ?? 0} | con embedding: ${withEmb.size} | a procesar: ${targets.length}` +
-      (reindexAll ? ' (--all)' : ' (solo faltantes)'),
+      (reindexAll ? ' (--all)' : reindexNew ? ' (--new)' : ' (solo faltantes)'),
   );
 
   let ok = 0;

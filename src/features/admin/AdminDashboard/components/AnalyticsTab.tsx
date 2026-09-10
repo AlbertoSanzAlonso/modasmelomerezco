@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Eye, Loader2, Smartphone, Users } from 'lucide-react';
+import { BarChart3, Eye, Loader2, Smartphone, Users, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AnalyticsApiError, type AnalyticsRange } from '@/lib/api/analytics';
 import { useAdminStore } from '@/store/useAdminStore';
@@ -13,6 +13,17 @@ function formatDayLabel(isoDate: string): string {
   if (!isoDate) return '';
   const date = new Date(`${isoDate}T12:00:00`);
   return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+}
+
+function formatDayFull(isoDate: string): string {
+  if (!isoDate) return '';
+  const date = new Date(`${isoDate}T12:00:00`);
+  return date.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function deviceLabel(device: string): string {
@@ -28,12 +39,17 @@ function deviceLabel(device: string): string {
 export const AnalyticsTab: React.FC = () => {
   const adminToken = useAdminStore((s) => s.adminToken);
   const [range, setRange] = useState<AnalyticsRange>(7);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedDay(null);
+  }, [range]);
 
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['admin-analytics', range],
+    queryKey: ['admin-analytics', range, selectedDay],
     queryFn: () => {
       if (!adminToken) throw new AnalyticsApiError('Sesión de admin no disponible', 401);
-      return api.analytics.getAdminOverview(adminToken, range);
+      return api.analytics.getAdminOverview(adminToken, range, selectedDay);
     },
     enabled: !!adminToken,
     staleTime: 60_000,
@@ -47,6 +63,13 @@ export const AnalyticsTab: React.FC = () => {
 
   const apiError = error instanceof AnalyticsApiError ? error : null;
   const notConfigured = apiError?.code === 'NOT_CONFIGURED' || apiError?.status === 503;
+  const periodLabel = selectedDay
+    ? formatDayFull(selectedDay)
+    : `Últimos ${range} días`;
+
+  const toggleDay = (date: string) => {
+    setSelectedDay((prev) => (prev === date ? null : date));
+  };
 
   return (
     <>
@@ -117,6 +140,23 @@ export const AnalyticsTab: React.FC = () => {
 
       {adminToken && !isLoading && data && (
         <div className={`space-y-8 ${isFetching ? 'opacity-70 transition-opacity' : ''}`}>
+          {selectedDay && (
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4">
+              <p className="text-xs font-bold text-(--text-main)">
+                Detalle del{' '}
+                <span className="text-primary capitalize">{formatDayFull(selectedDay)}</span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedDay(null)}
+                className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-primary transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Ver periodo completo
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl p-8 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
@@ -128,8 +168,8 @@ export const AnalyticsTab: React.FC = () => {
               <p className="text-4xl font-black tracking-tighter italic text-(--text-main)">
                 {formatNumber(data.totals.visitors)}
               </p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">
-                Últimos {range} días
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2 capitalize">
+                {periodLabel}
               </p>
             </div>
 
@@ -144,16 +184,19 @@ export const AnalyticsTab: React.FC = () => {
                 {formatNumber(data.totals.pageviews)}
               </p>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">
-                {data.since} → {data.until}
+                {selectedDay ? data.since : `${data.chartSince || data.since} → ${data.chartUntil || data.until}`}
               </p>
             </div>
           </div>
 
           <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl overflow-hidden shadow-sm">
-            <div className="p-8 border-b border-(--border-main)">
+            <div className="p-8 border-b border-(--border-main) flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
                 Tendencia diaria
               </h3>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                Pulsa una barra para ver el detalle del día
+              </p>
             </div>
             <div className="p-8">
               {data.daily.length === 0 ? (
@@ -164,20 +207,37 @@ export const AnalyticsTab: React.FC = () => {
                 <div className="flex items-end gap-2 sm:gap-3 h-48">
                   {data.daily.map((point) => {
                     const heightPct = Math.max(4, (point.pageviews / maxDailyViews) * 100);
+                    const isSelected = selectedDay === point.date;
                     return (
-                      <div key={point.date} className="flex-1 min-w-0 flex flex-col items-center gap-2 h-full justify-end">
+                      <button
+                        key={point.date}
+                        type="button"
+                        onClick={() => toggleDay(point.date)}
+                        aria-pressed={isSelected}
+                        title={`${point.date}: ${point.pageviews} vistas / ${point.visitors} visitantes`}
+                        className={`flex-1 min-w-0 flex flex-col items-center gap-2 h-full justify-end rounded-xl px-0.5 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                          selectedDay && !isSelected ? 'opacity-40 hover:opacity-70' : 'opacity-100'
+                        }`}
+                      >
                         <span className="text-[9px] font-bold text-gray-500 tabular-nums">
                           {point.pageviews > 0 ? formatNumber(point.pageviews) : ''}
                         </span>
                         <div
-                          className="w-full max-w-10 rounded-t-lg bg-primary/80 hover:bg-primary transition-colors"
+                          className={`w-full max-w-10 rounded-t-lg transition-colors ${
+                            isSelected
+                              ? 'bg-primary ring-2 ring-primary/30 ring-offset-2 ring-offset-(--bg-card)'
+                              : 'bg-primary/80 hover:bg-primary'
+                          }`}
                           style={{ height: `${heightPct}%` }}
-                          title={`${point.date}: ${point.pageviews} vistas / ${point.visitors} visitantes`}
                         />
-                        <span className="text-[8px] font-black uppercase tracking-wider text-gray-400 truncate w-full text-center">
+                        <span
+                          className={`text-[8px] font-black uppercase tracking-wider truncate w-full text-center ${
+                            isSelected ? 'text-primary' : 'text-gray-400'
+                          }`}
+                        >
                           {formatDayLabel(point.date)}
                         </span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -191,6 +251,11 @@ export const AnalyticsTab: React.FC = () => {
                 <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
                   Páginas más visitadas
                 </h3>
+                {selectedDay && (
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2 capitalize">
+                    {formatDayFull(selectedDay)}
+                  </p>
+                )}
               </div>
               <div className="divide-y divide-(--border-main)">
                 {data.topPaths.length === 0 && (
@@ -217,9 +282,16 @@ export const AnalyticsTab: React.FC = () => {
             <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl overflow-hidden shadow-sm">
               <div className="p-8 border-b border-(--border-main) flex items-center gap-3">
                 <Smartphone className="w-4 h-4 text-primary" />
-                <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
-                  Dispositivos
-                </h3>
+                <div>
+                  <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
+                    Dispositivos
+                  </h3>
+                  {selectedDay && (
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1 capitalize">
+                      {formatDayFull(selectedDay)}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="divide-y divide-(--border-main)">
                 {data.devices.length === 0 && (

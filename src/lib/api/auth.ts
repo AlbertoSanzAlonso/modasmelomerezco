@@ -265,8 +265,9 @@ export const auth = {
   },
 
   adminLogin: async (email: string, password: string): Promise<{ admin: Admin, token: string }> => {
+    const cleanEmail = email.toLowerCase().trim();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password
     });
     
@@ -275,12 +276,36 @@ export const auth = {
     const { user, session } = data;
     if (!user || !session) throw new Error('No se pudo iniciar sesión');
 
+    const { data: adminByEmail, error: adminEmailError } = await supabase
+      .from('admins')
+      .select('admin_id, email, role, created_at')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+
+    if (adminEmailError) throw adminEmailError;
+
+    let adminRow = adminByEmail;
+    if (!adminRow) {
+      const { data: adminById, error: adminIdError } = await supabase
+        .from('admins')
+        .select('admin_id, email, role, created_at')
+        .eq('admin_id', user.id)
+        .maybeSingle();
+      if (adminIdError) throw adminIdError;
+      adminRow = adminById;
+    }
+
+    if (!adminRow) {
+      await supabase.auth.signOut();
+      throw new Error('Esta cuenta no tiene acceso de administrador');
+    }
+
     const admin: Admin = {
-      admin_id: user.id,
-      username: user.email?.split('@')[0] || 'admin',
-      email: user.email || '',
-      role: 'admin',
-      created_at: user.created_at
+      admin_id: adminRow.admin_id,
+      username: (adminRow.email || user.email || '').split('@')[0] || 'admin',
+      email: adminRow.email || user.email || '',
+      role: (adminRow.role as Admin['role']) || 'admin',
+      created_at: adminRow.created_at || user.created_at
     };
 
     return {

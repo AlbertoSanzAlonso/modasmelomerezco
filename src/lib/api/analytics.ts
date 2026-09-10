@@ -27,8 +27,11 @@ export interface AnalyticsDeviceRow {
 
 export interface AdminAnalyticsResponse {
   range: AnalyticsRange;
+  day: string | null;
   since: string;
   until: string;
+  chartSince: string;
+  chartUntil: string;
   totals: AnalyticsTotals;
   daily: AnalyticsDailyPoint[];
   topPaths: AnalyticsPathRow[];
@@ -70,11 +73,14 @@ async function resolveAdminAccessToken(fallbackToken?: string | null): Promise<s
 export const analytics = {
   getAdminOverview: async (
     token: string,
-    range: AnalyticsRange = 7
+    range: AnalyticsRange = 7,
+    day?: string | null
   ): Promise<AdminAnalyticsResponse> => {
     const accessToken = await resolveAdminAccessToken(token);
+    const params = new URLSearchParams({ range: String(range) });
+    if (day) params.set('day', day);
 
-    const response = await fetch(`/api/admin-analytics?range=${range}`, {
+    const response = await fetch(`/api/admin-analytics?${params}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',

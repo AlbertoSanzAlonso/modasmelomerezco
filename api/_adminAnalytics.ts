@@ -31,6 +31,14 @@ function parseRange(raw: string | string[] | undefined): RangeDays {
   return value === '30' ? 30 : 7;
 }
 
+function parseDay(raw: string | string[] | undefined): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return value;
+}
+
 function toDateParam(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -174,26 +182,32 @@ export async function handleAdminAnalytics(
   }
 
   const days = parseRange(req.query.range);
-  const { since, until } = rangeBounds(days);
+  const selectedDay = parseDay(req.query.day);
+  const chartBounds = rangeBounds(days);
+  const detailSince = selectedDay || chartBounds.since;
+  const detailUntil = selectedDay || chartBounds.until;
 
   try {
     const [totalsRes, dailyRes, pathsRes, devicesRes] = await Promise.all([
-      queryVercelAnalytics<{ data: VisitTotals }>('visits/count', { since, until }),
+      queryVercelAnalytics<{ data: VisitTotals }>('visits/count', {
+        since: detailSince,
+        until: detailUntil,
+      }),
       queryVercelAnalytics<{ data: DayRow[] }>('visits/aggregate', {
-        since,
-        until,
+        since: chartBounds.since,
+        until: chartBounds.until,
         by: 'day',
         limit: days,
       }),
       queryVercelAnalytics<{ data: PathRow[] }>('visits/aggregate', {
-        since,
-        until,
+        since: detailSince,
+        until: detailUntil,
         by: 'requestPath',
         limit: 10,
       }),
       queryVercelAnalytics<{ data: DeviceRow[] }>('visits/aggregate', {
-        since,
-        until,
+        since: detailSince,
+        until: detailUntil,
         by: 'deviceType',
         limit: 10,
       }),
@@ -219,8 +233,11 @@ export async function handleAdminAnalytics(
 
     return res.status(200).json({
       range: days,
-      since,
-      until,
+      day: selectedDay,
+      since: detailSince,
+      until: detailUntil,
+      chartSince: chartBounds.since,
+      chartUntil: chartBounds.until,
       totals: {
         pageviews: asNumber(totalsRes.data?.pageviews),
         visitors: asNumber(totalsRes.data?.visitors),

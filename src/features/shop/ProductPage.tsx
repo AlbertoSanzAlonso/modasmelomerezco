@@ -755,10 +755,16 @@ const ProductPage = () => {
         >
           {/* Close Button */}
           <button 
-            onClick={() => { setShowFullscreen(false); setIsZoomed(false); }}
-            className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-120"
+            type="button"
+            aria-label="Cerrar"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowFullscreen(false);
+              setIsZoomed(false);
+            }}
+            className="fixed top-4 right-4 z-120 rounded-full bg-white p-3.5 text-secondary shadow-xl ring-1 ring-black/10 transition-transform hover:scale-105 hover:bg-white sm:top-6 sm:right-6"
           >
-            <X className="w-6 h-6" />
+            <X className="h-6 w-6 stroke-[2.5]" />
           </button>
 
           {/* Navigation Arrows (Desktop) */}

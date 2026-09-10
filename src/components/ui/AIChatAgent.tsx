@@ -191,15 +191,83 @@ export const AIChatAgent = () => {
       let productsInfo = '';
       let useProductSearch = true;
 
-      const isNoveltyQuery = (text: string) => {
-        const t = text
+      const normalizeText = (text: string) =>
+        text
           .toLowerCase()
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '');
-        return /\b(novedad(es)?|nuevo[as]?|nuevos|recien(\s+llegad\w*)?|lo\s+ultimo|ultima\s+coleccion)\b/.test(
-          t,
+
+      const isNoveltyQuery = (text: string) =>
+        /\b(novedad(es)?|nuevo[as]?|nuevos|recien(\s+llegad\w*)?|lo\s+ultimo|ultima\s+coleccion)\b/.test(
+          normalizeText(text),
+        );
+
+      const isVagueFollowUp = (text: string) => {
+        const t = normalizeText(text);
+        return (
+          t.length < 40 ||
+          /\b(cual(es)?|que modelo|cuantos modelos|cuantas|cuantos|el modelo|la modelo|ese|esa|esos|esas|verlo|y ese)\b/.test(
+            t,
+          )
         );
       };
+
+      /** Detecta categoría/subcategoría en el mensaje (y en el hilo si es un follow-up vago). */
+      const detectCatalogFilter = (
+        msg: string,
+        recentThread: string,
+      ):
+        | { kind: 'novelty' }
+        | { kind: 'category'; name: string }
+        | { kind: 'subcategory'; name: string }
+        | null => {
+        const current = normalizeText(msg);
+        const scope = isVagueFollowUp(msg)
+          ? normalizeText(`${msg}\n${recentThread}`)
+          : current;
+
+        if (isNoveltyQuery(current) || (isVagueFollowUp(msg) && isNoveltyQuery(scope))) {
+          return { kind: 'novelty' };
+        }
+
+        if (
+          /\b(calzado|zapato|zapatos|zapatill|bailarina|sandalia|tacon)\b/.test(scope)
+        ) {
+          return { kind: 'category', name: 'Calzado' };
+        }
+        if (/\b(bolso|bolsos|cartera|bandolera)\b/.test(scope)) {
+          return { kind: 'subcategory', name: 'bolsos' };
+        }
+        if (/\b(collar|collares)\b/.test(scope)) {
+          return { kind: 'subcategory', name: 'collares' };
+        }
+        if (/\b(pantalon|pantalones|jeans)\b/.test(scope)) {
+          return { kind: 'subcategory', name: 'pantalones' };
+        }
+        if (/\b(vestido|vestidos)\b/.test(scope)) {
+          return { kind: 'subcategory', name: 'vestidos' };
+        }
+        if (/\b(complemento|complementos|accesorio|accesorios)\b/.test(scope)) {
+          return { kind: 'category', name: 'Complementos' };
+        }
+        if (/\b(ropa|prendas?)\b/.test(scope)) {
+          return { kind: 'category', name: 'Ropa' };
+        }
+        return null;
+      };
+
+      const mapRowsWithVariants = (rows: any[]) =>
+        (rows || []).map((p: any) => ({
+          ...p,
+          variants: (p.product_variants || p.variants || []).map((v: any) => ({
+            size: v.size,
+            color: v.colors?.name || v.color || null,
+            stock: v.stock ?? 0,
+          })),
+        }));
+
+      const PRODUCT_CHAT_SELECT =
+        'product_id, name, description, price, is_new, slug, product_variants(size, stock, colors(name))';
 
       const formatProductsForPrompt = (
         items: Array<{
@@ -233,28 +301,61 @@ export const AIChatAgent = () => {
 
       try {
         let matchedProducts: any[] = [];
+        const recentThread = messages
+          .slice(-6)
+          .map((m) => m.text)
+          .join('\n');
+        const catalogFilter = detectCatalogFilter(userMsg, recentThread);
 
-        if (isNoveltyQuery(userMsg)) {
+        if (catalogFilter?.kind === 'novelty') {
           const { data: news, error: newsError } = await supabase
             .from('products')
-            .select(
-              'product_id, name, description, price, is_new, slug, product_variants(size, stock, colors(name))',
-            )
+            .select(PRODUCT_CHAT_SELECT)
             .eq('is_new', true)
             .eq('is_published', true)
             .order('created_at', { ascending: false })
             .limit(12);
 
           if (newsError) throw newsError;
+          matchedProducts = mapRowsWithVariants(news || []);
+        } else if (catalogFilter?.kind === 'category') {
+          const { data: cat, error: catError } = await supabase
+            .from('categories')
+            .select('id, name')
+            .ilike('name', catalogFilter.name)
+            .maybeSingle();
+          if (catError) throw catError;
 
-          matchedProducts = (news || []).map((p: any) => ({
-            ...p,
-            variants: (p.product_variants || []).map((v: any) => ({
-              size: v.size,
-              color: v.colors?.name || null,
-              stock: v.stock ?? 0,
-            })),
-          }));
+          if (cat?.id) {
+            const { data: rows, error: rowsError } = await supabase
+              .from('products')
+              .select(PRODUCT_CHAT_SELECT)
+              .eq('category_id', cat.id)
+              .eq('is_published', true)
+              .order('name', { ascending: true })
+              .limit(20);
+            if (rowsError) throw rowsError;
+            matchedProducts = mapRowsWithVariants(rows || []);
+          }
+        } else if (catalogFilter?.kind === 'subcategory') {
+          const { data: sub, error: subError } = await supabase
+            .from('subcategories')
+            .select('id, name')
+            .ilike('name', catalogFilter.name)
+            .maybeSingle();
+          if (subError) throw subError;
+
+          if (sub?.id) {
+            const { data: rows, error: rowsError } = await supabase
+              .from('products')
+              .select(PRODUCT_CHAT_SELECT)
+              .eq('subcategory_id', sub.id)
+              .eq('is_published', true)
+              .order('name', { ascending: true })
+              .limit(20);
+            if (rowsError) throw rowsError;
+            matchedProducts = mapRowsWithVariants(rows || []);
+          }
         } else {
           const embedding = await getQueryEmbedding(userMsg);
           const { data, error: rpcError } = await supabase.rpc('match_products', {
@@ -313,16 +414,18 @@ ${productsInfo}
 REGLAS CRÍTICAS DE RESPUESTA:
 1. SOLO recomienda artículos que estén en el "INVENTARIO REAL" arriba indicado. NUNCA inventes un producto que no aparezca en la lista.
 2. Si la clienta pide una categoría (ej: Pantalón) y no hay ninguno en el inventario real, NO inventes ni recomiendes otra cosa de distinta categoría. Di amablemente que no tienes stock de eso ahora mismo y ofrece mirar las "Novedades" o contactar por WhatsApp.
-3. Los enlaces a producto DEBEN ser copiados EXACTAMENTE del inventario real. No modifiques ni inventes URLs. Usa siempre la forma relativa (/producto/...) NUNCA con dominio completo.
-4. Sé persuasiva pero muy concisa. Máximo 3 productos por respuesta.
-5. Si un producto es "NOVEDAD", menciónalo con entusiasmo. Si el inventario trae artículos marcados como NOVEDAD (p. ej. la clienta preguntó por novedades), recomiéndalos; NUNCA digas que no hay novedades si aparecen en el inventario.
-6. NUNCA digas "Excelente elección" ni frases similares si la clienta solo preguntó o pidió recomendaciones. Responde de forma natural como una dependienta de boutique. Si la clienta aún no ha elegido nada, no finjas que ya lo hizo.
-7. NO compartas la URL completa del sitio web (https://www.modasmelomerezco.es) porque la usuaria ya está en él. Si quieres dirigir a una sección, usa solo el enlace relativo (ej: /#novedades).
-8. Empieza SIEMPRE con 1 o 2 frases cortas y cercanas respondiendo a la clienta ANTES de listar productos. Nunca empieces la respuesta directamente con el nombre de un artículo.
-9. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Tras la intro, para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:
+3. Los enlaces a producto DEBEN ser copiados EXACTAMENTE del inventario real. No modifiques, acortes ni inventes URLs (ej. NUNCA inventes /producto/zapatillas si la URL real es /producto/zapatillas-estela).
+4. NUNCA acortes ni inventes nombres ni precios. Si el inventario dice "Zapatillas estela" a 10€, escribe exactamente eso; no digas solo "Zapatillas" ni cambies el precio.
+5. Si preguntan cuántos modelos / cuáles hay de una categoría, cuenta TODOS los del inventario y lista CADA uno con nombre exacto, precio y URL. No resumas varios modelos en uno solo.
+6. Sé persuasiva pero muy concisa. En recomendaciones generales, máximo 3 productos; si preguntan por modelos/listado de categoría, lista todos los del inventario (hasta los que haya arriba).
+7. Si un producto es "NOVEDAD", menciónalo con entusiasmo. Si el inventario trae artículos marcados como NOVEDAD (p. ej. la clienta preguntó por novedades), recomiéndalos; NUNCA digas que no hay novedades si aparecen en el inventario.
+8. NUNCA digas "Excelente elección" ni frases similares si la clienta solo preguntó o pidió recomendaciones. Responde de forma natural como una dependienta de boutique. Si la clienta aún no ha elegido nada, no finjas que ya lo hizo.
+9. NO compartas la URL completa del sitio web (https://www.modasmelomerezco.es) porque la usuaria ya está en él. Si quieres dirigir a una sección, usa solo el enlace relativo (ej: /#novedades).
+10. Empieza SIEMPRE con 1 o 2 frases cortas y cercanas respondiendo a la clienta ANTES de listar productos. Nunca empieces la respuesta directamente con el nombre de un artículo.
+11. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Tras la intro, para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:
 ¡Claro! Aquí tienes unas opciones a buen precio:
-COLLARES COLORINES — 15€
-/producto/collares-colorines`
+Zapatillas estela — 10€
+/producto/zapatillas-estela`
         : `
 NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. NO inventes productos ni generes URLs de producto bajo ninguna circunstancia. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y sugiérele estas secciones reales de la web usando enlaces relativos:
 

@@ -357,7 +357,7 @@ const ProductPage = () => {
       />
       <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
         {/* Breadcrumbs */}
-        <nav className="mb-6 flex items-center justify-between lg:mb-3">
+        <nav className="mb-6 flex items-center justify-between lg:mb-6">
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-secondary/40">
             <Link to="/" state={{ fromProduct: true }} className="hover:text-secondary transition-colors">Inicio</Link>
             <ChevronRight className="w-3 h-3" />
@@ -415,11 +415,11 @@ const ProductPage = () => {
           </div>
         </nav>
         
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-10 xl:gap-14">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-16 xl:gap-20">
           {/* Left: Gallery */}
           <div className="flex flex-col gap-6 -mx-6 lg:col-span-5 lg:mx-0 lg:gap-3">
             <div 
-              className="relative aspect-3/4 cursor-pointer overflow-hidden bg-white touch-pan-y lg:aspect-[3/4] lg:h-[min(52vh,calc(100dvh-15rem))] lg:max-h-[520px] lg:w-auto lg:max-w-full"
+              className="relative aspect-3/4 w-full cursor-pointer overflow-hidden bg-white touch-pan-y lg:max-w-[min(100%,380px)]"
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;
@@ -486,7 +486,7 @@ const ProductPage = () => {
                     setImageLoaded(true);
                   }}
                   draggable={false}
-                  className={`relative z-[1] w-full h-full object-cover select-none ${soldOut ? 'grayscale-[0.25]' : ''}`}
+                  className={`relative z-[1] h-full w-full object-cover object-top select-none ${soldOut ? 'grayscale-[0.25]' : ''}`}
                   loading="eager"
                   fetchPriority="high"
                 />

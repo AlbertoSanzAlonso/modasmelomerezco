@@ -56,20 +56,20 @@ async function requireAdmin(
   }
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !anonKey || !serviceKey) {
+  if (!supabaseUrl || !serviceKey) {
     return { ok: false, status: 500, message: 'Supabase no configurado' };
   }
 
-  const authClient = createClient(supabaseUrl, anonKey);
-  const { data: userData, error: userError } = await authClient.auth.getUser(token);
+  // Validar JWT con service role (más fiable en serverless que anon key).
+  const adminClient = createClient(supabaseUrl, serviceKey);
+  const { data: userData, error: userError } = await adminClient.auth.getUser(token);
   if (userError || !userData.user?.email) {
+    console.error('[admin-analytics] getUser', userError?.message || 'sin email');
     return { ok: false, status: 401, message: 'Sesión inválida' };
   }
 
-  const adminClient = createClient(supabaseUrl, serviceKey);
   const email = userData.user.email.toLowerCase();
   const { data: adminByEmail, error: emailError } = await adminClient
     .from('admins')

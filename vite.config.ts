@@ -17,7 +17,11 @@ function vercelDevPlugin() {
         try {
           const parsedUrl = url.parse(req.url, true)
           const apiPath = parsedUrl.pathname || ''
-          const baseName = apiPath.substring(5) // Remove '/api/'
+          // Mirror vercel.json rewrite: /api/admin-analytics → notify-admin-order
+          let baseName = apiPath.substring(5) // Remove '/api/'
+          if (baseName === 'admin-analytics') {
+            baseName = 'notify-admin-order'
+          }
 
           // Resolve backend API files (supporting .ts, .js, or index files)
           let filePath = ''

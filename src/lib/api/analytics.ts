@@ -1,3 +1,5 @@
+import { supabase } from '../supabase';
+
 export type AnalyticsRange = 7 | 30;
 
 export interface AnalyticsTotals {
@@ -45,14 +47,36 @@ export class AnalyticsApiError extends Error {
   }
 }
 
+async function resolveAdminAccessToken(fallbackToken?: string | null): Promise<string> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  let accessToken = sessionData.session?.access_token || '';
+
+  if (!accessToken) {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    accessToken = refreshed.session?.access_token || '';
+  }
+
+  if (!accessToken) {
+    accessToken = fallbackToken?.trim() || '';
+  }
+
+  if (!accessToken) {
+    throw new AnalyticsApiError('Sesión de admin no disponible', 401);
+  }
+
+  return accessToken;
+}
+
 export const analytics = {
   getAdminOverview: async (
     token: string,
     range: AnalyticsRange = 7
   ): Promise<AdminAnalyticsResponse> => {
+    const accessToken = await resolveAdminAccessToken(token);
+
     const response = await fetch(`/api/admin-analytics?range=${range}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',
       },
     });

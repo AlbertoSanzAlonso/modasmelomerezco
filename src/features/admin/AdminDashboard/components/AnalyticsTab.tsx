@@ -103,10 +103,15 @@ export const AnalyticsTab: React.FC = () => {
       )}
 
       {adminToken && !isLoading && error && !notConfigured && (
-        <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-10 text-center">
+        <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-10 text-center space-y-3">
           <p className="text-sm font-bold text-red-500 uppercase tracking-widest">
             {(error as Error).message || 'No se pudieron cargar las analíticas'}
           </p>
+          {apiError?.status === 401 && (
+            <p className="text-xs text-gray-500">
+              Tu sesión ha caducado. Cierra sesión y vuelve a entrar en el admin.
+            </p>
+          )}
         </div>
       )}
 

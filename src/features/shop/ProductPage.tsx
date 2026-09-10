@@ -781,7 +781,7 @@ const ProductPage = () => {
 
 
           <div 
-            className={`min-h-full min-w-full flex items-center justify-center ${isZoomed ? 'w-[300vw] h-[300vh]' : ''}`}
+            className={`min-h-full min-w-full flex items-center justify-center ${isZoomed ? 'w-[200vw] h-[200vh]' : ''}`}
           >
             <div 
               className={`relative ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
@@ -795,7 +795,7 @@ const ProductPage = () => {
                   exit={{ opacity: 0 }}
                   src={displayImages[activeImage]} 
                   alt={product.name}
-                  className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[180vw] md:w-[120vw]' : 'max-w-[90vw] max-h-[85vh] object-contain'}`}
+                  className={`transition-all duration-500 shadow-2xl rounded-sm ${isZoomed ? 'max-w-none w-[130vw] md:w-[95vw]' : 'max-w-[90vw] max-h-[85vh] object-contain'}`}
                 />
               </AnimatePresence>
               {/* Watermark */}

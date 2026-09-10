@@ -16,6 +16,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/admin-analytics",
+      "destination": "/api/notify-admin-order"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },

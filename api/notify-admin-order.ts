@@ -2,14 +2,27 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import type { Order, OrderItem } from '../src/types/index.js';
 import { sendAdminNewOrderEmail } from '../src/lib/emails/adminNewOrderNotification.js';
+import { handleAdminAnalytics } from './_adminAnalytics.js';
 
+/**
+ * POST: aviso de nuevo pedido al admin.
+ * GET: analíticas Vercel (vía rewrite /api/admin-analytics).
+ * Un solo endpoint para no superar el límite Hobby (máx. 12 functions).
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Authorization, Content-Type, Accept'
+  );
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (req.method === 'GET') {
+    return handleAdminAnalytics(req, res);
   }
 
   if (req.method !== 'POST') {

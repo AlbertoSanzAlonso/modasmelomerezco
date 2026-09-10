@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import sharp from 'sharp';
+import { deleteObject, uploadObject } from './_r2.js';
 
-/** Un solo endpoint: chat/embed + convert-webp (límite Hobby: máx. 12 functions). */
+/** Un solo endpoint: chat/embed + convert-webp + R2 upload (límite Hobby: máx. 12 functions). */
 export const config = {
   api: {
     bodyParser: {
@@ -27,6 +28,25 @@ function setCors(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
+function guessContentType(fileName: string, fallback?: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    case 'svg':
+      return 'image/svg+xml';
+    default:
+      return fallback || 'application/octet-stream';
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(req, res);
 
@@ -39,6 +59,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { action } = req.body as { action?: string };
+
+  if (action === 'upload-image') {
+    try {
+      const imageBase64 =
+        typeof req.body?.imageBase64 === 'string' ? req.body.imageBase64 : '';
+      const path =
+        typeof req.body?.path === 'string' ? req.body.path.trim() : '';
+      const contentType =
+        typeof req.body?.contentType === 'string'
+          ? req.body.contentType
+          : undefined;
+
+      if (!imageBase64) {
+        return res.status(400).json({ message: 'Missing imageBase64' });
+      }
+      if (!path) {
+        return res.status(400).json({ message: 'Missing path' });
+      }
+
+      const body = Buffer.from(imageBase64, 'base64');
+      if (body.length < 24) {
+        return res.status(400).json({ message: 'Image too small' });
+      }
+
+      const url = await uploadObject({
+        key: path,
+        body,
+        contentType: guessContentType(path, contentType),
+      });
+      return res.status(200).json({ url });
+    } catch (error: unknown) {
+      console.error('upload-image error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Error uploading image';
+      return res.status(500).json({ message });
+    }
+  }
+
+  if (action === 'delete-image') {
+    try {
+      const urlOrKey =
+        typeof req.body?.url === 'string'
+          ? req.body.url
+          : typeof req.body?.key === 'string'
+            ? req.body.key
+            : '';
+      if (!urlOrKey.trim()) {
+        return res.status(400).json({ message: 'Missing url' });
+      }
+      await deleteObject(urlOrKey);
+      return res.status(200).json({ ok: true });
+    } catch (error: unknown) {
+      console.error('delete-image error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Error deleting image';
+      return res.status(500).json({ message });
+    }
+  }
 
   if (action === 'convert-webp') {
     try {

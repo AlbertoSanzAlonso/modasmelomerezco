@@ -824,91 +824,91 @@ export const ProductInventory: React.FC<ProductInventoryProps> = ({
                     )}
 
                     {hasColors && (
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="border-b border-(--border-main)">
-                            <th className="pb-3 text-[8px] font-black uppercase tracking-widest text-gray-500 w-[45%]">
-                              Color
-                            </th>
-                            <th className="pb-3 text-[8px] font-black uppercase tracking-widest text-gray-500 w-[35%]">
-                              Unidades
-                            </th>
-                            <th className="pb-3 w-[20%]" />
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-(--border-main)">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 border-b border-(--border-main) pb-3">
+                          <span className="min-w-0 flex-1 text-[8px] font-black uppercase tracking-widest text-gray-500">
+                            Color
+                          </span>
+                          <span className="w-16 shrink-0 text-center text-[8px] font-black uppercase tracking-widest text-gray-500 sm:w-20">
+                            Unidades
+                          </span>
+                          <span className="w-8 shrink-0 sm:w-[4.5rem]" aria-hidden />
+                        </div>
+                        <div className="divide-y divide-(--border-main)">
                           {coloredRows.map((row, idx) => {
                             const colorRow = catalog.find(
                               (c) => Number(c.id) === Number(row.color_id)
                             );
 
                             return (
-                              <tr key={row.variant_id ?? row.id ?? idx}>
-                                <td className="py-4">
-                                  <div className="flex items-center gap-3">
-                                    <ColorSwatch
-                                      color={
-                                        colorRow ?? {
-                                          hex: '#C4B8A8',
-                                          name: row.color || 'Color',
-                                        }
+                              <div
+                                key={row.variant_id ?? row.id ?? idx}
+                                className="flex min-w-0 items-center gap-2 py-3 sm:gap-3"
+                              >
+                                <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                                  <ColorSwatch
+                                    color={
+                                      colorRow ?? {
+                                        hex: '#C4B8A8',
+                                        name: row.color || 'Color',
                                       }
-                                      className="w-8 h-8 rounded-full shrink-0"
-                                    />
-                                    <select
-                                      className="flex-1 bg-(--bg-main) border border-(--border-main) px-3 py-2.5 text-xs font-black uppercase focus:border-primary outline-none rounded-xl cursor-pointer"
-                                      value={row.color_id ?? ''}
-                                      onChange={(e) =>
-                                        updateRowColorId(
-                                          row,
-                                          group.size,
-                                          Number(e.target.value)
-                                        )
-                                      }
-                                    >
-                                      {catalog.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                          {getColorDisplayName(c.name, productName)}
-                                          {isOwnedProductColor(c, productId)
-                                            ? ' · propio'
-                                            : ' · genérico'}
-                                          {c.swatch_url ? ' · estampado' : ''}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                </td>
-                                <td className="py-4">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    className="w-full max-w-[120px] bg-(--bg-main) border border-(--border-main) px-4 py-3 text-sm font-black focus:border-primary outline-none rounded-xl text-center"
-                                    value={row.stock ?? 0}
+                                    }
+                                    className="h-8 w-8 shrink-0 rounded-full"
+                                  />
+                                  <select
+                                    className="min-w-0 w-full cursor-pointer rounded-xl border border-(--border-main) bg-(--bg-main) px-2 py-2.5 text-xs font-black uppercase outline-none focus:border-primary sm:px-3"
+                                    value={row.color_id ?? ''}
                                     onChange={(e) =>
-                                      updateRowStock(
+                                      updateRowColorId(
                                         row,
                                         group.size,
-                                        parseInt(e.target.value, 10) || 0
+                                        Number(e.target.value)
                                       )
                                     }
-                                  />
-                                </td>
-                                <td className="py-4 text-right">
-                                  <button
-                                    type="button"
-                                    className="text-[10px] font-black uppercase text-gray-400 hover:text-red-500"
-                                    onClick={() =>
-                                      removeColorRow(row, group.size)
-                                    }
                                   >
+                                    {catalog.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {getColorDisplayName(c.name, productName)}
+                                        {isOwnedProductColor(c, productId)
+                                          ? ' · propio'
+                                          : ' · genérico'}
+                                        {c.swatch_url ? ' · estampado' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  aria-label="Unidades"
+                                  className="w-16 shrink-0 rounded-xl border border-(--border-main) bg-(--bg-main) px-1 py-2.5 text-center text-sm font-black outline-none focus:border-primary sm:w-20 sm:px-2"
+                                  value={row.stock ?? 0}
+                                  onChange={(e) =>
+                                    updateRowStock(
+                                      row,
+                                      group.size,
+                                      parseInt(e.target.value, 10) || 0
+                                    )
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  className="flex w-8 shrink-0 items-center justify-center text-gray-400 hover:text-red-500 sm:w-[4.5rem] sm:justify-end"
+                                  aria-label="Eliminar color"
+                                  onClick={() =>
+                                    removeColorRow(row, group.size)
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4 sm:hidden" />
+                                  <span className="hidden text-[10px] font-black uppercase sm:inline">
                                     Eliminar
-                                  </button>
-                                </td>
-                              </tr>
+                                  </span>
+                                </button>
+                              </div>
                             );
                           })}
-                        </tbody>
-                      </table>
+                        </div>
+                      </div>
                     )}
 
                     <div className="mt-4 pt-4 border-t border-(--border-main) space-y-4">

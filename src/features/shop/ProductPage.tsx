@@ -280,7 +280,7 @@ const ProductPage = () => {
   const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   return (
-    <div className="bg-accent min-h-screen pt-12 pb-32 text-secondary">
+    <div className="bg-accent min-h-screen pt-4 pb-32 text-secondary lg:pt-1 lg:pb-16">
       <SeoHelmet
         title={product.name}
         description={productDescription}
@@ -357,8 +357,8 @@ const ProductPage = () => {
       />
       <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
         {/* Breadcrumbs */}
-        <nav className="flex items-center justify-between mb-12">
-          <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-secondary/40">
+        <nav className="mb-6 flex items-center justify-between lg:mb-3">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-secondary/40">
             <Link to="/" state={{ fromProduct: true }} className="hover:text-secondary transition-colors">Inicio</Link>
             <ChevronRight className="w-3 h-3" />
             <Link 
@@ -384,42 +384,42 @@ const ProductPage = () => {
             <span className="text-primary">{product.name}</span>
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-8">
-            <div className="flex items-center gap-2 border-r border-secondary/10 pr-4 sm:pr-8">
+          <div className="flex items-center gap-4 sm:gap-6 lg:gap-4">
+            <div className="flex items-center gap-1 border-r border-secondary/10 pr-4 sm:gap-2 sm:pr-6 lg:pr-4">
               <Link 
                 to={siblings?.prevSlug ? `/producto/${siblings.prevSlug}` : '#'}
                 replace={true}
-                className={`p-2 transition-all ${!siblings?.prevSlug ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
+                className={`p-1.5 transition-all lg:p-1 ${!siblings?.prevSlug ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
                 title="Producto Anterior"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="h-5 w-5" />
               </Link>
               <Link 
                 to={siblings?.nextSlug ? `/producto/${siblings.nextSlug}` : '#'}
                 replace={true}
-                className={`p-2 transition-all ${!siblings?.nextSlug ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
+                className={`p-1.5 transition-all lg:p-1 ${!siblings?.nextSlug ? 'opacity-20 cursor-not-allowed' : 'hover:text-primary hover:bg-primary/5 rounded-full'}`}
                 title="Siguiente Producto"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="h-5 w-5" />
               </Link>
             </div>
 
             <button 
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-secondary/60 hover:text-primary transition-all group"
+              className="group flex items-center gap-2 text-[10px] font-black tracking-[0.3em] text-secondary/60 uppercase transition-all hover:text-primary"
             >
-              <ChevronRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
+              <ChevronRight className="h-4 w-4 rotate-180 transition-transform group-hover:-translate-x-1" />
               <span className="hidden sm:inline">Volver a la lista</span>
               <span className="sm:hidden">Volver</span>
             </button>
           </div>
         </nav>
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-10 xl:gap-14">
           {/* Left: Gallery */}
-          <div className="lg:col-span-6 flex flex-col gap-6 -mx-6 lg:mx-0">
+          <div className="flex flex-col gap-6 -mx-6 lg:col-span-6 lg:mx-0 lg:gap-3">
             <div 
-              className="relative aspect-3/4 overflow-hidden bg-white cursor-pointer touch-pan-y"
+              className="relative aspect-3/4 cursor-pointer overflow-hidden bg-white touch-pan-y lg:aspect-[3/4] lg:h-[min(68vh,calc(100dvh-10.5rem))] lg:w-auto lg:max-w-full"
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;
@@ -519,39 +519,39 @@ const ProductPage = () => {
                 </div>
               )}
             </div>
-            <div className="hidden lg:flex gap-4 overflow-x-auto pb-2">
+            <div className="hidden gap-2 overflow-x-auto pb-1 lg:flex">
               {displayImages.map((img: string, idx: number) => (
                 <div 
                   key={idx}
                   onClick={() => changeActiveImage(idx)}
-                  className={`shrink-0 w-20 h-24 cursor-pointer overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-75'}`}
+                  className={`h-16 w-14 shrink-0 cursor-pointer overflow-hidden border-2 transition-all ${activeImage === idx ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-75'}`}
                 >
-                  <img src={img} alt="" loading="lazy" width={80} height={96} className="w-full h-full object-cover" />
+                  <img src={img} alt="" loading="lazy" width={56} height={64} className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>
           </div>
 
           {/* Right: Info */}
-          <div className="lg:col-span-6 flex flex-col justify-center">
-            <div className="mb-12 border-b border-secondary/5 pb-12">
-              <span className="text-primary font-black tracking-[0.4em] uppercase text-xs mb-4 block">{product.category}</span>
-              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase italic mb-6 leading-none">{product.name}</h1>
-              <p className="text-3xl font-light text-secondary">
+          <div className="flex flex-col justify-center lg:col-span-6 lg:justify-start">
+            <div className="mb-10 border-b border-secondary/5 pb-10 lg:mb-5 lg:pb-5">
+              <span className="mb-3 block text-xs font-black tracking-[0.4em] text-primary uppercase lg:mb-2">{product.category}</span>
+              <h1 className="mb-4 text-3xl leading-none font-black tracking-tighter uppercase italic sm:text-4xl lg:mb-3 lg:text-4xl xl:text-5xl">{product.name}</h1>
+              <p className="text-3xl font-light text-secondary lg:text-2xl">
                 {product.price.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
               </p>
             </div>
 
-            <div className="space-y-12">
+            <div className="space-y-10 lg:space-y-5">
               {soldOut ? (
-                <div className="space-y-6">
-                  <p className="text-sm text-secondary/60 uppercase tracking-widest font-bold">
+                <div className="space-y-6 lg:space-y-4">
+                  <p className="text-sm font-bold tracking-widest text-secondary/60 uppercase">
                     Este artículo está agotado y no se puede comprar en este momento.
                   </p>
                   <Button
                     size="lg"
                     disabled
-                    className="w-full py-6 text-base font-black tracking-widest uppercase italic opacity-60 cursor-not-allowed"
+                    className="w-full cursor-not-allowed py-6 text-base font-black tracking-widest uppercase italic opacity-60 lg:py-3.5 lg:text-sm"
                   >
                     Agotado
                   </Button>
@@ -560,11 +560,11 @@ const ProductPage = () => {
               <>
               {oneSizeOnly ? (
                 <div>
-                  <div className="mb-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Talla</h4>
+                  <div className="mb-4 lg:mb-2.5">
+                    <h4 className="text-[10px] font-black tracking-[0.3em] uppercase">Talla</h4>
                   </div>
                   <div
-                    className="inline-flex py-4 px-8 text-xs font-black tracking-widest uppercase border bg-secondary/10 text-secondary border-secondary/20 cursor-default select-none"
+                    className="inline-flex cursor-default border border-secondary/20 bg-secondary/10 px-8 py-4 text-xs font-black tracking-widest text-secondary uppercase select-none lg:px-6 lg:py-2.5"
                     aria-label="Talla única"
                   >
                     Talla única
@@ -572,10 +572,10 @@ const ProductPage = () => {
                 </div>
               ) : (
                 <div>
-                  <div className="mb-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Seleccionar Talla</h4>
+                  <div className="mb-4 lg:mb-2.5">
+                    <h4 className="text-[10px] font-black tracking-[0.3em] uppercase">Seleccionar Talla</h4>
                   </div>
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid max-w-md grid-cols-4 gap-3 lg:gap-2">
                     {availableSizes.map((size) => {
                       const isOutOfStock = !hasStockForSize(product.variants, size);
                       return (
@@ -583,18 +583,18 @@ const ProductPage = () => {
                           key={size}
                           disabled={isOutOfStock}
                           onClick={() => handleSizeSelect(size)}
-                          className={`py-4 text-xs font-black tracking-widest transition-all border relative overflow-hidden
+                          className={`relative overflow-hidden border py-4 text-xs font-black tracking-widest transition-all lg:py-2.5
                             ${selectedSize === size 
-                              ? 'bg-secondary text-white border-secondary shadow-xl' 
+                              ? 'border-secondary bg-secondary text-white shadow-xl' 
                               : isOutOfStock 
-                                ? 'opacity-40 cursor-not-allowed border-secondary/5 text-secondary/40 grayscale' 
-                                : 'bg-transparent text-secondary border-secondary/10 hover:border-secondary'
+                                ? 'cursor-not-allowed border-secondary/5 text-secondary/40 opacity-40 grayscale' 
+                                : 'border-secondary/10 bg-transparent text-secondary hover:border-secondary'
                             }`}
                         >
                           {normalizeSize(size)}
                           {isOutOfStock && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-[120%] h-px bg-secondary/30 -rotate-45" />
+                              <div className="h-px w-[120%] -rotate-45 bg-secondary/30" />
                             </div>
                           )}
                         </button>
@@ -606,10 +606,10 @@ const ProductPage = () => {
 
               {requiresColor && (
                 <div>
-                  <div className="mb-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Color</h4>
+                  <div className="mb-4 lg:mb-2.5">
+                    <h4 className="text-[10px] font-black tracking-[0.3em] uppercase">Color</h4>
                   </div>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-4 lg:gap-3">
                     {catalogColors.map((c: Color) => {
                       const colorLabel = getColorDisplayName(c.name, product.name);
                       const colorOutOfStock =
@@ -629,14 +629,14 @@ const ProductPage = () => {
                       >
                         <ColorSwatch
                           color={{ ...c, name: colorLabel }}
-                          className={`block size-10 rounded-full overflow-hidden shadow-md outline outline-2 outline-offset-2 transition-[transform,outline-color] duration-300 active:scale-95 ${
+                          className={`block size-10 overflow-hidden rounded-full shadow-md outline outline-2 outline-offset-2 transition-[transform,outline-color] duration-300 active:scale-95 lg:size-8 ${
                             selectedColorId === Number(c.id)
                               ? 'outline-primary'
                               : 'outline-transparent group-hover:outline-secondary/40'
                           } ${colorDisabled ? '' : 'group-hover:scale-105'}`}
                         />
                         {/* Tooltip */}
-                        <span className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-secondary text-white text-[9px] font-bold uppercase tracking-wider rounded-lg pointer-events-none transition-opacity duration-200 whitespace-nowrap shadow-lg z-10
+                        <span className={`pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-lg bg-secondary px-3 py-1.5 text-[9px] font-bold tracking-wider text-white uppercase whitespace-nowrap shadow-lg transition-opacity duration-200
                           ${(isTouchDevice && activeMobileColorTooltip === colorLabel) 
                             ? 'opacity-100' 
                             : 'opacity-0 group-hover:opacity-100'
@@ -649,17 +649,17 @@ const ProductPage = () => {
                     })}
                   </div>
                   {!oneSizeOnly && !selectedSize && (
-                    <p className="text-[9px] text-secondary/40 font-bold uppercase tracking-widest mt-4">
+                    <p className="mt-3 text-[9px] font-bold tracking-widest text-secondary/40 uppercase lg:mt-2">
                       Elige una talla para ver los colores disponibles
                     </p>
                   )}
                 </div>
               )}
 
-              <div className="flex gap-4">
+              <div className="flex gap-3 lg:gap-3">
                 <Button 
                   size="lg" 
-                  className="flex-1 py-6 text-base font-black tracking-widest uppercase italic bg-primary hover:bg-primary-dark text-white shadow-xl shadow-primary/20"
+                  className="flex-1 bg-primary py-6 text-base font-black tracking-widest text-white uppercase italic shadow-xl shadow-primary/20 hover:bg-primary-dark lg:py-3.5 lg:text-sm"
                   onClick={() => {
                     if (!oneSizeOnly && !selectedSize) {
                       openModal({
@@ -692,28 +692,28 @@ const ProductPage = () => {
                     addItem(product, variant);
                   }}
                 >
-                  <ShoppingBag className="mr-2 w-5 h-5" /> Añadir a la Cesta
+                  <ShoppingBag className="mr-2 h-5 w-5" /> Añadir a la Cesta
                 </Button>
                 <button 
                   onClick={toggleFavorite}
-                  className={`p-6 border border-secondary/10 transition-all group rounded-xl ${isFavorite ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'hover:bg-secondary hover:text-white'}`}
+                  className={`rounded-xl border border-secondary/10 p-6 transition-all group lg:p-3.5 ${isFavorite ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary hover:text-white'}`}
                 >
-                  <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : 'group-hover:fill-current'}`} />
+                  <Heart className={`h-6 w-6 lg:h-5 lg:w-5 ${isFavorite ? 'fill-current' : 'group-hover:fill-current'}`} />
                 </button>
               </div>
               </>
               )}
 
               {product.details?.trim() && (
-                <div className="pt-8 border-t border-secondary/5">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4">Detalles</h4>
-                  <p className="text-sm leading-relaxed text-secondary/70 whitespace-pre-line">
+                <div className="border-t border-secondary/5 pt-8 lg:pt-5">
+                  <h4 className="mb-4 text-[10px] font-black tracking-[0.3em] uppercase lg:mb-3">Detalles</h4>
+                  <p className="text-sm leading-relaxed whitespace-pre-line text-secondary/70">
                     {product.details.trim()}
                   </p>
                 </div>
               )}
 
-              <div className="pt-12 border-t border-secondary/5">
+              <div className="border-t border-secondary/5 pt-10 lg:pt-5">
                 <button 
                   onClick={() => {
                     const shareData = {
@@ -735,10 +735,10 @@ const ProductPage = () => {
                       });
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-4 py-5 border border-secondary/10 hover:border-secondary hover:bg-secondary/5 transition-all group rounded-2xl"
+                  className="group flex w-full items-center justify-center gap-4 rounded-2xl border border-secondary/10 py-5 transition-all hover:border-secondary hover:bg-secondary/5 lg:py-3"
                 >
-                  <Share2 className="w-5 h-5 text-secondary/40 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary/40 group-hover:text-secondary transition-colors">Compartir esta pieza</span>
+                  <Share2 className="h-5 w-5 text-secondary/40 transition-colors group-hover:text-primary" />
+                  <span className="text-[10px] font-black tracking-[0.3em] text-secondary/40 uppercase transition-colors group-hover:text-secondary">Compartir esta pieza</span>
                 </button>
               </div>
             </div>

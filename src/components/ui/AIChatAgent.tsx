@@ -208,14 +208,28 @@ export const AIChatAgent = () => {
           t.length < 40 ||
           /\b(cual(es)?|que modelo|cuantos modelos|cuantas|cuantos|el modelo|la modelo|ese|esa|esos|esas|verlo|y ese)\b/.test(
             t,
-          )
+          ) ||
+          /(?:por|a|menos de|maximo|hasta|bajo)\s*\d/.test(t) ||
+          /\d+(?:[.,]\d+)?\s*(?:€|euros?)/.test(t)
         );
+      };
+
+      const parseMaxPrice = (text: string): number | null => {
+        const t = normalizeText(text);
+        const m =
+          t.match(
+            /(?:por|a|menos de|maximo|hasta|bajo|debajo de|de menos de)\s*(\d+(?:[.,]\d+)?)\s*(?:€|eur)/,
+          ) || t.match(/(\d+(?:[.,]\d+)?)\s*(?:€|euros?)/);
+        if (!m) return null;
+        const value = Number.parseFloat(m[1].replace(',', '.'));
+        return Number.isFinite(value) ? value : null;
       };
 
       /** Detecta categoría/subcategoría en el mensaje (y en el hilo si es un follow-up vago). */
       const detectCatalogFilter = (
         msg: string,
         recentThread: string,
+        recentUserThread: string,
       ):
         | { kind: 'novelty' }
         | { kind: 'category'; name: string }
@@ -226,7 +240,11 @@ export const AIChatAgent = () => {
           ? normalizeText(`${msg}\n${recentThread}`)
           : current;
 
-        if (isNoveltyQuery(current) || (isVagueFollowUp(msg) && isNoveltyQuery(scope))) {
+        // Solo mirar mensajes de la USUARIA para "novedades" (el bot puede decir "novedades" y confundir)
+        if (
+          isNoveltyQuery(current) ||
+          (isVagueFollowUp(msg) && isNoveltyQuery(recentUserThread))
+        ) {
           return { kind: 'novelty' };
         }
 
@@ -305,7 +323,19 @@ export const AIChatAgent = () => {
           .slice(-6)
           .map((m) => m.text)
           .join('\n');
-        const catalogFilter = detectCatalogFilter(userMsg, recentThread);
+        const recentUserThread = messages
+          .filter((m) => !m.isBot)
+          .slice(-6)
+          .map((m) => m.text)
+          .join('\n');
+        const catalogFilter = detectCatalogFilter(
+          userMsg,
+          recentThread,
+          recentUserThread,
+        );
+        const maxPrice =
+          parseMaxPrice(userMsg) ??
+          (isVagueFollowUp(userMsg) ? parseMaxPrice(recentUserThread) : null);
 
         if (catalogFilter?.kind === 'novelty') {
           const { data: news, error: newsError } = await supabase
@@ -313,8 +343,10 @@ export const AIChatAgent = () => {
             .select(PRODUCT_CHAT_SELECT)
             .eq('is_new', true)
             .eq('is_published', true)
-            .order('created_at', { ascending: false })
-            .limit(12);
+            .order(maxPrice != null ? 'price' : 'created_at', {
+              ascending: maxPrice != null,
+            })
+            .limit(maxPrice != null ? 30 : 12);
 
           if (newsError) throw newsError;
           matchedProducts = mapRowsWithVariants(news || []);
@@ -332,8 +364,8 @@ export const AIChatAgent = () => {
               .select(PRODUCT_CHAT_SELECT)
               .eq('category_id', cat.id)
               .eq('is_published', true)
-              .order('name', { ascending: true })
-              .limit(20);
+              .order(maxPrice != null ? 'price' : 'name', { ascending: true })
+              .limit(30);
             if (rowsError) throw rowsError;
             matchedProducts = mapRowsWithVariants(rows || []);
           }
@@ -351,8 +383,8 @@ export const AIChatAgent = () => {
               .select(PRODUCT_CHAT_SELECT)
               .eq('subcategory_id', sub.id)
               .eq('is_published', true)
-              .order('name', { ascending: true })
-              .limit(20);
+              .order(maxPrice != null ? 'price' : 'name', { ascending: true })
+              .limit(30);
             if (rowsError) throw rowsError;
             matchedProducts = mapRowsWithVariants(rows || []);
           }
@@ -365,6 +397,12 @@ export const AIChatAgent = () => {
           });
           if (rpcError) throw rpcError;
           matchedProducts = data || [];
+        }
+
+        if (maxPrice != null && matchedProducts.length > 0) {
+          matchedProducts = [...matchedProducts].sort(
+            (a, b) => Number(a.price ?? 0) - Number(b.price ?? 0),
+          );
         }
 
         let slugById: Record<string, string | null> = {};
@@ -382,10 +420,20 @@ export const AIChatAgent = () => {
           );
         }
 
-        productsInfo =
-          matchedProducts.length > 0
-            ? formatProductsForPrompt(matchedProducts, slugById)
-            : 'No hay artículos específicos en el catálogo que coincidan.';
+        if (matchedProducts.length > 0) {
+          const list = formatProductsForPrompt(matchedProducts, slugById);
+          if (maxPrice != null) {
+            const within = matchedProducts.filter(
+              (p) => Number(p.price ?? 0) <= maxPrice + 0.001,
+            );
+            const withinNames = within.map((p) => p.name.trim()).join(', ') || 'ninguno';
+            productsInfo = `FILTRO DE PRECIO: la clienta busca artículos a ${maxPrice}€ o menos. Cumplen ese precio: ${withinNames}.\nRevisa SIEMPRE el campo Precio de cada artículo antes de responder.\n\n${list}`;
+          } else {
+            productsInfo = list;
+          }
+        } else {
+          productsInfo = 'No hay artículos específicos en el catálogo que coincidan.';
+        }
       } catch {
         useProductSearch = false;
         productsInfo = '';
@@ -425,7 +473,8 @@ REGLAS CRÍTICAS DE RESPUESTA:
 11. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Tras la intro, para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:
 ¡Claro! Aquí tienes unas opciones a buen precio:
 Zapatillas estela — 10€
-/producto/zapatillas-estela`
+/producto/zapatillas-estela
+12. Si hay un FILTRO DE PRECIO en el inventario, prioriza los artículos que lo cumplen. Si alguno cumple (p. ej. BOLSO INDIA a 18€), recomiéndalo; NUNCA digas que no hay opciones en ese precio si aparecen en la lista.`
         : `
 NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. NO inventes productos ni generes URLs de producto bajo ninguna circunstancia. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y sugiérele estas secciones reales de la web usando enlaces relativos:
 

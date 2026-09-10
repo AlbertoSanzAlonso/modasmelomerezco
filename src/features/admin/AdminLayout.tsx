@@ -56,8 +56,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
 
       {/* Sidebar: fija y oculta por defecto hasta 1350px; visible en desktop ancho */}
       <aside className={`fixed min-[1350px]:static inset-y-0 left-0 w-72 border-r border-(--border-main) flex flex-col bg-(--bg-main) z-40 transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full min-[1350px]:translate-x-0'}`}>
-        <div className="p-10 grow overflow-y-auto">
-          <div className="flex flex-col mb-16 items-center">
+        <div className="p-10 min-[1350px]:pt-5 grow overflow-y-auto">
+          <div className="flex flex-col mb-16 min-[1350px]:mb-8 items-center">
             <Link to="/" className="flex items-center">
               <img 
                 src={theme === 'dark' ? "/assets/logo/LOGO MELOMEREZCO completo blanco.png" : "/assets/logo/LOGO MELOMEREZCO completo transparente.png"} 

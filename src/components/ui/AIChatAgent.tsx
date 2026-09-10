@@ -16,19 +16,88 @@ const getQueryEmbedding = async (text: string): Promise<number[]> => {
   return data.data[0].embedding;
 };
 
+const trimTrailingPunctuation = (value: string) =>
+  value.replace(/[.,;:!?)\]}>]+$/g, '');
+
+const isInternalPath = (href: string) =>
+  href.startsWith('/producto/') ||
+  href.startsWith('/categoria/') ||
+  href.startsWith('/#');
+
+/** Extrae href + etiqueta opcional desde markdown, URL absoluta o ruta relativa. */
+const parseLinkToken = (
+  token: string,
+): { href: string; label?: string } | null => {
+  const md = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+  if (md) {
+    const label = md[1].trim();
+    const hrefRaw = md[2].trim();
+    // Casos rotos del modelo: [/producto/...](#) o [texto](#)
+    if (hrefRaw === '#' || hrefRaw === '') {
+      if (isInternalPath(label)) return { href: trimTrailingPunctuation(label) };
+      return null;
+    }
+    const href = trimTrailingPunctuation(hrefRaw);
+    if (isInternalPath(href) || href.startsWith('http')) {
+      const niceLabel =
+        label && !isInternalPath(label) && !label.startsWith('http')
+          ? label.replace(/\*\*/g, '').trim()
+          : undefined;
+      return { href, label: niceLabel };
+    }
+    return null;
+  }
+
+  if (/^https?:\/\//.test(token) || isInternalPath(token)) {
+    return { href: trimTrailingPunctuation(token) };
+  }
+  return null;
+};
+
+const ProductLinkButton = ({
+  href,
+  label,
+}: {
+  href: string;
+  label?: string;
+}) => (
+  <a
+    href={href}
+    className="flex items-center justify-between mt-3 px-5 py-3.5 bg-secondary text-white text-[10px] font-black uppercase tracking-[0.18em] italic rounded-2xl hover:bg-primary transition-all group shadow-lg shadow-secondary/10 active:scale-[0.98]"
+  >
+    <span className="truncate pr-3">{label || 'Ver producto'}</span>
+    <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors shrink-0">
+      <Send className="w-3 h-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+    </div>
+  </a>
+);
+
+const formatPlainText = (text: string) =>
+  text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/^\|.*\|$/gm, '')
+    .replace(/^[-|:\s]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 const formatMessage = (text: string) => {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
+  // Markdown links, http(s), o rutas internas sueltas
+  const tokenRegex =
+    /(\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s|]+|\/(?:producto|categoria)\/[^\s|\]>]+|\/#[^\s|\]>]+)/g;
+  const parts = text.split(tokenRegex);
 
   return parts.map((part, index) => {
-    if (part.match(/^https?:\/\//)) {
-      const cleanUrl = part.replace(/[.,;:!?)\]}>]+$/, '');
-      // Caso 1: WhatsApp
-      if (part.includes('wa.me') || part.includes('whatsapp')) {
+    if (!part) return null;
+
+    const link = parseLinkToken(part);
+    if (link) {
+      const { href, label } = link;
+
+      if (href.includes('wa.me') || href.includes('whatsapp')) {
         return (
           <a
             key={index}
-            href={cleanUrl}
+            href={href}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 mt-3 px-5 py-2.5 bg-[#25D366] text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-[#20BD5A] transition-all hover:scale-105 shadow-md shadow-green-500/20 active:scale-95"
@@ -37,37 +106,43 @@ const formatMessage = (text: string) => {
           </a>
         );
       }
-      
-      // Caso 2: Producto de la tienda
-      if (part.includes('/producto/')) {
+
+      if (href.includes('/producto/')) {
+        return <ProductLinkButton key={index} href={href} label={label} />;
+      }
+
+      if (isInternalPath(href)) {
         return (
           <a
             key={index}
-            href={cleanUrl}
-            className="flex items-center justify-between mt-4 px-6 py-4 bg-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] italic rounded-2xl hover:bg-primary transition-all group shadow-xl shadow-secondary/10 active:scale-[0.98]"
+            href={href}
+            className="inline-flex mt-3 px-5 py-2.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:opacity-90 transition-all"
           >
-            <span>Ver Producto</span>
-            <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors">
-              <Send className="w-3 h-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </div>
+            {label || 'Ver sección'}
           </a>
         );
       }
 
-      // Caso 3: Otras URLs (links genéricos)
       return (
         <a
           key={index}
-          href={cleanUrl}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary font-bold underline hover:text-primary/80 break-all"
         >
-          {cleanUrl}
+          {label || href}
         </a>
       );
     }
-    return <span key={index} className="leading-relaxed">{part}</span>;
+
+    const plain = formatPlainText(part);
+    if (!plain) return null;
+    return (
+      <span key={index} className="leading-relaxed whitespace-pre-wrap">
+        {plain}
+      </span>
+    );
   });
 };
 
@@ -129,6 +204,22 @@ export const AIChatAgent = () => {
         if (rpcError) throw rpcError;
 
         const matchedProducts = data || [];
+
+        let slugById: Record<string, string | null> = {};
+        if (matchedProducts.length > 0) {
+          const ids = matchedProducts.map((p: { product_id: string }) => p.product_id);
+          const { data: slugRows } = await supabase
+            .from('products')
+            .select('product_id, slug')
+            .in('product_id', ids);
+          slugById = Object.fromEntries(
+            (slugRows || []).map((r: { product_id: string; slug: string | null }) => [
+              r.product_id,
+              r.slug,
+            ]),
+          );
+        }
+
         productsInfo = matchedProducts.length > 0
           ? matchedProducts.map((p: any) => {
               const stockInfo = p.variants?.map((v: any) => {
@@ -136,7 +227,11 @@ export const AIChatAgent = () => {
                 return `${label}: ${v.stock}uds`;
               }).join(', ') || 'Sin info de stock';
               const novelty = p.is_new ? '✨ NOVEDAD ✨' : '';
-              return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${getProductPath(p)}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
+              const path = getProductPath({
+                product_id: p.product_id,
+                slug: slugById[p.product_id],
+              });
+              return `Artículo: ${p.name} ${novelty}. Precio: ${p.price}€. URL: ${path}. Tallas/Stock: ${stockInfo}. Descripción: ${p.description}`;
             }).join('\n---\n')
           : 'No hay artículos específicos en el catálogo que coincidan.';
       } catch {
@@ -168,10 +263,13 @@ REGLAS CRÍTICAS DE RESPUESTA:
 1. SOLO recomienda artículos que estén en el "INVENTARIO REAL" arriba indicado. NUNCA inventes un producto que no aparezca en la lista.
 2. Si la clienta pide una categoría (ej: Pantalón) y no hay ninguno en el inventario real, NO inventes ni recomiendes otra cosa de distinta categoría. Di amablemente que no tienes stock de eso ahora mismo y ofrece mirar las "Novedades" o contactar por WhatsApp.
 3. Los enlaces a producto DEBEN ser copiados EXACTAMENTE del inventario real. No modifiques ni inventes URLs. Usa siempre la forma relativa (/producto/...) NUNCA con dominio completo.
-4. Sé persuasiva pero muy concisa.
+4. Sé persuasiva pero muy concisa. Máximo 3 productos por respuesta.
 5. Si un producto es "NOVEDAD", menciónalo con entusiasmo.
 6. NUNCA digas "Excelente elección" ni frases similares si la clienta solo preguntó o pidió recomendaciones. Responde de forma natural como una dependienta de boutique. Si la clienta aún no ha elegido nada, no finjas que ya lo hizo.
-7. NO compartas la URL completa del sitio web (https://www.modasmelomerezco.es) porque la usuaria ya está en él. Si quieres dirigir a una sección, usa solo el enlace relativo (ej: /#novedades).`
+7. NO compartas la URL completa del sitio web (https://www.modasmelomerezco.es) porque la usuaria ya está en él. Si quieres dirigir a una sección, usa solo el enlace relativo (ej: /#novedades).
+8. FORMATO OBLIGATORIO: NUNCA uses tablas markdown, pipes |, ni sintaxis [texto](url) ni **negritas**. Para cada producto escribe 1 línea con nombre y precio, y en la línea siguiente SOLO la URL relativa tal cual del inventario. La interfaz la convertirá en un botón. Ejemplo correcto:
+COLLARES COLORINES — 15€
+/producto/collares-colorines`
         : `
 NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. NO inventes productos ni generes URLs de producto bajo ninguna circunstancia. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y sugiérele estas secciones reales de la web usando enlaces relativos:
 
@@ -181,7 +279,7 @@ NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. 
 - Calzado: /categoria/calzado
 - Novedades: /#novedades
 
-Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enlaces que no estén en esta lista. NUNCA incluyas el dominio completo (https://...) en los enlaces, usa siempre la forma relativa como se muestra arriba.`;
+Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enlaces que no estén en esta lista. NUNCA incluyas el dominio completo (https://...) en los enlaces, usa siempre la forma relativa como se muestra arriba. NUNCA uses tablas markdown ni sintaxis [texto](url): pon la ruta relativa sola en su propia línea.`;
 
       const systemPrompt = baseInfo + inventoryBlock;
 

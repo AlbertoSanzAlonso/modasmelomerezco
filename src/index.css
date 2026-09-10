@@ -235,3 +235,14 @@ button {
 html {
   scroll-behavior: smooth;
 }
+
+/*
+  Google Merchant store widget: el iframe debe medir ~viewport; el wrapper
+  recorta con overflow:hidden. Si un reset limita el iframe (max-width:100%),
+  el toast de puntuación se corta al desplegarse.
+*/
+#google-merchantwidget-iframe-wrapper iframe,
+#merchantwidgetiframe {
+  max-width: none !important;
+  max-height: none !important;
+}

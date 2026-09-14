@@ -11,23 +11,26 @@ import { useScrollRestoration } from "@/lib/useScrollRestoration";
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import { absoluteUrl, truncateDescription } from '@/lib/seo/constants';
 
+function parseIdParam(value: string | null): number | null {
+  if (!value) return null;
+  const n = Number.parseInt(value, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 const CategoryPage: React.FC = () => {
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const subQuery = searchParams.get('sub');
   const labelQuery = searchParams.get('label');
 
-  const filterKey = `${subQuery || 'null'}-${labelQuery || 'null'}`;
+  // Fuente única de verdad: query params (evita carrera selected* vs URL)
+  const selectedSub = parseIdParam(subQuery);
+  const selectedLabel = parseIdParam(labelQuery);
+  const filterKey = `${selectedSub ?? 'null'}-${selectedLabel ?? 'null'}`;
 
-  // Ref to track if we have already performed the initial restoration
   const wasRestored = React.useRef(false);
-
-  const [selectedSub, setSelectedSub] = useState<number | null>(() =>
-    subQuery ? parseInt(subQuery, 10) : null
-  );
-  const [selectedLabel, setSelectedLabel] = useState<number | null>(() =>
-    labelQuery ? parseInt(labelQuery, 10) : null
-  );
+  const lastFilterKey = React.useRef(`${category}-${filterKey}`);
+  const allProductsLengthRef = React.useRef(0);
 
   const [page, setPage] = useState(() => {
     const savedPage = sessionStorage.getItem(`page-${category}-${filterKey}`);
@@ -38,65 +41,52 @@ const CategoryPage: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileLabelMenuOpen, setIsMobileLabelMenuOpen] = useState(false);
 
-  const lastState = React.useRef({ category, subQuery, labelQuery });
+  allProductsLengthRef.current = allProducts.length;
 
   const applyFilters = (subId: number | null, labelId: number | null) => {
+    if (subId === selectedSub && labelId === selectedLabel) return;
+
+    const nextKey = `${subId ?? 'null'}-${labelId ?? 'null'}`;
     const params = new URLSearchParams();
     if (subId) params.set('sub', subId.toString());
     if (labelId) params.set('label', labelId.toString());
-    setSearchParams(params);
 
-    // Evita vaciar la lista si el filtro no cambia: la caché de React Query
-    // no dispara el efecto que vuelve a rellenar allProducts.
-    const filtersChanged = subId !== selectedSub || labelId !== selectedLabel;
-    if (filtersChanged) {
-      setPage(1);
-      setAllProducts([]);
-      wasRestored.current = false;
-    }
+    sessionStorage.setItem(`page-${category}-${nextKey}`, '1');
+    setPage(1);
+    setAllProducts([]);
+    wasRestored.current = false;
+    setSearchParams(params);
   };
 
+  // Al cambiar categoría/filtros: reset de lista y página (o restauración)
   React.useEffect(() => {
-    if (
-      lastState.current.category !== category ||
-      lastState.current.subQuery !== subQuery ||
-      lastState.current.labelQuery !== labelQuery
-    ) {
-      setSelectedSub(subQuery ? parseInt(subQuery, 10) : null);
-      setSelectedLabel(labelQuery ? parseInt(labelQuery, 10) : null);
+    if (lastFilterKey.current === `${category}-${filterKey}`) return;
+    lastFilterKey.current = `${category}-${filterKey}`;
 
-      const saved = sessionStorage.getItem(
-        `page-${category}-${subQuery || 'null'}-${labelQuery || 'null'}`
-      );
-      setPage(saved ? parseInt(saved, 10) : 1);
-      setAllProducts([]);
-      wasRestored.current = false;
-
-      lastState.current = { category, subQuery, labelQuery };
-    }
-  }, [subQuery, labelQuery, category]);
+    const saved = sessionStorage.getItem(`page-${category}-${filterKey}`);
+    setPage(saved ? parseInt(saved, 10) : 1);
+    setAllProducts([]);
+    wasRestored.current = false;
+  }, [category, filterKey]);
 
   React.useEffect(() => {
-    sessionStorage.setItem(
-      `page-${category}-${selectedSub || 'null'}-${selectedLabel || 'null'}`,
-      page.toString()
-    );
-  }, [category, selectedSub, selectedLabel, page]);
+    sessionStorage.setItem(`page-${category}-${filterKey}`, page.toString());
+  }, [category, filterKey, page]);
 
   const handleSubChange = (subId: number | null) => {
-    const next = subId !== null && selectedSub === subId ? null : subId;
-    setSelectedSub(next);
+    const id = subId == null ? null : Number(subId);
+    const next = id !== null && selectedSub === id ? null : id;
     applyFilters(next, selectedLabel);
     setIsMobileMenuOpen(false);
   };
 
   const handleLabelChange = (labelId: number | null) => {
-    const next = labelId !== null && selectedLabel === labelId ? null : labelId;
-    setSelectedLabel(next);
+    const id = labelId == null ? null : Number(labelId);
+    const next = id !== null && selectedLabel === id ? null : id;
     applyFilters(selectedSub, next);
     setIsMobileLabelMenuOpen(false);
   };
-  
+
   const pageSize = 12;
 
   const { data: categoryData } = useQuery({
@@ -121,7 +111,7 @@ const CategoryPage: React.FC = () => {
   const { data: productsData, isLoading, isFetching } = useQuery<{ products: Product[], total: number }>({
     queryKey: ['products', categoryId, selectedSub, selectedLabel, page],
     queryFn: () => {
-      const isRestoring = page > 1 && allProducts.length === 0;
+      const isRestoring = page > 1 && allProductsLengthRef.current === 0;
       const actualPage = isRestoring ? 1 : page;
       const actualPageSize = isRestoring ? page * pageSize : pageSize;
 
@@ -144,39 +134,38 @@ const CategoryPage: React.FC = () => {
 
   const products = productsData?.products;
 
-  // Restore scroll position
-  // We use a more stable trigger for restoration
   const restorationTrigger = allProducts.length;
   useScrollRestoration(
-    `category-${category}-${selectedSub || 'null'}-${selectedLabel || 'null'}`,
+    `category-${category}-${filterKey}`,
     restorationTrigger
   );
 
+  // Rellena/reemplaza la lista acumulada. Depende de filterKey para no quedarse
+  // vacía si otro efecto limpia allProducts con la misma caché de React Query.
   React.useEffect(() => {
-    if (products) {
-      setAllProducts(prev => {
-        // Case A: First load or restoration load
-        if (prev.length === 0 || page === 1) {
-          // If we are restoring multiple pages, mark it so the hook knows we have content
-          if (products.length > pageSize) wasRestored.current = true;
-          return products;
-        } 
-        
-        // Case B: Normal pagination append
-        // Avoid duplicates if any
-        const existingIds = new Set(prev.map(p => p.product_id));
-        const newItems = products.filter(p => !existingIds.has(p.product_id));
-        if (newItems.length === 0) return prev;
-        return [...prev, ...newItems];
-      });
-    }
-  }, [products, page]);
+    if (!products) return;
 
+    setAllProducts((prev) => {
+      if (prev.length === 0 || page === 1) {
+        if (products.length > pageSize) wasRestored.current = true;
+        return products;
+      }
 
-  const hasMore = productsData ? allProducts.length < productsData.total : false;
+      const existingIds = new Set(prev.map((p) => p.product_id));
+      const newItems = products.filter((p) => !existingIds.has(p.product_id));
+      if (newItems.length === 0) return prev;
+      return [...prev, ...newItems];
+    });
+  }, [products, page, filterKey, pageSize]);
 
-  // Helper to determine if we should show the empty state
-  const showEmptyState = !isLoading && !isFetching && productsData && allProducts.length === 0;
+  // Si allProducts se vació en un render intermedio pero la query ya tiene datos, mostrarlos
+  const visibleProducts =
+    allProducts.length > 0 ? allProducts : page === 1 && products ? products : allProducts;
+
+  const hasMore = productsData ? visibleProducts.length < productsData.total : false;
+
+  const showEmptyState =
+    !isLoading && !isFetching && !!productsData && visibleProducts.length === 0;
 
   const categoryTitle = categoryData?.name || category || 'Categoría';
   const categoryDescription = truncateDescription(
@@ -330,11 +319,11 @@ const CategoryPage: React.FC = () => {
                             <button
                               key={label.id}
                               type="button"
-                              onClick={() => handleLabelChange(label.id)}
-                              className={`w-full flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl ${selectedLabel === label.id ? 'text-primary bg-primary/5' : 'text-secondary'}`}
+                              onClick={() => handleLabelChange(Number(label.id))}
+                              className={`w-full flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl ${selectedLabel === Number(label.id) ? 'text-primary bg-primary/5' : 'text-secondary'}`}
                             >
                               {label.name}
-                              {selectedLabel === label.id && <Check className="w-3 h-3" />}
+                              {selectedLabel === Number(label.id) && <Check className="w-3 h-3" />}
                             </button>
                           ))}
                         </div>
@@ -356,8 +345,8 @@ const CategoryPage: React.FC = () => {
                   <button
                     key={label.id}
                     type="button"
-                    onClick={() => handleLabelChange(label.id)}
-                    className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] border rounded-full transition-all ${selectedLabel === label.id ? 'bg-secondary border-secondary text-white' : 'border-secondary/10 hover:border-secondary'}`}
+                    onClick={() => handleLabelChange(Number(label.id))}
+                    className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] border rounded-full transition-all ${selectedLabel === Number(label.id) ? 'bg-secondary border-secondary text-white' : 'border-secondary/10 hover:border-secondary'}`}
                   >
                     {label.name}
                   </button>
@@ -398,7 +387,7 @@ const CategoryPage: React.FC = () => {
         ) : (
           <div className="space-y-20 relative z-0">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-              {allProducts.map((product: Product, index: number) => (
+              {visibleProducts.map((product: Product, index: number) => (
                 <motion.div 
                   key={product.product_id}
                   id={`product-${product.product_id}`}

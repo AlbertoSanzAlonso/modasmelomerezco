@@ -135,6 +135,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         availableLabels={availableLabels}
         onLabelsChange={(labels) => setFormData({ ...formData, labels })}
         onLabelCreated={(label) => setAvailableLabels((prev) => [...prev, label])}
+        onLabelDeleted={(labelId) => {
+          setAvailableLabels((prev) => prev.filter((l) => l.id !== labelId));
+          setFormData({
+            ...formData,
+            labels: (formData.labels || []).filter((l: Label) => l.id !== labelId),
+          });
+        }}
       />
 
       <ProductOffer

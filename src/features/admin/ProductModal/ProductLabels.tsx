@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Label } from '@/types/index';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/store/useCartStore';
@@ -9,6 +11,7 @@ interface ProductLabelsProps {
   availableLabels: Label[];
   onLabelsChange: (labels: Label[]) => void;
   onLabelCreated: (label: Label) => void;
+  onLabelDeleted: (labelId: number) => void;
 }
 
 export const ProductLabels: React.FC<ProductLabelsProps> = ({
@@ -16,9 +19,12 @@ export const ProductLabels: React.FC<ProductLabelsProps> = ({
   availableLabels = [],
   onLabelsChange,
   onLabelCreated,
+  onLabelDeleted,
 }) => {
+  const queryClient = useQueryClient();
   const [newLabelName, setNewLabelName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleToggle = (label: Label) => {
     const isSelected = selectedLabels.some((l) => l.id === label.id);
@@ -51,6 +57,7 @@ export const ProductLabels: React.FC<ProductLabelsProps> = ({
       onLabelCreated(created);
       onLabelsChange([...selectedLabels, created]);
       setNewLabelName('');
+      queryClient.invalidateQueries({ queryKey: ['admin-labels'] });
     } catch (error) {
       console.error(
         'Error creating label:',
@@ -67,6 +74,41 @@ export const ProductLabels: React.FC<ProductLabelsProps> = ({
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const requestDelete = (label: Label, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deletingId != null) return;
+
+    useCartStore.getState().openModal({
+      title: 'Eliminar etiqueta',
+      message: `¿Segura de que quieres eliminar «${label.name}»? Todos los productos que la tengan dejarán de tenerla.`,
+      type: 'confirm',
+      onConfirm: () => {
+        void (async () => {
+          setDeletingId(label.id);
+          try {
+            await api.labels.delete(label.id);
+            onLabelDeleted(label.id);
+            queryClient.invalidateQueries({ queryKey: ['admin-labels'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+          } catch (err) {
+            console.error('Error deleting label:', err);
+            useCartStore.getState().openModal({
+              title: 'No se pudo eliminar',
+              message:
+                err instanceof Error
+                  ? err.message
+                  : 'No se pudo eliminar la etiqueta. Inténtalo de nuevo.',
+              type: 'error',
+            });
+          } finally {
+            setDeletingId(null);
+          }
+        })();
+      },
+    });
   };
 
   return (
@@ -88,20 +130,41 @@ export const ProductLabels: React.FC<ProductLabelsProps> = ({
         ) : (
           availableLabels.map((label) => {
             const isSelected = selectedLabels.some((l) => l.id === label.id);
+            const isDeleting = deletingId === label.id;
             return (
-              <button
+              <div
                 key={label.id}
-                type="button"
-                onClick={() => handleToggle(label)}
-                className={`px-5 py-3 border text-xs font-bold rounded-xl transition-all select-none uppercase tracking-wider
+                className={`inline-flex items-center gap-1 border text-xs font-bold rounded-xl transition-all uppercase tracking-wider
                   ${
                     isSelected
                       ? 'bg-primary text-white border-primary shadow-lg shadow-primary/15'
-                      : 'bg-(--bg-card) text-(--text-main) border-(--border-main) hover:border-primary/50'
-                  }`}
+                      : 'bg-(--bg-card) text-(--text-main) border-(--border-main)'
+                  }
+                  ${isDeleting ? 'opacity-50' : ''}`}
               >
-                {label.name}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggle(label)}
+                  disabled={isDeleting}
+                  className="px-4 py-3 hover:opacity-90 select-none"
+                >
+                  {label.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => requestDelete(label, e)}
+                  disabled={isDeleting}
+                  title={`Eliminar etiqueta «${label.name}»`}
+                  aria-label={`Eliminar etiqueta ${label.name}`}
+                  className={`mr-2 p-1 rounded-md transition-colors ${
+                    isSelected
+                      ? 'text-white/70 hover:text-white hover:bg-white/15'
+                      : 'text-gray-400 hover:text-red-500 hover:bg-red-500/10'
+                  }`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             );
           })
         )}

@@ -67,4 +67,17 @@ export const labels = {
     }
     return data;
   },
+
+  delete: async (id: number): Promise<void> => {
+    const { error } = await supabase.from('labels').delete().eq('id', id);
+
+    if (error) {
+      if (isLabelsTableMissing(error)) {
+        throw new Error(
+          'La tabla de etiquetas no existe. Aplica supabase/migrations/labels.sql en la base Postgres.'
+        );
+      }
+      throw error;
+    }
+  },
 };

@@ -26,6 +26,7 @@ interface ProductsTabProps {
   soldOutFilter?: boolean;
   categoryFilter?: number;
   onOfferFilter?: boolean;
+  labelFilter?: number;
   onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
   onStatusFilterChange: (status: boolean | undefined) => void;
@@ -33,6 +34,7 @@ interface ProductsTabProps {
   onSoldOutFilterChange: (soldOut: boolean | undefined) => void;
   onCategoryFilterChange: (categoryId: number | undefined) => void;
   onOnOfferFilterChange: (onOffer: boolean | undefined) => void;
+  onLabelFilterChange: (labelId: number | undefined) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
@@ -60,6 +62,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   soldOutFilter,
   categoryFilter,
   onOfferFilter,
+  labelFilter,
   onSearchChange,
   onPageChange,
   onStatusFilterChange,
@@ -67,6 +70,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   onSoldOutFilterChange,
   onCategoryFilterChange,
   onOnOfferFilterChange,
+  onLabelFilterChange,
   onToggleSelectAll,
   onToggleSelect,
   onBulkStatusChange,
@@ -85,6 +89,15 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     queryKey: ['admin-categories'],
     queryFn: () => api.categories.getAll(),
   });
+
+  const { data: labels = [] } = useQuery({
+    queryKey: ['admin-labels'],
+    queryFn: () => api.labels.getAll(),
+  });
+
+  const toggleLabelFilter = (labelId: number) => {
+    onLabelFilterChange(labelFilter === labelId ? undefined : labelId);
+  };
 
   const selectedProducts =
     products?.filter((p) => selectedIds.includes(p.product_id)) ?? [];
@@ -239,6 +252,42 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             )}
           </div>
         </div>
+
+        {labels.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+              Etiquetas
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {labels.map((label) => {
+                const selected = labelFilter === label.id;
+                return (
+                  <button
+                    key={label.id}
+                    type="button"
+                    onClick={() => toggleLabelFilter(label.id)}
+                    className={`px-4 py-2 border text-[10px] font-black uppercase tracking-wider rounded-xl transition-all select-none ${
+                      selected
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/15'
+                        : 'bg-white text-(--text-main) border-gray-200 hover:border-primary/50'
+                    }`}
+                  >
+                    {label.name}
+                  </button>
+                );
+              })}
+              {labelFilter != null && (
+                <button
+                  type="button"
+                  onClick={() => onLabelFilterChange(undefined)}
+                  className="px-4 py-2 text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-primary transition-colors"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {selectedIds.length > 0 && (

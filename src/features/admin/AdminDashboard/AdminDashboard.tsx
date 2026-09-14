@@ -54,6 +54,7 @@ export const AdminDashboard: React.FC = () => {
   const [soldOutFilter, setSoldOutFilter] = useState<boolean | undefined>(undefined);
   const [categoryFilter, setCategoryFilter] = useState<number | undefined>(undefined);
   const [onOfferFilter, setOnOfferFilter] = useState<boolean | undefined>(undefined);
+  const [labelFilter, setLabelFilter] = useState<number | undefined>(undefined);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [isRestocking, setIsRestocking] = useState(false);
@@ -62,7 +63,7 @@ export const AdminDashboard: React.FC = () => {
   // Reset page when filters or search change
   useEffect(() => {
     setProductPage(1);
-  }, [productSearch, statusFilter, isNewFilter, soldOutFilter, categoryFilter, onOfferFilter]);
+  }, [productSearch, statusFilter, isNewFilter, soldOutFilter, categoryFilter, onOfferFilter, labelFilter]);
 
   // Newsletter state
   const [newsletterSubject, setNewsletterSubject] = useState('');
@@ -91,7 +92,8 @@ export const AdminDashboard: React.FC = () => {
     customerSearch,
     soldOutFilter,
     categoryFilter,
-    onOfferFilter
+    onOfferFilter,
+    labelFilter
   );
 
   const openModal = useCartStore((state) => state.openModal);
@@ -471,11 +473,13 @@ export const AdminDashboard: React.FC = () => {
             soldOutFilter={soldOutFilter}
             categoryFilter={categoryFilter}
             onOfferFilter={onOfferFilter}
+            labelFilter={labelFilter}
             onStatusFilterChange={setStatusFilter}
             onIsNewFilterChange={setIsNewFilter}
             onSoldOutFilterChange={setSoldOutFilter}
             onCategoryFilterChange={setCategoryFilter}
             onOnOfferFilterChange={setOnOfferFilter}
+            onLabelFilterChange={setLabelFilter}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === products?.length ? [] : products?.map(p => p.product_id) || [])}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onBulkStatusChange={handleBulkStatusChange}

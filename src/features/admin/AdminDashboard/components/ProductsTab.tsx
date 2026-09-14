@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { downloadProductImagesAsZip } from '@/utils/imageDownloader';
 import { getProductTotalStock, isProductSoldOut } from '@/lib/productVariants';
 import { getProductPath } from '@/lib/productSlug';
+import { hasActiveOffer } from '@/lib/productOffer';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
@@ -24,12 +25,14 @@ interface ProductsTabProps {
   isNewFilter?: boolean;
   soldOutFilter?: boolean;
   categoryFilter?: number;
+  onOfferFilter?: boolean;
   onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
   onStatusFilterChange: (status: boolean | undefined) => void;
   onIsNewFilterChange: (isNew: boolean | undefined) => void;
   onSoldOutFilterChange: (soldOut: boolean | undefined) => void;
   onCategoryFilterChange: (categoryId: number | undefined) => void;
+  onOnOfferFilterChange: (onOffer: boolean | undefined) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
@@ -56,12 +59,14 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   isNewFilter,
   soldOutFilter,
   categoryFilter,
+  onOfferFilter,
   onSearchChange,
   onPageChange,
   onStatusFilterChange,
   onIsNewFilterChange,
   onSoldOutFilterChange,
   onCategoryFilterChange,
+  onOnOfferFilterChange,
   onToggleSelectAll,
   onToggleSelect,
   onBulkStatusChange,
@@ -196,6 +201,20 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             <option value="">Todas las Fechas</option>
             <option value="true">Solo Novedades</option>
             <option value="false">No Novedades</option>
+          </select>
+
+          <select
+            value={onOfferFilter === undefined ? '' : onOfferFilter.toString()}
+            onChange={(e) =>
+              onOnOfferFilterChange(
+                e.target.value === '' ? undefined : e.target.value === 'true'
+              )
+            }
+            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+          >
+            <option value="">Todas las ofertas</option>
+            <option value="true">Solo en oferta</option>
+            <option value="false">Sin oferta</option>
           </select>
 
           <div className="relative col-span-2 md:flex-1 md:min-w-[200px]">
@@ -364,6 +383,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                           Agotado
                         </span>
                       )}
+                      {hasActiveOffer(product) && (
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-secondary/10 text-secondary border border-secondary/30 rounded-full whitespace-nowrap">
+                          Oferta
+                        </span>
+                      )}
                       {product.is_new && (
                         <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full whitespace-nowrap">Novedad</span>
                       )}
@@ -526,6 +550,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                       {isProductSoldOut(product) && (
                         <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-amber-500/10 text-amber-700 border border-amber-500/30 rounded-full">
                           Agotado
+                        </span>
+                      )}
+                      {hasActiveOffer(product) && (
+                        <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-secondary/10 text-secondary border border-secondary/30 rounded-full">
+                          Oferta
                         </span>
                       )}
                       {product.is_new && (

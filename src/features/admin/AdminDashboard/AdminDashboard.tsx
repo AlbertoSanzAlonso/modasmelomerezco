@@ -53,6 +53,7 @@ export const AdminDashboard: React.FC = () => {
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
   const [soldOutFilter, setSoldOutFilter] = useState<boolean | undefined>(undefined);
   const [categoryFilter, setCategoryFilter] = useState<number | undefined>(undefined);
+  const [onOfferFilter, setOnOfferFilter] = useState<boolean | undefined>(undefined);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [isRestocking, setIsRestocking] = useState(false);
@@ -61,7 +62,7 @@ export const AdminDashboard: React.FC = () => {
   // Reset page when filters or search change
   useEffect(() => {
     setProductPage(1);
-  }, [productSearch, statusFilter, isNewFilter, soldOutFilter, categoryFilter]);
+  }, [productSearch, statusFilter, isNewFilter, soldOutFilter, categoryFilter, onOfferFilter]);
 
   // Newsletter state
   const [newsletterSubject, setNewsletterSubject] = useState('');
@@ -89,7 +90,8 @@ export const AdminDashboard: React.FC = () => {
     isNewFilter,
     customerSearch,
     soldOutFilter,
-    categoryFilter
+    categoryFilter,
+    onOfferFilter
   );
 
   const openModal = useCartStore((state) => state.openModal);
@@ -468,10 +470,12 @@ export const AdminDashboard: React.FC = () => {
             isNewFilter={isNewFilter}
             soldOutFilter={soldOutFilter}
             categoryFilter={categoryFilter}
+            onOfferFilter={onOfferFilter}
             onStatusFilterChange={setStatusFilter}
             onIsNewFilterChange={setIsNewFilter}
             onSoldOutFilterChange={setSoldOutFilter}
             onCategoryFilterChange={setCategoryFilter}
+            onOnOfferFilterChange={setOnOfferFilter}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === products?.length ? [] : products?.map(p => p.product_id) || [])}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onBulkStatusChange={handleBulkStatusChange}

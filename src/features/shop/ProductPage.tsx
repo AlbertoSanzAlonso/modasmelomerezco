@@ -23,7 +23,7 @@ import {
   findImageIndexForColor,
 } from '@/lib/productVariants';
 import { getProductPath, isProductUuid } from '@/lib/productSlug';
-import { formatEur, getCompareAtPrice, hasActiveOffer } from '@/lib/productOffer';
+import { formatEur, getProductCompareAtPrice, hasActiveOffer } from '@/lib/productOffer';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import {
@@ -279,9 +279,7 @@ const ProductPage = () => {
   const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
   const soldOut = isProductSoldOut(product);
   const onOffer = hasActiveOffer(product);
-  const compareAt = onOffer
-    ? getCompareAtPrice(product.price, product.offer_percent ?? 0)
-    : null;
+  const compareAt = onOffer ? getProductCompareAtPrice(product) : null;
   const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   return (

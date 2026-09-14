@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { isProductSoldOut } from '@/lib/productVariants';
 import { getProductPath } from '@/lib/productSlug';
-import { formatEur, getCompareAtPrice, hasActiveOffer } from '@/lib/productOffer';
+import { formatEur, getProductCompareAtPrice, hasActiveOffer } from '@/lib/productOffer';
 
 interface ProductCardProps {
   product: Product;
@@ -22,9 +22,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const queryClient = useQueryClient();
   const soldOut = isProductSoldOut(product);
   const onOffer = !soldOut && hasActiveOffer(product);
-  const compareAt = onOffer
-    ? getCompareAtPrice(product.price, product.offer_percent ?? 0)
-    : null;
+  const compareAt = onOffer ? getProductCompareAtPrice(product) : null;
   const isNew = !soldOut && !!(product.is_new || (product as any).featured);
   
   const isFavorite = user?.favorites?.includes(String(product.product_id)) || false;

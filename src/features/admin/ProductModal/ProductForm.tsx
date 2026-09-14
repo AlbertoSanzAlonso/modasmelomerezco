@@ -139,16 +139,19 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
       <ProductOffer
         isOnOffer={!!formData.is_on_offer}
-        offerPercent={formData.offer_percent ?? 0}
+        offerType={formData.offer_type === 'fixed' ? 'fixed' : 'percent'}
+        offerValue={formData.offer_value ?? 0}
         price={formData.price ?? 0}
         onOfferChange={(val) =>
           setFormData({
             ...formData,
             is_on_offer: val,
-            offer_percent: val ? formData.offer_percent || 0 : 0,
+            offer_value: val ? formData.offer_value || 0 : 0,
+            offer_type: formData.offer_type === 'fixed' ? 'fixed' : 'percent',
           })
         }
-        onPercentChange={(offer_percent) => setFormData({ ...formData, offer_percent })}
+        onTypeChange={(offer_type) => setFormData({ ...formData, offer_type })}
+        onValueChange={(offer_value) => setFormData({ ...formData, offer_value })}
       />
 
       <ProductDiscountCodes

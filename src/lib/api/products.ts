@@ -59,7 +59,8 @@ const PRODUCT_TABLE_COLUMNS = new Set([
   'is_published',
   'is_new',
   'is_on_offer',
-  'offer_percent',
+  'offer_type',
+  'offer_value',
   'is_sold_out',
   'category_id',
   'subcategory_id',
@@ -461,7 +462,13 @@ const normalise = (p: any): Product => ({
   slug: (typeof p.slug === 'string' && p.slug.trim()) || p.product_id,
   is_published: p.is_published ?? true,
   is_on_offer: p.is_on_offer === true,
-  offer_percent: Number(p.offer_percent) || 0,
+  offer_type: p.offer_type === 'fixed' ? 'fixed' : 'percent',
+  offer_value: (() => {
+    const v = Number(p.offer_value);
+    if (Number.isFinite(v) && v > 0) return v;
+    const legacy = Number(p.offer_percent);
+    return Number.isFinite(legacy) ? legacy : 0;
+  })(),
   is_sold_out: p.is_sold_out === true,
   stock: (() => {
     const rawVariants =
@@ -551,7 +558,8 @@ export const products = {
     search?: string,
     isNewOnly?: boolean,
     labelId?: number,
-    soldOutOnly?: boolean
+    soldOutOnly?: boolean,
+    onOfferOnly?: boolean
   ): Promise<{ products: Product[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -571,6 +579,7 @@ export const products = {
       if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
       if (isNewOnly !== undefined) query = query.eq('is_new', isNewOnly);
       if (soldOutOnly !== undefined) query = query.eq('is_sold_out', soldOutOnly);
+      if (onOfferOnly !== undefined) query = query.eq('is_on_offer', onOfferOnly);
       if (labelId && select.includes('product_labels')) {
         query = query.eq('product_labels.label_id', labelId);
       }

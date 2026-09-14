@@ -13,12 +13,13 @@ export const useAdminData = (
   isNewFilter?: boolean,
   customerSearch?: string,
   soldOutFilter?: boolean,
-  categoryFilter?: number
+  categoryFilter?: number,
+  onOfferFilter?: boolean
 ) => {
   const queryClient = useQueryClient();
 
   const { data: productsData, isLoading: loadingProducts } = useQuery<{ products: Product[], total: number }>({
-    queryKey: ['admin-products', productPage, searchTerm, statusFilter, isNewFilter, soldOutFilter, categoryFilter],
+    queryKey: ['admin-products', productPage, searchTerm, statusFilter, isNewFilter, soldOutFilter, categoryFilter, onOfferFilter],
     queryFn: () =>
       api.products.getAll(
         categoryFilter != null ? String(categoryFilter) : undefined,
@@ -29,7 +30,8 @@ export const useAdminData = (
         searchTerm,
         isNewFilter,
         undefined,
-        soldOutFilter
+        soldOutFilter,
+        onOfferFilter
       ),
   });
   

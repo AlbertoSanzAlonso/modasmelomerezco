@@ -21,6 +21,7 @@ export interface ProductFormState extends Partial<Product> {
   is_new: boolean;
   is_published: boolean;
   is_on_offer?: boolean;
-  offer_percent?: number;
+  offer_type?: 'percent' | 'fixed';
+  offer_value?: number;
   variants: any[];
 }

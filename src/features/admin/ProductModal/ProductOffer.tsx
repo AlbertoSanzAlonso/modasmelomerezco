@@ -1,23 +1,28 @@
 import React from 'react';
+import type { OfferType } from '@/lib/productOffer';
 import { formatEur, getCompareAtPrice } from '@/lib/productOffer';
 
 interface ProductOfferProps {
   isOnOffer: boolean;
-  offerPercent: number;
+  offerType: OfferType;
+  offerValue: number;
   price: number;
   onOfferChange: (value: boolean) => void;
-  onPercentChange: (value: number) => void;
+  onTypeChange: (value: OfferType) => void;
+  onValueChange: (value: number) => void;
 }
 
 export const ProductOffer: React.FC<ProductOfferProps> = ({
   isOnOffer,
-  offerPercent,
+  offerType,
+  offerValue,
   price,
   onOfferChange,
-  onPercentChange,
+  onTypeChange,
+  onValueChange,
 }) => {
-  const compareAt = getCompareAtPrice(price || 0, offerPercent || 0);
-  const showPreview = isOnOffer && offerPercent > 0 && (price || 0) >= 0;
+  const compareAt = getCompareAtPrice(price || 0, offerValue || 0, offerType);
+  const showPreview = isOnOffer && offerValue > 0 && (price || 0) >= 0;
 
   return (
     <div className="space-y-8 border-t border-(--border-main) pt-12">
@@ -26,8 +31,8 @@ export const ProductOffer: React.FC<ProductOfferProps> = ({
           Oferta
         </label>
         <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-          Activa un precio tachado en tienda sumando un porcentaje al precio real. El cliente
-          paga el precio real.
+          Activa un precio tachado en tienda sumando un porcentaje o una cantidad en euros al
+          precio real. El cliente paga el precio real.
         </p>
       </div>
 
@@ -49,35 +54,65 @@ export const ProductOffer: React.FC<ProductOfferProps> = ({
         </div>
 
         {isOnOffer && (
-          <div className="space-y-3">
-            <label
-              htmlFor="offer_percent"
-              className="text-[8px] font-black uppercase tracking-widest text-gray-500 block"
-            >
-              Porcentaje sobre el precio
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="offer_percent"
-                type="number"
-                min={1}
-                max={99}
-                step={1}
-                inputMode="numeric"
-                className="w-28 bg-(--bg-card) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl"
-                value={offerPercent || ''}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === '') {
-                    onPercentChange(0);
-                    return;
-                  }
-                  const n = Math.min(99, Math.max(0, Number(raw)));
-                  onPercentChange(Number.isFinite(n) ? n : 0);
-                }}
-                placeholder="20"
-              />
-              <span className="text-xs font-bold text-(--text-main)">%</span>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onTypeChange('percent')}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${
+                  offerType === 'percent'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-(--bg-card) text-(--text-main) border-(--border-main) hover:border-primary/50'
+                }`}
+              >
+                Porcentaje
+              </button>
+              <button
+                type="button"
+                onClick={() => onTypeChange('fixed')}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${
+                  offerType === 'fixed'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-(--bg-card) text-(--text-main) border-(--border-main) hover:border-primary/50'
+                }`}
+              >
+                Euros
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label
+                htmlFor="offer_value"
+                className="text-[8px] font-black uppercase tracking-widest text-gray-500 block"
+              >
+                {offerType === 'percent'
+                  ? 'Porcentaje a sumar (puede ser más de 100%)'
+                  : 'Euros a sumar al precio'}
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  id="offer_value"
+                  type="number"
+                  min={0}
+                  step={offerType === 'fixed' ? 0.01 : 1}
+                  inputMode="decimal"
+                  className="w-32 bg-(--bg-card) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl"
+                  value={offerValue || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      onValueChange(0);
+                      return;
+                    }
+                    const n = Math.max(0, Number(raw));
+                    onValueChange(Number.isFinite(n) ? n : 0);
+                  }}
+                  placeholder={offerType === 'percent' ? '20' : '10'}
+                />
+                <span className="text-xs font-bold text-(--text-main)">
+                  {offerType === 'percent' ? '%' : '€'}
+                </span>
+              </div>
             </div>
 
             {showPreview && (

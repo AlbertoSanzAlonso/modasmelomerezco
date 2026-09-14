@@ -51,7 +51,8 @@ export const useProductForm = (
     is_new: false,
     is_published: false,
     is_on_offer: false,
-    offer_percent: 0,
+    offer_type: 'percent',
+    offer_value: 0,
     variants: [{ id: 'v1', size: '', color_id: null, stock: 0 }],
     colors: [],
     labels: [],
@@ -405,9 +406,13 @@ export const useProductForm = (
       return;
     }
     if (formData.is_on_offer) {
-      const pct = Number(formData.offer_percent);
-      if (!Number.isFinite(pct) || pct < 1 || pct > 99) {
-        openError('Indica un porcentaje de oferta entre 1 y 99.');
+      const value = Number(formData.offer_value);
+      if (!Number.isFinite(value) || value <= 0) {
+        openError(
+          formData.offer_type === 'fixed'
+            ? 'Indica una cantidad en euros mayor que 0 para la oferta.'
+            : 'Indica un porcentaje mayor que 0 para la oferta.'
+        );
         return;
       }
     }
@@ -477,7 +482,12 @@ export const useProductForm = (
         ...formData,
         details: trimmedDetails,
         is_on_offer: !!formData.is_on_offer,
-        offer_percent: formData.is_on_offer ? Number(formData.offer_percent) || 0 : 0,
+        offer_type: formData.is_on_offer
+          ? formData.offer_type === 'fixed'
+            ? 'fixed'
+            : 'percent'
+          : 'percent',
+        offer_value: formData.is_on_offer ? Number(formData.offer_value) || 0 : 0,
         images,
         image_color_ids: alignImageColorIds(images.length, formData.image_color_ids),
         variants: validVariants,

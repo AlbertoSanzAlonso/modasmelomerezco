@@ -15,6 +15,7 @@ description: >-
 - Tienda: cartel Agotado + sin compra si `is_sold_out`.
 - Admin: Agotar / En stock (solo si toda la selección es homogénea).
 - Al reponer: modal de tallas → 3 uds por talla × color (`restockWithSizes`).
+- **Auto-agotado:** si el stock total de variantes llega a 0 (ventas tienda `decrementStock`, pedidos online, etc.), se pone `is_sold_out = true` automáticamente (admin + catálogo). Trigger SQL: `product_variants_auto_sold_out.sql`. No se desmarca solo al reponer stock a mano; usar **En stock** o `restockWithSizes`.
 
 ## Fuente de verdad
 
@@ -44,7 +45,7 @@ description: >-
 - Pestaña admin **Ventas tienda** (`DailySalesTab.tsx`): buscar producto → talla/color → cantidad → lista → restar.
 - Usa `api.products.decrementStock(variant_id, quantity)` (no crea pedidos).
 - Respeta stock disponible (incluye lo ya añadido a la lista).
-- No marca `is_sold_out` automáticamente; eso sigue siendo manual (Agotar).
+- Si tras restar el producto queda a 0 uds en todas las variantes, marca `is_sold_out` automáticamente.
 
 ## Tienda y carrito
 

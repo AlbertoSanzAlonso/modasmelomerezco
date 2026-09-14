@@ -286,6 +286,30 @@ async function insertVariantRow(row: VariantDbRow): Promise<void> {
   assertNoSupabaseError(error, 'product_variants insert');
 }
 
+/** Si el producto no tiene unidades en ninguna variante, lo marca como agotado. */
+async function markSoldOutIfNoStock(product_id: string): Promise<void> {
+  const { data: variants, error } = await supabase
+    .from('product_variants')
+    .select('stock')
+    .eq('product_id', product_id);
+
+  if (error) throw error;
+
+  const total = (variants ?? []).reduce(
+    (sum, v) => sum + (v.stock ?? 0),
+    0
+  );
+  if (total > 0) return;
+
+  const { error: soldOutError } = await supabase
+    .from('products')
+    .update({ is_sold_out: true })
+    .eq('product_id', product_id)
+    .eq('is_sold_out', false);
+
+  if (soldOutError) throw soldOutError;
+}
+
 async function deleteVariantRow(variantId: number): Promise<void> {
   const { error } = await supabase
     .from('product_variants')
@@ -871,20 +895,25 @@ export const products = {
   decrementStock: async (variant_id: string, quantity: number): Promise<void> => {
     const { data: variant, error: fetchError } = await supabase
       .from('product_variants')
-      .select('stock')
+      .select('stock, product_id')
       .eq('variant_id', variant_id)
       .maybeSingle();
 
     if (fetchError) throw fetchError;
+    if (!variant?.product_id) {
+      throw new Error('Variante no encontrada');
+    }
 
-    const newStock = Math.max(0, (variant?.stock || 0) - quantity);
-    
+    const newStock = Math.max(0, (variant.stock || 0) - quantity);
+
     const { error: updateError } = await supabase
       .from('product_variants')
       .update({ stock: newStock })
       .eq('variant_id', variant_id);
 
     if (updateError) throw updateError;
+
+    await markSoldOutIfNoStock(variant.product_id);
   },
 
   /** Marca agotado sin tocar unidades (el stock se conserva). */

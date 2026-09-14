@@ -219,7 +219,8 @@ export const DailySalesTab: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-daily-sales-search'] });
       openModal({
         title: 'Inventario actualizado',
-        message: 'Las ventas de tienda se han restado del stock.',
+        message:
+          'Las ventas de tienda se han restado del stock. Si un artículo se queda sin unidades, se marca como Agotado en admin y en la tienda.',
         type: 'success',
       });
     },

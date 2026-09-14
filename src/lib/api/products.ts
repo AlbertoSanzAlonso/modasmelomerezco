@@ -47,8 +47,6 @@ const PRODUCT_SELECT_WITH_DISCOUNTS = `${PRODUCT_SELECT_BASE}, product_discount_
 
 const PRODUCT_SELECT_FULL = `${PRODUCT_SELECT_BASE}, product_labels(labels(*)), product_discount_codes(discount_codes(*))`;
 
-const PRODUCT_SELECT_FILTER_BY_LABEL = `${PRODUCT_SELECT_BASE}, product_labels!inner(labels(*))`;
-
 const PRODUCT_TABLE_COLUMNS = new Set([
   'product_id',
   'slug',
@@ -142,6 +140,38 @@ function createProductId(): string {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+/** Productos que tienen TODAS las etiquetas indicadas (AND). */
+async function findProductIdsWithAllLabels(
+  labelIds: number[]
+): Promise<{ ids: string[]; error: { code?: string; message?: string } | null }> {
+  if (labelIds.length === 0) return { ids: [], error: null };
+
+  const { data, error } = await supabase
+    .from('product_labels')
+    .select('product_id, label_id')
+    .in('label_id', labelIds);
+
+  if (error) return { ids: [], error };
+
+  const needed = labelIds;
+  const byProduct = new Map<string, Set<number>>();
+  for (const row of data || []) {
+    const pid = String(row.product_id);
+    let set = byProduct.get(pid);
+    if (!set) {
+      set = new Set();
+      byProduct.set(pid, set);
+    }
+    set.add(Number(row.label_id));
+  }
+
+  const ids: string[] = [];
+  for (const [pid, have] of byProduct) {
+    if (needed.every((id) => have.has(id))) ids.push(pid);
+  }
+  return { ids, error: null };
 }
 
 function assertDbError(
@@ -569,9 +599,24 @@ export const products = {
       .filter((id) => Number.isInteger(id) && id > 0);
     const hasLabelFilter = labelIdList.length > 0;
 
-    const selects = hasLabelFilter
-      ? [PRODUCT_SELECT_FILTER_BY_LABEL, PRODUCT_SELECT_BASE]
-      : [PRODUCT_SELECT_WITH_LABELS, PRODUCT_SELECT_BASE];
+    let matchingLabelProductIds: string[] | null = null;
+    if (hasLabelFilter) {
+      const { ids, error: labelLookupError } = await findProductIdsWithAllLabels(labelIdList);
+      if (labelLookupError) {
+        if (isMissingRelation(labelLookupError, 'product_labels')) {
+          console.warn(
+            '[labels] Filtro por etiqueta ignorado: aplica supabase/migrations/labels.sql en la base Postgres'
+          );
+          return { products: [], total: 0 };
+        }
+        throw labelLookupError;
+      }
+      if (ids.length === 0) return { products: [], total: 0 };
+      matchingLabelProductIds = ids;
+    }
+
+    // Con filtro AND por etiquetas ya restringimos por product_id; no hace falta !inner
+    const selects = [PRODUCT_SELECT_WITH_LABELS, PRODUCT_SELECT_BASE];
 
     let lastError: typeof selects extends never[] ? never : object | null = null;
 
@@ -585,11 +630,8 @@ export const products = {
       if (isNewOnly !== undefined) query = query.eq('is_new', isNewOnly);
       if (soldOutOnly !== undefined) query = query.eq('is_sold_out', soldOutOnly);
       if (onOfferOnly !== undefined) query = query.eq('is_on_offer', onOfferOnly);
-      if (hasLabelFilter && select.includes('product_labels')) {
-        query =
-          labelIdList.length === 1
-            ? query.eq('product_labels.label_id', labelIdList[0])
-            : query.in('product_labels.label_id', labelIdList);
+      if (matchingLabelProductIds) {
+        query = query.in('product_id', matchingLabelProductIds);
       }
 
       const { data, count, error } = await query

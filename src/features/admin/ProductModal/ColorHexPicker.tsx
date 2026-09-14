@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Pipette, X, Check } from 'lucide-react';
+import { resolveImageForCrop } from '@/utils/resolveImageForCrop';
 
 function normalizeHex(value: string): string {
   const raw = value.trim();
@@ -171,31 +172,43 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
   const ensureCanvas = async (src: string): Promise<HTMLCanvasElement | null> => {
     if (canvasRef.current) return canvasRef.current;
 
-    return new Promise((resolve) => {
-      const probe = new Image();
-      probe.crossOrigin = 'anonymous';
-      probe.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = probe.naturalWidth;
-          canvas.height = probe.naturalHeight;
-          const ctx = canvas.getContext('2d', { willReadFrequently: true });
-          if (!ctx) {
+    // R2 público (*.r2.dev) no envía CORS; hay que pasar por blob/proxy
+    // (igual que el recorte) para poder leer píxeles en canvas.
+    try {
+      const objectUrl = await resolveImageForCrop(src);
+      const canvas = await new Promise<HTMLCanvasElement | null>((resolve) => {
+        const probe = new Image();
+        probe.onload = () => {
+          try {
+            const next = document.createElement('canvas');
+            next.width = probe.naturalWidth;
+            next.height = probe.naturalHeight;
+            const ctx = next.getContext('2d', { willReadFrequently: true });
+            if (!ctx) {
+              resolve(null);
+              return;
+            }
+            ctx.drawImage(probe, 0, 0);
+            resolve(next);
+          } catch {
             resolve(null);
-            return;
           }
-          ctx.drawImage(probe, 0, 0);
-          canvasRef.current = canvas;
-          setCanvasReady(true);
-          resolve(canvas);
-        } catch {
-          resolve(null);
-        }
-      };
-      probe.onerror = () => resolve(null);
-      const sep = src.includes('?') ? '&' : '?';
-      probe.src = `${src}${sep}eyedrop=${Date.now()}`;
-    });
+        };
+        probe.onerror = () => resolve(null);
+        probe.src = objectUrl;
+      });
+
+      if (objectUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(objectUrl);
+      }
+
+      if (!canvas) return null;
+      canvasRef.current = canvas;
+      setCanvasReady(true);
+      return canvas;
+    } catch {
+      return null;
+    }
   };
 
   const sampleAtClientPoint = async (

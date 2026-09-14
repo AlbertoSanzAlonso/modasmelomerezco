@@ -15,7 +15,7 @@ export const useAdminData = (
   soldOutFilter?: boolean,
   categoryFilter?: number,
   onOfferFilter?: boolean,
-  labelFilter?: number
+  labelFilter?: number[]
 ) => {
   const queryClient = useQueryClient();
 
@@ -30,7 +30,7 @@ export const useAdminData = (
         statusFilter,
         searchTerm,
         isNewFilter,
-        labelFilter,
+        labelFilter && labelFilter.length > 0 ? labelFilter : undefined,
         soldOutFilter,
         onOfferFilter
       ),

@@ -127,7 +127,7 @@ const CategoryPage: React.FC = () => {
         true,
         undefined,
         undefined,
-        selectedLabel ?? undefined
+        selectedLabel != null ? [selectedLabel] : undefined
       );
     },
     enabled: category?.toLowerCase() === 'todas' || !!categoryId,

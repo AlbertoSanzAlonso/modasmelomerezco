@@ -26,7 +26,7 @@ interface ProductsTabProps {
   soldOutFilter?: boolean;
   categoryFilter?: number;
   onOfferFilter?: boolean;
-  labelFilter?: number;
+  labelFilter?: number[];
   onSearchChange: (term: string) => void;
   onPageChange: (page: number) => void;
   onStatusFilterChange: (status: boolean | undefined) => void;
@@ -34,7 +34,7 @@ interface ProductsTabProps {
   onSoldOutFilterChange: (soldOut: boolean | undefined) => void;
   onCategoryFilterChange: (categoryId: number | undefined) => void;
   onOnOfferFilterChange: (onOffer: boolean | undefined) => void;
-  onLabelFilterChange: (labelId: number | undefined) => void;
+  onLabelFilterChange: (labelIds: number[]) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (id: string) => void;
   onBulkStatusChange: (is_published: boolean) => void;
@@ -96,7 +96,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   });
 
   const toggleLabelFilter = (labelId: number) => {
-    onLabelFilterChange(labelFilter === labelId ? undefined : labelId);
+    const current = labelFilter ?? [];
+    if (current.includes(labelId)) {
+      onLabelFilterChange(current.filter((id) => id !== labelId));
+    } else {
+      onLabelFilterChange([...current, labelId]);
+    }
   };
 
   const selectedProducts =
@@ -260,7 +265,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             </p>
             <div className="flex flex-wrap gap-2">
               {labels.map((label) => {
-                const selected = labelFilter === label.id;
+                const selected = (labelFilter ?? []).includes(label.id);
                 return (
                   <button
                     key={label.id}
@@ -276,10 +281,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </button>
                 );
               })}
-              {labelFilter != null && (
+              {(labelFilter?.length ?? 0) > 0 && (
                 <button
                   type="button"
-                  onClick={() => onLabelFilterChange(undefined)}
+                  onClick={() => onLabelFilterChange([])}
                   className="px-4 py-2 text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-primary transition-colors"
                 >
                   Limpiar

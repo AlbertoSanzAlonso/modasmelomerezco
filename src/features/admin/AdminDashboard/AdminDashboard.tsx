@@ -85,7 +85,7 @@ export const AdminDashboard: React.FC = () => {
   const [soldOutFilter, setSoldOutFilter] = useState<boolean | undefined>(undefined);
   const [categoryFilter, setCategoryFilter] = useState<number | undefined>(undefined);
   const [onOfferFilter, setOnOfferFilter] = useState<boolean | undefined>(undefined);
-  const [labelFilter, setLabelFilter] = useState<number | undefined>(undefined);
+  const [labelFilter, setLabelFilter] = useState<number[]>([]);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [isRestocking, setIsRestocking] = useState(false);

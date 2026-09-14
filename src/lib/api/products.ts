@@ -557,14 +557,19 @@ export const products = {
     publishedOnly?: boolean,
     search?: string,
     isNewOnly?: boolean,
-    labelId?: number,
+    labelIds?: number | number[],
     soldOutOnly?: boolean,
     onOfferOnly?: boolean
   ): Promise<{ products: Product[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const selects = labelId
+    const labelIdList = (Array.isArray(labelIds) ? labelIds : labelIds != null ? [labelIds] : [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    const hasLabelFilter = labelIdList.length > 0;
+
+    const selects = hasLabelFilter
       ? [PRODUCT_SELECT_FILTER_BY_LABEL, PRODUCT_SELECT_BASE]
       : [PRODUCT_SELECT_WITH_LABELS, PRODUCT_SELECT_BASE];
 
@@ -580,8 +585,11 @@ export const products = {
       if (isNewOnly !== undefined) query = query.eq('is_new', isNewOnly);
       if (soldOutOnly !== undefined) query = query.eq('is_sold_out', soldOutOnly);
       if (onOfferOnly !== undefined) query = query.eq('is_on_offer', onOfferOnly);
-      if (labelId && select.includes('product_labels')) {
-        query = query.eq('product_labels.label_id', labelId);
+      if (hasLabelFilter && select.includes('product_labels')) {
+        query =
+          labelIdList.length === 1
+            ? query.eq('product_labels.label_id', labelIdList[0])
+            : query.in('product_labels.label_id', labelIdList);
       }
 
       const { data, count, error } = await query
@@ -600,7 +608,7 @@ export const products = {
       if (!isMissingRelation(error, 'product_labels')) break;
     }
 
-    if (labelId && isMissingRelation(lastError as { code?: string; message?: string }, 'product_labels')) {
+    if (hasLabelFilter && isMissingRelation(lastError as { code?: string; message?: string }, 'product_labels')) {
       console.warn('[labels] Filtro por etiqueta ignorado: aplica supabase/migrations/labels.sql en la base Postgres');
       return { products: [], total: 0 };
     }

@@ -21,7 +21,7 @@ export const ProductGeneralInfo: React.FC<ProductGeneralInfoProps> = ({
         <input 
           required
           autoComplete="off"
-          className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-bold focus:border-primary outline-none uppercase italic text-(--text-main) rounded-xl"
+          className="w-full bg-(--bg-card) border border-(--border-main) px-6 py-4 text-sm font-bold focus:border-primary outline-none italic text-(--text-main) rounded-xl"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
         />

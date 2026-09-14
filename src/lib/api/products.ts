@@ -58,6 +58,8 @@ const PRODUCT_TABLE_COLUMNS = new Set([
   'price',
   'is_published',
   'is_new',
+  'is_on_offer',
+  'offer_percent',
   'is_sold_out',
   'category_id',
   'subcategory_id',
@@ -458,6 +460,8 @@ const normalise = (p: any): Product => ({
   ...p,
   slug: (typeof p.slug === 'string' && p.slug.trim()) || p.product_id,
   is_published: p.is_published ?? true,
+  is_on_offer: p.is_on_offer === true,
+  offer_percent: Number(p.offer_percent) || 0,
   is_sold_out: p.is_sold_out === true,
   stock: (() => {
     const rawVariants =

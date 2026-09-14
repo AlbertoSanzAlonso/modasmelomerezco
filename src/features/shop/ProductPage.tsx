@@ -23,6 +23,7 @@ import {
   findImageIndexForColor,
 } from '@/lib/productVariants';
 import { getProductPath, isProductUuid } from '@/lib/productSlug';
+import { formatEur, getCompareAtPrice, hasActiveOffer } from '@/lib/productOffer';
 import { SeoHelmet } from '@/components/seo/SeoHelmet';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import {
@@ -277,6 +278,10 @@ const ProductPage = () => {
 
   const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
   const soldOut = isProductSoldOut(product);
+  const onOffer = hasActiveOffer(product);
+  const compareAt = onOffer
+    ? getCompareAtPrice(product.price, product.offer_percent ?? 0)
+    : null;
   const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   return (
@@ -537,9 +542,21 @@ const ProductPage = () => {
             <div className="mb-10 border-b border-secondary/5 pb-10 lg:mb-5 lg:pb-5">
               <span className="mb-3 block text-xs font-black tracking-[0.4em] text-primary uppercase lg:mb-2">{product.category}</span>
               <h1 className="mb-4 text-3xl leading-none font-black tracking-tighter uppercase italic sm:text-4xl lg:mb-3 lg:text-4xl xl:text-5xl">{product.name}</h1>
-              <p className="text-3xl font-light text-secondary lg:text-2xl">
-                {product.price.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-              </p>
+              {onOffer && (
+                <span className="mb-3 inline-block bg-secondary text-white text-[10px] font-bold px-3 py-1 uppercase tracking-widest italic">
+                  Oferta
+                </span>
+              )}
+              <div className="flex flex-wrap items-baseline gap-3">
+                {compareAt != null && (
+                  <p className="text-xl font-light text-secondary/40 line-through lg:text-lg">
+                    {formatEur(compareAt)}
+                  </p>
+                )}
+                <p className="text-3xl font-light text-secondary lg:text-2xl">
+                  {formatEur(product.price)}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-10 lg:space-y-5">

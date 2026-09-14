@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { isProductSoldOut } from '@/lib/productVariants';
 import { getProductPath } from '@/lib/productSlug';
+import { formatEur, getCompareAtPrice, hasActiveOffer } from '@/lib/productOffer';
 
 interface ProductCardProps {
   product: Product;
@@ -20,6 +21,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const soldOut = isProductSoldOut(product);
+  const onOffer = !soldOut && hasActiveOffer(product);
+  const compareAt = onOffer
+    ? getCompareAtPrice(product.price, product.offer_percent ?? 0)
+    : null;
+  const isNew = !soldOut && !!(product.is_new || (product as any).featured);
   
   const isFavorite = user?.favorites?.includes(String(product.product_id)) || false;
 
@@ -105,12 +111,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <Heart className={`w-4 h-4 md:w-5 md:h-5 ${isFavorite ? 'fill-current' : ''}`} />
       </button>
 
-      {!soldOut && ((product as any).is_new || (product as any).featured) && (
-        <span className={`absolute top-2 left-2 md:top-4 md:left-4 bg-primary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic transition-all duration-500 z-10 ${
-          isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
-        }`}>
-          Novedad
-        </span>
+      {!soldOut && (onOffer || isNew) && (
+        <div
+          className={`absolute top-2 left-2 md:top-4 md:left-4 flex flex-col gap-1 transition-all duration-500 z-10 ${
+            isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
+          }`}
+        >
+          {onOffer && (
+            <span className="bg-secondary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic">
+              Oferta
+            </span>
+          )}
+          {isNew && (
+            <span className="bg-primary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic">
+              Novedad
+            </span>
+          )}
+        </div>
       )}
 
       {/* Text Info */}
@@ -124,9 +141,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               {soldOut ? 'Agotado' : product.category}
             </p>
           </div>
-          <p className="text-xs md:text-sm font-black text-secondary italic">
-            {product.price.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-          </p>
+          <div className="text-right">
+            {compareAt != null && (
+              <p className="text-[10px] md:text-xs text-secondary/40 line-through italic">
+                {formatEur(compareAt)}
+              </p>
+            )}
+            <p className="text-xs md:text-sm font-black text-secondary italic">
+              {formatEur(product.price)}
+            </p>
+          </div>
         </div>
       </div>
     </div>

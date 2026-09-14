@@ -50,6 +50,8 @@ export const useProductForm = (
     stock: 0,
     is_new: false,
     is_published: false,
+    is_on_offer: false,
+    offer_percent: 0,
     variants: [{ id: 'v1', size: '', color_id: null, stock: 0 }],
     colors: [],
     labels: [],
@@ -402,6 +404,13 @@ export const useProductForm = (
       openError('Por favor, indica un precio válido.');
       return;
     }
+    if (formData.is_on_offer) {
+      const pct = Number(formData.offer_percent);
+      if (!Number.isFinite(pct) || pct < 1 || pct > 99) {
+        openError('Indica un porcentaje de oferta entre 1 y 99.');
+        return;
+      }
+    }
     if (!formData.images || formData.images.length === 0) {
       openError('Para guardar el producto, es necesario añadir al menos una imagen.');
       return;
@@ -467,6 +476,8 @@ export const useProductForm = (
       onSave({
         ...formData,
         details: trimmedDetails,
+        is_on_offer: !!formData.is_on_offer,
+        offer_percent: formData.is_on_offer ? Number(formData.offer_percent) || 0 : 0,
         images,
         image_color_ids: alignImageColorIds(images.length, formData.image_color_ids),
         variants: validVariants,

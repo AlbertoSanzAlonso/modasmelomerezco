@@ -60,6 +60,10 @@ export interface Product {
   variants: ProductVariant[];
   is_new?: boolean;
   is_published?: boolean;
+  /** true = mostrar precio tachado (oferta) en tienda */
+  is_on_offer?: boolean;
+  /** % a sumar al precio real para el precio tachado (solo visual) */
+  offer_percent?: number;
   /** true = cartel Agotado en tienda; por defecto false (en stock) */
   is_sold_out?: boolean;
   stock: number;

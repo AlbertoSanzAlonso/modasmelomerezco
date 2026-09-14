@@ -5,6 +5,7 @@ import { ProductGeneralInfo } from './ProductGeneralInfo';
 import { ProductCategories } from './ProductCategories';
 import { ProductInventory } from './ProductInventory';
 import { ProductLabels } from './ProductLabels';
+import { ProductOffer } from './ProductOffer';
 import { ProductDiscountCodes } from './ProductDiscountCodes';
 import { ProductDetailsField } from './ProductDetailsField';
 import { ProductPublishOptions } from './ProductPublishOptions';
@@ -134,6 +135,20 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         availableLabels={availableLabels}
         onLabelsChange={(labels) => setFormData({ ...formData, labels })}
         onLabelCreated={(label) => setAvailableLabels((prev) => [...prev, label])}
+      />
+
+      <ProductOffer
+        isOnOffer={!!formData.is_on_offer}
+        offerPercent={formData.offer_percent ?? 0}
+        price={formData.price ?? 0}
+        onOfferChange={(val) =>
+          setFormData({
+            ...formData,
+            is_on_offer: val,
+            offer_percent: val ? formData.offer_percent || 0 : 0,
+          })
+        }
+        onPercentChange={(offer_percent) => setFormData({ ...formData, offer_percent })}
       />
 
       <ProductDiscountCodes

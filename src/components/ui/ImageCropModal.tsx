@@ -1,16 +1,18 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, Check } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, Check, Loader2 } from 'lucide-react';
 
 export type ImageCropShape = 'rect' | 'circle';
 
 interface ImageCropModalProps {
   imageSrc: string;
-  onConfirm: (croppedBlob: Blob) => void;
+  onConfirm: (croppedBlob: Blob) => void | Promise<void>;
   onClose: () => void;
   /** `circle` = muestra de estampado (marco redondo + zoom) */
   cropShape?: ImageCropShape;
   title?: string;
   subtitle?: string;
+  /** Deshabilita confirmar/cancelar mientras el padre sube la imagen */
+  isBusy?: boolean;
 }
 
 export const ImageCropModal: React.FC<ImageCropModalProps> = ({
@@ -20,6 +22,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   cropShape = 'rect',
   title,
   subtitle,
+  isBusy = false,
 }) => {
   const isCircle = cropShape === 'circle';
   const [aspect, setAspect] = useState<'portrait' | 'landscape'>('portrait');
@@ -38,6 +41,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const lastOffset = useRef({ x: 0, y: 0 });
@@ -51,17 +56,44 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     [CROP_W, CROP_H]
   );
 
+  const zoomMax = Math.max(5, zoom, imgRef.current ? coverZoomForImage(imgRef.current) * 2 : 5);
+
   useEffect(() => {
+    let cancelled = false;
     setImgLoaded(false);
+    setLoadError(null);
+    imgRef.current = null;
+
     const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = imageSrc;
+    // blob:/data: no necesitan CORS; forzarlo puede fallar en algunos navegadores
+    if (/^https?:\/\//i.test(imageSrc)) {
+      img.crossOrigin = 'anonymous';
+    }
+
     img.onload = () => {
+      if (cancelled) return;
+      if (!img.width || !img.height) {
+        setLoadError('La imagen no se pudo decodificar.');
+        return;
+      }
       imgRef.current = img;
       setZoom(coverZoomForImage(img));
       setOffset({ x: 0, y: 0 });
       setRotation(0);
       setImgLoaded(true);
+    };
+    img.onerror = () => {
+      if (cancelled) return;
+      setLoadError(
+        'No se pudo cargar la imagen para recortar. Cierra e inténtalo de nuevo.'
+      );
+    };
+    img.src = imageSrc;
+
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
     };
   }, [imageSrc, coverZoomForImage]);
 
@@ -112,6 +144,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   }, [draw]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    if (isBusy || isExporting || !imgLoaded) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
     lastOffset.current = offset;
@@ -133,11 +166,13 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const onMouseUp = () => setIsDragging(false);
 
   const onWheel = (e: React.WheelEvent) => {
+    if (isBusy || isExporting || !imgLoaded) return;
     e.preventDefault();
     setZoom((z) => Math.min(10, Math.max(0.01, z - e.deltaY * 0.001)));
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
+    if (isBusy || isExporting || !imgLoaded) return;
     setIsDragging(true);
     const touch = e.touches[0];
     dragStart.current = { x: touch.clientX, y: touch.clientY };
@@ -169,53 +204,76 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     setOffset({ x: 0, y: 0 });
   };
 
-  const handleConfirm = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (isCircle) {
-      // Exportar PNG con transparencia fuera del círculo
-      const exportCanvas = document.createElement('canvas');
-      exportCanvas.width = CROP_W;
-      exportCanvas.height = CROP_H;
-      const ctx = exportCanvas.getContext('2d');
-      if (!ctx) return;
-      ctx.clearRect(0, 0, CROP_W, CROP_H);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(CROP_W / 2, CROP_H / 2, CROP_W / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(canvas, 0, 0);
-      ctx.restore();
-      exportCanvas.toBlob(
-        (blob) => {
-          if (blob) onConfirm(blob);
-        },
-        'image/png',
-        1
-      );
-      return;
-    }
-
-    // Preferir WebP; si el navegador no puede, entregar PNG y toWebpBlob lo convertirá al subir
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          onConfirm(blob);
+  const exportBlob = (canvas: HTMLCanvasElement): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      if (isCircle) {
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = CROP_W;
+        exportCanvas.height = CROP_H;
+        const ctx = exportCanvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('No se pudo exportar el recorte'));
           return;
         }
-        canvas.toBlob(
-          (pngBlob) => {
-            if (pngBlob) onConfirm(pngBlob);
+        ctx.clearRect(0, 0, CROP_W, CROP_H);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CROP_W / 2, CROP_H / 2, CROP_W / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+        exportCanvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('No se pudo exportar el recorte'));
           },
           'image/png',
           1
         );
-      },
-      'image/webp',
-      0.95
-    );
+        return;
+      }
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+          canvas.toBlob(
+            (pngBlob) => {
+              if (pngBlob) resolve(pngBlob);
+              else reject(new Error('No se pudo exportar el recorte'));
+            },
+            'image/png',
+            1
+          );
+        },
+        'image/webp',
+        0.95
+      );
+    });
+
+  const handleConfirm = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgLoaded || loadError || isBusy || isExporting) return;
+
+    // Asegurar un frame pintado antes de exportar
+    draw();
+    setIsExporting(true);
+    try {
+      const blob = await exportBlob(canvas);
+      await onConfirm(blob);
+    } catch (err) {
+      console.error('Crop export failed:', err);
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo exportar el recorte. Inténtalo de nuevo.'
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const heading = title ?? (isCircle ? 'Recortar muestra' : 'Ajustar Imagen');
@@ -224,6 +282,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     (isCircle
       ? 'Arrastra y usa el zoom para encajar el estampado en el círculo'
       : 'Arrastra y usa la rueda para encuadrar');
+  const controlsDisabled = isBusy || isExporting || !imgLoaded || !!loadError;
 
   return (
     <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -240,14 +299,15 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-primary/10 text-(--text-main) transition-colors"
+            disabled={isBusy || isExporting}
+            className="p-2 rounded-full hover:bg-primary/10 text-(--text-main) transition-colors disabled:opacity-40"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="flex justify-center py-8 px-6 bg-black/40">
+          <div className="flex justify-center py-8 px-6 bg-black/40 relative">
             <div
               className={`relative overflow-hidden shadow-2xl border-2 border-primary/40 touch-none ${
                 isCircle ? 'rounded-full' : 'rounded-xl'
@@ -255,7 +315,11 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               style={{
                 width: displayW,
                 height: displayH,
-                cursor: isDragging ? 'grabbing' : 'grab',
+                cursor: controlsDisabled
+                  ? 'default'
+                  : isDragging
+                    ? 'grabbing'
+                    : 'grab',
               }}
               onMouseDown={onMouseDown}
               onMouseMove={onMouseMove}
@@ -285,17 +349,29 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               {isCircle && (
                 <div className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-white/70 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)]" />
               )}
+              {!imgLoaded && !loadError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                </div>
+              )}
             </div>
           </div>
+
+          {loadError && (
+            <p className="px-8 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-red-500">
+              {loadError}
+            </p>
+          )}
 
           {!isCircle && (
             <div className="px-8 py-4 flex flex-wrap justify-center gap-2 border-b border-(--border-main)/5">
               <button
                 type="button"
+                disabled={controlsDisabled}
                 onClick={() => {
                   setAspect('portrait');
                 }}
-                className={`py-2 px-3 flex-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border ${
+                className={`py-2 px-3 flex-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border disabled:opacity-40 ${
                   aspect === 'portrait'
                     ? 'bg-primary text-white border-primary'
                     : 'bg-white/5 text-(--text-main) border-transparent hover:border-primary/20'
@@ -305,10 +381,11 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               </button>
               <button
                 type="button"
+                disabled={controlsDisabled}
                 onClick={() => {
                   setAspect('landscape');
                 }}
-                className={`py-2 px-3 flex-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border ${
+                className={`py-2 px-3 flex-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border disabled:opacity-40 ${
                   aspect === 'landscape'
                     ? 'bg-primary text-white border-primary'
                     : 'bg-white/5 text-(--text-main) border-transparent hover:border-primary/20'
@@ -322,22 +399,25 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <div className="px-8 py-4 flex flex-wrap justify-center gap-2 border-b border-(--border-main)/5">
             <button
               type="button"
+              disabled={controlsDisabled}
               onClick={fitToFrame}
-              className="flex-1 py-2 px-3 bg-white/5 hover:bg-primary/10 text-(--text-main) text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border border-transparent hover:border-primary/20"
+              className="flex-1 py-2 px-3 bg-white/5 hover:bg-primary/10 text-(--text-main) text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border border-transparent hover:border-primary/20 disabled:opacity-40"
             >
               Ver todo
             </button>
             <button
               type="button"
+              disabled={controlsDisabled}
               onClick={coverFrame}
-              className="flex-1 py-2 px-3 bg-white/5 hover:bg-primary/10 text-(--text-main) text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border border-transparent hover:border-primary/20"
+              className="flex-1 py-2 px-3 bg-white/5 hover:bg-primary/10 text-(--text-main) text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border border-transparent hover:border-primary/20 disabled:opacity-40"
             >
               Llenar {isCircle ? 'círculo' : 'marco'}
             </button>
             <button
               type="button"
+              disabled={controlsDisabled}
               onClick={() => setRotation((r) => r + 90)}
-              className="py-2 px-4 bg-white/5 hover:bg-primary/10 text-(--text-main) rounded-lg transition-all border border-transparent hover:border-primary/20"
+              className="py-2 px-4 bg-white/5 hover:bg-primary/10 text-(--text-main) rounded-lg transition-all border border-transparent hover:border-primary/20 disabled:opacity-40"
               aria-label="Rotar"
             >
               <RotateCw className="w-3.5 h-3.5" />
@@ -347,8 +427,9 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <div className="px-8 pt-6 pb-4 flex items-center gap-4 justify-center">
             <button
               type="button"
+              disabled={controlsDisabled}
               onClick={() => setZoom((z) => Math.max(0.01, z - 0.15))}
-              className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
+              className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors disabled:opacity-40"
               aria-label="Alejar"
             >
               <ZoomOut className="w-4 h-4" />
@@ -357,18 +438,20 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               <input
                 type="range"
                 min={0.01}
-                max={5}
+                max={zoomMax}
                 step={0.01}
-                value={Math.min(5, zoom)}
+                value={Math.min(zoomMax, Math.max(0.01, zoom))}
+                disabled={controlsDisabled}
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="w-full accent-primary"
+                className="w-full accent-primary disabled:opacity-40"
                 aria-label="Zoom"
               />
             </div>
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.min(5, z + 0.15))}
-              className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors"
+              disabled={controlsDisabled}
+              onClick={() => setZoom((z) => Math.min(zoomMax, z + 0.15))}
+              className="p-3 rounded-full bg-white/5 hover:bg-primary/20 text-(--text-main) transition-colors disabled:opacity-40"
               aria-label="Acercar"
             >
               <ZoomIn className="w-4 h-4" />
@@ -380,17 +463,23 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-4 border border-(--border-main) text-(--text-main) text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary/30 transition-all"
+            disabled={isBusy || isExporting}
+            className="flex-1 py-4 border border-(--border-main) text-(--text-main) text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary/30 transition-all disabled:opacity-40"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleConfirm}
-            className="flex-1 py-4 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-secondary transition-all flex items-center justify-center gap-2"
+            disabled={controlsDisabled}
+            className="flex-1 py-4 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-secondary transition-all flex items-center justify-center gap-2 disabled:opacity-40"
           >
-            <Check className="w-4 h-4" />
-            Confirmar
+            {isBusy || isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            {isBusy || isExporting ? 'Subiendo…' : 'Confirmar'}
           </button>
         </div>
       </div>

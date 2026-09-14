@@ -22,8 +22,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     isProductLoading,
     isSubmitting,
     cropSrc,
-    setCropSrc,
-    setEditingImageIndex,
+    closeCropModal,
     fileInputRef,
     handleFileChange,
     handleCropConfirm,
@@ -39,14 +38,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
       {cropSrc && (
         <ImageCropModal
           imageSrc={cropSrc}
+          isBusy={isUploading}
           onConfirm={handleCropConfirm}
-          onClose={() => { 
-            if (cropSrc && !formData.images?.includes(cropSrc)) {
-              URL.revokeObjectURL(cropSrc); 
-            }
-            setCropSrc(null); 
-            setEditingImageIndex(null);
-          }}
+          onClose={closeCropModal}
         />
       )}
       <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm">

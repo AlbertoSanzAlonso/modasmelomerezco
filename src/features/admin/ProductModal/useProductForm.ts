@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { api } from "@/lib/api";
 import { useCartStore } from "@/store/useCartStore";
 import type { Product, Category, Subcategory, Color } from "@/types/index";
@@ -11,6 +11,7 @@ import {
   alignImageColorIds,
 } from '@/lib/productVariants';
 import { toWebpBlob } from '@/utils/toWebp';
+import { resolveImageForCrop } from '@/utils/resolveImageForCrop';
 
 function newDraftProductId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -68,7 +69,27 @@ export const useProductForm = (
   const loadedColorVariantCount = useRef(0);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+  const cropObjectUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const revokeCropObjectUrl = () => {
+    if (cropObjectUrlRef.current) {
+      URL.revokeObjectURL(cropObjectUrlRef.current);
+      cropObjectUrlRef.current = null;
+    }
+  };
+
+  const closeCropModal = () => {
+    revokeCropObjectUrl();
+    setCropSrc(null);
+    setEditingImageIndex(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      revokeCropObjectUrl();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isSaving) {
@@ -198,25 +219,43 @@ export const useProductForm = (
     return `${productKey}/${Date.now()}_${baseName}_${index}.webp`;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setCropSrc(url);
     e.target.value = '';
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      revokeCropObjectUrl();
+      const url = await resolveImageForCrop(file);
+      cropObjectUrlRef.current = url;
+      setEditingImageIndex(null);
+      setCropSrc(url);
+    } catch (error) {
+      console.error('Open crop failed:', error);
+      useCartStore.getState().openModal({
+        title: 'Error',
+        message: 'No se pudo abrir la imagen para recortar.',
+        type: 'error',
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleCropConfirm = async (croppedBlob: Blob) => {
-    if (!cropSrc) return;
-    URL.revokeObjectURL(cropSrc);
-    setCropSrc(null);
+    if (!cropSrc || !croppedBlob?.size) return;
+
+    const editIndex = editingImageIndex;
+    const previousUrl =
+      editIndex !== null ? formData.images?.[editIndex] ?? null : null;
 
     try {
       setIsUploading(true);
       const productName = formData.name || 'product';
       const currentImages = formData.images || [];
-      
-      const targetIndex = editingImageIndex !== null ? editingImageIndex : currentImages.length;
+      const targetIndex = editIndex !== null ? editIndex : currentImages.length;
+
       // Siempre convertir a WebP real (cabecera RIFF/WEBP) antes de subir
       const webpBlob = await toWebpBlob(croppedBlob);
       const fileName = buildImageFileName(productName, targetIndex);
@@ -225,31 +264,42 @@ export const useProductForm = (
       const publicUrl = await api.storage.upload(imageFile, fileName);
       const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
 
-      if (editingImageIndex !== null) {
-        const newImages = [...currentImages];
-        newImages[editingImageIndex] = cacheBustedUrl;
-        setFormData((prev) => ({
-          ...prev,
-          images: newImages,
-          image_color_ids: alignImageColorIds(newImages.length, prev.image_color_ids),
-        }));
-        setEditingImageIndex(null);
+      if (editIndex !== null) {
+        setFormData((prev) => {
+          const newImages = [...(prev.images || [])];
+          if (editIndex < 0 || editIndex >= newImages.length) return prev;
+          newImages[editIndex] = cacheBustedUrl;
+          return {
+            ...prev,
+            images: newImages,
+            image_color_ids: alignImageColorIds(newImages.length, prev.image_color_ids),
+          };
+        });
+        if (previousUrl && previousUrl !== cacheBustedUrl) {
+          api.storage.delete(previousUrl).catch(() => undefined);
+        }
       } else {
         setFormData((prev) => {
           const newImages = [...(prev.images || []), cacheBustedUrl];
           return {
             ...prev,
             images: newImages,
-            image_color_ids: [...alignImageColorIds(currentImages.length, prev.image_color_ids), null],
+            image_color_ids: [
+              ...alignImageColorIds((prev.images || []).length, prev.image_color_ids),
+              null,
+            ],
           };
         });
       }
+
+      // Solo cerrar y liberar el blob cuando la subida ha ido bien
+      closeCropModal();
     } catch (error) {
       console.error('Upload failed:', error);
       useCartStore.getState().openModal({
         title: 'Error de subida',
-        message: 'No se pudo subir la imagen. Por favor, inténtalo de nuevo.',
-        type: 'error'
+        message: 'No se pudo subir la imagen. Puedes reintentar el recorte.',
+        type: 'error',
       });
     } finally {
       setIsUploading(false);
@@ -279,11 +329,31 @@ export const useProductForm = (
     });
   };
 
-  const handleEditImage = (index: number) => {
+  const handleEditImage = async (index: number) => {
     const url = formData.images?.[index];
     if (!url) return;
-    setEditingImageIndex(index);
-    setCropSrc(url);
+
+    try {
+      setIsUploading(true);
+      setEditingImageIndex(index);
+      revokeCropObjectUrl();
+      const objectUrl = await resolveImageForCrop(url);
+      cropObjectUrlRef.current = objectUrl;
+      setCropSrc(objectUrl);
+    } catch (error) {
+      console.error('Edit image crop failed:', error);
+      setEditingImageIndex(null);
+      useCartStore.getState().openModal({
+        title: 'Error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la imagen para recortar.',
+        type: 'error',
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const removeImage = async (index: number) => {
@@ -468,9 +538,7 @@ export const useProductForm = (
     isProductLoading,
     isSubmitting: isSubmitting || isSaving,
     cropSrc,
-    setCropSrc,
-    editingImageIndex,
-    setEditingImageIndex,
+    closeCropModal,
     fileInputRef,
     handleFileChange,
     handleCropConfirm,

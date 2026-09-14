@@ -118,6 +118,65 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  if (action === 'fetch-image') {
+    try {
+      const rawUrl = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
+      if (!rawUrl) {
+        return res.status(400).json({ message: 'Missing url' });
+      }
+
+      let parsed: URL;
+      try {
+        parsed = new URL(rawUrl);
+      } catch {
+        return res.status(400).json({ message: 'Invalid url' });
+      }
+
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        return res.status(400).json({ message: 'Invalid url protocol' });
+      }
+
+      const host = parsed.hostname.toLowerCase();
+      const allowed =
+        host.endsWith('.r2.dev') ||
+        host.endsWith('.supabase.co') ||
+        host.endsWith('.insforge.app') ||
+        host === 'www.modasmelomerezco.es' ||
+        host === 'modasmelomerezco.es';
+      if (!allowed) {
+        return res.status(400).json({ message: 'Host not allowed' });
+      }
+
+      const upstream = await fetch(parsed.toString(), {
+        headers: { Accept: 'image/*,*/*' },
+      });
+      if (!upstream.ok) {
+        return res.status(502).json({
+          message: `No se pudo descargar la imagen (${upstream.status})`,
+        });
+      }
+
+      const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+      const buffer = Buffer.from(await upstream.arrayBuffer());
+      if (buffer.length < 24) {
+        return res.status(400).json({ message: 'Image too small' });
+      }
+      if (buffer.length > 12 * 1024 * 1024) {
+        return res.status(400).json({ message: 'Image too large' });
+      }
+
+      return res.status(200).json({
+        imageBase64: buffer.toString('base64'),
+        contentType,
+      });
+    } catch (error: unknown) {
+      console.error('fetch-image error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Error fetching image';
+      return res.status(500).json({ message });
+    }
+  }
+
   if (action === 'convert-webp') {
     try {
       const imageBase64 =

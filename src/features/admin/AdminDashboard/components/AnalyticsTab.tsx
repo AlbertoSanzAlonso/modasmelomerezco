@@ -263,19 +263,28 @@ export const AnalyticsTab: React.FC = () => {
                     Sin datos de rutas
                   </p>
                 )}
-                {data.topPaths.map((row) => (
-                  <div key={row.path} className="px-8 py-5 flex items-center justify-between gap-4">
-                    <p className="text-xs font-bold text-(--text-main) truncate" title={row.path}>
-                      {row.path || '/'}
-                    </p>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-black text-primary">{formatNumber(row.pageviews)}</p>
-                      <p className="text-[9px] text-gray-500 uppercase tracking-widest">
-                        {formatNumber(row.visitors)} visit.
+                {data.topPaths.map((row) => {
+                  const href = row.path || '/';
+                  return (
+                    <a
+                      key={row.path}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-8 py-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-(--bg-main)/60 transition-colors"
+                    >
+                      <p className="text-xs font-bold text-(--text-main) truncate" title={href}>
+                        {href}
                       </p>
-                    </div>
-                  </div>
-                ))}
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-black text-primary">{formatNumber(row.pageviews)}</p>
+                        <p className="text-[9px] text-gray-500 uppercase tracking-widest">
+                          {formatNumber(row.visitors)} visit.
+                        </p>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             </div>
 

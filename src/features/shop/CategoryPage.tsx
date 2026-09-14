@@ -45,9 +45,15 @@ const CategoryPage: React.FC = () => {
     if (subId) params.set('sub', subId.toString());
     if (labelId) params.set('label', labelId.toString());
     setSearchParams(params);
-    setPage(1);
-    setAllProducts([]);
-    wasRestored.current = false;
+
+    // Evita vaciar la lista si el filtro no cambia: la caché de React Query
+    // no dispara el efecto que vuelve a rellenar allProducts.
+    const filtersChanged = subId !== selectedSub || labelId !== selectedLabel;
+    if (filtersChanged) {
+      setPage(1);
+      setAllProducts([]);
+      wasRestored.current = false;
+    }
   };
 
   React.useEffect(() => {
@@ -78,14 +84,16 @@ const CategoryPage: React.FC = () => {
   }, [category, selectedSub, selectedLabel, page]);
 
   const handleSubChange = (subId: number | null) => {
-    setSelectedSub(subId);
-    applyFilters(subId, selectedLabel);
+    const next = subId !== null && selectedSub === subId ? null : subId;
+    setSelectedSub(next);
+    applyFilters(next, selectedLabel);
     setIsMobileMenuOpen(false);
   };
 
   const handleLabelChange = (labelId: number | null) => {
-    setSelectedLabel(labelId);
-    applyFilters(selectedSub, labelId);
+    const next = labelId !== null && selectedLabel === labelId ? null : labelId;
+    setSelectedLabel(next);
+    applyFilters(selectedSub, next);
     setIsMobileLabelMenuOpen(false);
   };
   

@@ -65,9 +65,19 @@ export const customers = {
   },
 
   create: async (customer: Omit<Customer, 'customer_id'>): Promise<Customer> => {
+    const { password: _password, favorites, addresses, paymentMethods, orders, ...rest } = customer as any;
+    const payload = {
+      ...rest,
+      customer_id: crypto.randomUUID(),
+      email: String(rest.email || '').toLowerCase().trim(),
+      name: String(rest.name || '').trim(),
+      surname: String(rest.surname || '').trim(),
+      phone: rest.phone ? String(rest.phone).trim() : null,
+    };
+
     const { data, error } = await supabase
       .from('customers')
-      .insert([customer])
+      .insert([payload])
       .select()
       .maybeSingle();
 
@@ -76,16 +86,46 @@ export const customers = {
   },
 
   update: async (id: string, updates: Partial<Customer>): Promise<Customer> => {
-    const { favorites, addresses, paymentMethods, orders, ...rest } = updates as any;
-    
+    const { favorites, addresses, paymentMethods, orders, password, ...rest } = updates as any;
+    const payload: Record<string, unknown> = { ...rest };
+    if (typeof payload.email === 'string') payload.email = payload.email.toLowerCase().trim();
+    if (typeof payload.name === 'string') payload.name = payload.name.trim();
+    if (typeof payload.surname === 'string') payload.surname = payload.surname.trim();
+    if (typeof payload.phone === 'string') payload.phone = payload.phone.trim() || null;
+
     const { data, error } = await supabase
       .from('customers')
-      .update(rest)
+      .update(payload)
       .eq('customer_id', id)
       .select()
       .maybeSingle();
 
     if (error) throw error;
     return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const relatedDeletes = await Promise.all([
+      supabase.from('shipping_addresses').delete().eq('customer_id', id),
+      supabase.from('customer_favorites').delete().eq('customer_id', id),
+      supabase.from('payment_methods').delete().eq('customer_id', id),
+    ]);
+
+    const relatedError = relatedDeletes.find((r) => r.error)?.error;
+    if (relatedError) throw relatedError;
+
+    // Desvincular pedidos para no bloquear el borrado por FK
+    const { error: ordersError } = await supabase
+      .from('orders')
+      .update({ customer_id: null })
+      .eq('customer_id', id);
+    if (ordersError) throw ordersError;
+
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .eq('customer_id', id);
+
+    if (error) throw error;
   },
 };

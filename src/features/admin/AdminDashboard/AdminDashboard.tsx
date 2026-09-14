@@ -10,6 +10,7 @@ import { DailySalesTab } from "@/features/admin/AdminDashboard/components/DailyS
 import { OrdersTab } from "@/features/admin/AdminDashboard/components/OrdersTab";
 import { NewsletterTab } from "@/features/admin/AdminDashboard/components/NewsletterTab";
 import { CustomersTab } from "@/features/admin/AdminDashboard/components/CustomersTab";
+import { CustomerModal, type CustomerFormData } from "@/features/admin/AdminDashboard/components/CustomerModal";
 import { DiscountCodesTab } from "@/features/admin/AdminDashboard/components/DiscountCodesTab";
 import { AnalyticsTab } from "@/features/admin/AdminDashboard/components/AnalyticsTab";
 import { OrderDetailsModal } from "@/features/admin/AdminDashboard/components/OrderDetailsModal";
@@ -21,7 +22,7 @@ import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
 import { useCartStore } from "@/store/useCartStore";
 import { getProductPath } from '@/lib/productSlug';
-import type { Product, Order } from "@/types";
+import type { Product, Order, Customer } from "@/types";
 
 const ADMIN_TABS: readonly AdminTab[] = [
   'dashboard',
@@ -70,6 +71,8 @@ export const AdminDashboard: React.FC = () => {
   }, [setSearchParams]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [trackingInfo, setTrackingInfo] = useState({ number: '', carrier: 'NACEX' });
@@ -128,6 +131,62 @@ export const AdminDashboard: React.FC = () => {
   );
 
   const openModal = useCartStore((state) => state.openModal);
+
+  const saveCustomerMutation = useMutation({
+    mutationFn: (data: CustomerFormData) => {
+      if (editingCustomer) return api.customers.update(editingCustomer.customer_id, data);
+      return api.customers.create(data);
+    },
+    onSuccess: () => {
+      const wasEdit = !!editingCustomer;
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+      setIsCustomerModalOpen(false);
+      setEditingCustomer(null);
+      openModal({
+        title: 'Éxito',
+        message: wasEdit ? 'Cliente actualizado correctamente.' : 'Cliente creado correctamente.',
+        type: 'info',
+      });
+    },
+    onError: (err: Error) => {
+      openModal({
+        title: 'Error',
+        message: err.message || 'No se pudo guardar el cliente.',
+        type: 'warning',
+      });
+    },
+  });
+
+  const deleteCustomerMutation = useMutation({
+    mutationFn: (id: string) => api.customers.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+      setIsCustomerModalOpen(false);
+      setEditingCustomer(null);
+      openModal({
+        title: 'Éxito',
+        message: 'Cliente eliminado correctamente.',
+        type: 'info',
+      });
+    },
+    onError: (err: Error) => {
+      openModal({
+        title: 'Error',
+        message: err.message || 'No se pudo eliminar el cliente.',
+        type: 'warning',
+      });
+    },
+  });
+
+  const confirmDeleteCustomer = (customer: Customer) => {
+    const fullName = `${customer.name} ${customer.surname || ''}`.trim();
+    openModal({
+      title: 'Eliminar Cliente',
+      message: `¿Borrar a "${fullName}"? Se desvincularán sus pedidos y se eliminarán direcciones, favoritos y métodos de pago asociados.`,
+      type: 'confirm',
+      onConfirm: () => deleteCustomerMutation.mutate(customer.customer_id),
+    });
+  };
 
   // Mutations
   const saveMutation = useMutation({
@@ -576,16 +635,14 @@ export const AdminDashboard: React.FC = () => {
             onSearchChange={setCustomerSearch}
             onPageChange={setCustomerPage}
             onCreate={() => {
-              const name = prompt('Nombre:');
-              const surname = prompt('Apellidos:');
-              const email = prompt('Email:');
-              const password = prompt('Password:');
-              if (name && surname && email && password) {
-                api.customers.create({ name, surname, email, password }).then(() => {
-                  queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
-                });
-              }
+              setEditingCustomer(null);
+              setIsCustomerModalOpen(true);
             }}
+            onEdit={(customer) => {
+              setEditingCustomer(customer);
+              setIsCustomerModalOpen(true);
+            }}
+            onDelete={confirmDeleteCustomer}
           />
         )}
       </div>
@@ -599,6 +656,20 @@ export const AdminDashboard: React.FC = () => {
           }}
           onSave={(data) => saveMutation.mutate(data)}
           isSaving={saveMutation.isPending}
+        />
+      )}
+
+      {isCustomerModalOpen && (
+        <CustomerModal
+          customer={editingCustomer}
+          onClose={() => {
+            if (saveCustomerMutation.isPending || deleteCustomerMutation.isPending) return;
+            setIsCustomerModalOpen(false);
+            setEditingCustomer(null);
+          }}
+          onSave={(data) => saveCustomerMutation.mutate(data)}
+          onDelete={confirmDeleteCustomer}
+          isSaving={saveCustomerMutation.isPending || deleteCustomerMutation.isPending}
         />
       )}
 

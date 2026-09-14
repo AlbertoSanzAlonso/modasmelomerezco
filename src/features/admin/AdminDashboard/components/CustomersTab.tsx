@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Plus, Search, Mail } from 'lucide-react';
+import { Plus, Search, Mail, Edit, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Customer } from "@/types";
 
@@ -13,6 +12,8 @@ interface CustomersTabProps {
   onSearchChange: (val: string) => void;
   onPageChange: (page: number) => void;
   onCreate: () => void;
+  onEdit: (customer: Customer) => void;
+  onDelete: (customer: Customer) => void;
 }
 
 export const CustomersTab: React.FC<CustomersTabProps> = ({
@@ -23,7 +24,9 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
   searchTerm,
   onSearchChange,
   onPageChange,
-  onCreate
+  onCreate,
+  onEdit,
+  onDelete,
 }) => {
   return (
     <div className="space-y-10">
@@ -51,18 +54,23 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
 
       <div className="bg-(--bg-card) border border-(--border-main) overflow-hidden rounded-[2.5rem] shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[800px]">
+          <table className="w-full text-left min-w-[900px]">
             <thead>
               <tr className="border-b border-(--border-main) bg-(--bg-main)/50">
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Cliente</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Email</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary">Teléfono</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary text-center">Newsletter</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-primary text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-(--border-main)">
               {customers?.map((customer) => (
-                <tr key={customer.customer_id} className="hover:bg-primary/5 transition-colors group">
+                <tr
+                  key={customer.customer_id}
+                  className="hover:bg-primary/5 transition-colors group cursor-pointer"
+                  onClick={() => onEdit(customer)}
+                >
                   <td className="px-8 py-6">
                     <p className="text-sm font-bold uppercase italic text-(--text-main)">{customer.name} {customer.surname}</p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">ID: {customer.customer_id.split('-')[0]}</p>
@@ -82,11 +90,31 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                       )}
                     </div>
                   </td>
+                  <td className="px-8 py-6">
+                    <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="p-3 text-gray-400 hover:text-primary transition-colors bg-transparent rounded-full hover:bg-primary/10"
+                        title="Editar"
+                        onClick={() => onEdit(customer)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-3 text-gray-400 hover:text-red-500 transition-colors bg-transparent rounded-full hover:bg-red-500/10"
+                        title="Eliminar"
+                        onClick={() => onDelete(customer)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {customers?.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center text-gray-400 font-bold italic">
+                  <td colSpan={5} className="px-8 py-20 text-center text-gray-400 font-bold italic">
                     No se encontraron clientes para la búsqueda "{searchTerm}"
                   </td>
                 </tr>
@@ -96,7 +124,9 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
         </div>
         <div className="flex justify-center items-center gap-4 mt-10 pb-10">
           <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, customerPage - 1))} disabled={customerPage === 1} className="text-[10px] font-black uppercase tracking-widest px-6">Anterior</Button>
-          <span className="text-[10px] font-black text-primary bg-primary/10 px-4 py-2 rounded-lg">PÁGINA {customerPage}</span>
+          <span className="text-[10px] font-black text-primary bg-primary/10 px-4 py-2 rounded-lg">
+            PÁGINA {customerPage}{totalCustomers > 0 ? ` · ${totalCustomers}` : ''}
+          </span>
           <Button variant="outline" size="sm" onClick={() => onPageChange(customerPage + 1)} disabled={!customers || customers.length < pageSize} className="text-[10px] font-black uppercase tracking-widest px-6">Siguiente</Button>
         </div>
       </div>

@@ -351,14 +351,6 @@ export const ColorHexPicker: React.FC<ColorHexPickerProps> = ({
         </button>
       </div>
 
-      <p className="text-[9px] text-gray-400 uppercase tracking-wider leading-relaxed">
-        {pickingActive
-          ? 'Gotero activo: elige un tono de la foto…'
-          : isTouchPrimary
-            ? 'Pipeta: toca la foto y confirma el color'
-            : 'Cuentagotas: toma el color de la foto'}
-      </p>
-
       {pickError && !showImagePick && (
         <p className="text-[10px] text-red-500 font-medium">{pickError}</p>
       )}

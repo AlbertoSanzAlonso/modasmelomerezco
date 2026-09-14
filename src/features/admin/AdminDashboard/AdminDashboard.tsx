@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { ProductModal } from "@/features/admin/ProductModal/ProductModal";
 import { OverviewTab } from "@/features/admin/AdminDashboard/components/OverviewTab";
@@ -22,6 +23,21 @@ import { useCartStore } from "@/store/useCartStore";
 import { getProductPath } from '@/lib/productSlug';
 import type { Product, Order } from "@/types";
 
+const ADMIN_TABS: readonly AdminTab[] = [
+  'dashboard',
+  'products',
+  'daily-sales',
+  'orders',
+  'customers',
+  'newsletter',
+  'discounts',
+  'analytics',
+];
+
+function parseAdminTab(value: string | null): AdminTab {
+  return ADMIN_TABS.includes(value as AdminTab) ? (value as AdminTab) : 'dashboard';
+}
+
 function refreshProductCaches(queryClient: QueryClient, product: Product) {
   queryClient.setQueryData(['product', product.product_id], product);
   if (product.slug) {
@@ -36,7 +52,22 @@ function refreshProductCaches(queryClient: QueryClient, product: Product) {
 }
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = parseAdminTab(searchParams.get('tab'));
+  const setActiveTab = useCallback((tab: AdminTab) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === 'dashboard') {
+          next.delete('tab');
+        } else {
+          next.set('tab', tab);
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);

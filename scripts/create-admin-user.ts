@@ -1,5 +1,5 @@
 /**
- * Crea un usuario administrador (Supabase Auth + fila en `admins` si existe la tabla).
+ * Crea un usuario administrador (Auth API + fila en `admins` si existe la tabla).
  *
  * Uso:
  *   npx tsx scripts/create-admin-user.ts email@ejemplo.com "ContraseñaSegura"

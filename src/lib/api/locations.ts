@@ -16,7 +16,7 @@ export const locations = {
     const prefix = zip.substring(0, 2);
     const identifiedProvince = PROVINCE_BY_PREFIX[prefix];
     
-    // 2. Intentar base de datos local de Supabase
+    // 2. Intentar base de datos local
     try {
       const { data: rows } = await supabase
         .from('spanish_locations')
@@ -36,7 +36,7 @@ export const locations = {
         };
       }
     } catch (dbError) {
-      console.warn('Supabase location fetch failed:', dbError);
+      console.warn('Location fetch failed:', dbError);
     }
 
     // 3. Fallback a API externa si no existe en nuestra DB

@@ -44,7 +44,7 @@ export const ResetPasswordPage: React.FC = () => {
     try {
       const type = searchParams.get('type') || 'customer';
       
-      // 1. Actualizar la contraseña en Supabase Auth (Oficial)
+      // 1. Actualizar la contraseña (Auth API)
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });

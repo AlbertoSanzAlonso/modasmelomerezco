@@ -104,7 +104,7 @@ function nacexLabelPath(codExp: string): string {
   return `/api/nacex?method=get_etiqueta&codExp=${encodeURIComponent(codExp)}`;
 }
 
-/** Guarda tracking en Supabase con service role (el admin en cliente suele fallar por RLS). */
+/** Guarda tracking con service role (el admin en cliente suele fallar por RLS). */
 async function saveOrderTracking(orderId: string, tracking: string): Promise<boolean> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

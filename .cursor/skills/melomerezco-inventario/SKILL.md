@@ -2,7 +2,7 @@
 name: melomerezco-inventario
 description: >-
   Inventario y variantes de producto en Modas Me lo Merezco (talla × color, admin
-  ProductInventory, Supabase product_variants.color_id). Usar al editar stock,
+  ProductInventory, product_variants.color_id). Usar al editar stock,
   colores, admin de piezas, carrito, checkout, pedidos o stock en tienda.
 ---
 
@@ -15,7 +15,8 @@ description: >-
 - Tienda: cartel Agotado + sin compra si `is_sold_out`.
 - Admin: Agotar / En stock (solo si toda la selección es homogénea).
 - Al reponer: modal de tallas → 3 uds por talla × color (`restockWithSizes`).
-- **Auto-agotado:** si el stock total de variantes llega a 0 (ventas tienda `decrementStock`, pedidos online, etc.), se pone `is_sold_out = true` automáticamente (admin + catálogo). Trigger SQL: `product_variants_auto_sold_out.sql`. No se desmarca solo al reponer stock a mano; usar **En stock** o `restockWithSizes`.
+- **Auto-agotado:** si el stock total de variantes llega a 0 (ventas tienda `decrementStock`, y trigger SQL si está aplicado), se pone `is_sold_out = true` automáticamente (admin + catálogo). SQL opcional: `supabase/migrations/product_variants_auto_sold_out.sql` (aplicar en la base Postgres).
+- **Auto-reponer:** al guardar el producto en admin con stock total > 0 (`products.update` + variantes), se pone `is_sold_out = false`. También `restockWithSizes` / botón **En stock**.
 
 ## Fuente de verdad
 
@@ -56,7 +57,9 @@ description: >-
 
 ## Migración
 
-- SQL: `supabase/migrations/product_variants_color_id.sql` (añade `color_id`, migra legacy, elimina columna `color`).
+- SQL del esquema: carpeta `supabase/migrations/` (nombre histórico). Aplicar en la base Postgres del proyecto.
+- Color en variantes: `product_variants_color_id.sql` (añade `color_id`, migra legacy, elimina columna `color`).
+- Auto-agotado: `product_variants_auto_sold_out.sql` (opcional; ventas tienda ya lo hace en código).
 
 ## Al cambiar inventario
 

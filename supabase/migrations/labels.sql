@@ -1,5 +1,5 @@
 -- Etiquetas (labels) para filtrar productos en tienda y admin
--- Ejecutar TODO este archivo en el SQL Editor de Supabase (una sola vez)
+-- Aplicar TODO este archivo en la base Postgres del proyecto (una sola vez)
 
 -- Tabla de etiquetas
 create table if not exists labels (

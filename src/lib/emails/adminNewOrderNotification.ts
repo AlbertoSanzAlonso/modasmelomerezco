@@ -7,8 +7,7 @@ import {
   buildOrderTotalsEmailHtml,
 } from '../orderEmailHtml.js';
 
-const LOGO_URL =
-  'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+const LOGO_URL = 'https://www.modasmelomerezco.es/logo.png';
 
 const DEFAULT_ADMIN_ORDER_EMAIL = 'infobenalumox@gmail.com';
 

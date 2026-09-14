@@ -31,7 +31,7 @@ export const labels = {
     if (error) {
       if (isLabelsTableMissing(error)) {
         console.warn(
-          '[labels] Tabla no encontrada. Ejecuta supabase/migrations/labels.sql en Supabase.'
+          '[labels] Tabla no encontrada. Aplica supabase/migrations/labels.sql en la base Postgres.'
         );
         return [];
       }
@@ -52,7 +52,7 @@ export const labels = {
     if (error) {
       if (isLabelsTableMissing(error)) {
         throw new Error(
-          'La tabla de etiquetas no existe. Ejecuta supabase/migrations/labels.sql en el SQL Editor de Supabase.'
+          'La tabla de etiquetas no existe. Aplica supabase/migrations/labels.sql en la base Postgres.'
         );
       }
       if (error.code === '23505') {

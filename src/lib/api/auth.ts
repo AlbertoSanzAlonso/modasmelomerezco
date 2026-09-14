@@ -118,7 +118,7 @@ export const auth = {
   login: async (email: string, password: string): Promise<{ user: Customer, token: string }> => {
     const cleanEmail = email.toLowerCase().trim();
     
-    // 1. Login oficial en Supabase Auth
+    // 1. Login oficial (Auth API)
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password
@@ -167,14 +167,14 @@ export const auth = {
   signup: async (customer: Omit<Customer, 'customer_id'> & { password: string }): Promise<{ user: Customer, token: string }> => {
     const cleanEmail = customer.email.toLowerCase().trim();
 
-    // 1. Crear el usuario en Supabase Auth (Oficial)
+    // 1. Crear el usuario (Auth API)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: cleanEmail,
       password: customer.password,
     });
 
     if (authError) {
-      console.error('Supabase Auth Signup Error:', authError);
+      console.error('Auth Signup Error:', authError);
       throw authError;
     }
     if (!authData.user) throw new Error('Error al crear la cuenta de autenticación');

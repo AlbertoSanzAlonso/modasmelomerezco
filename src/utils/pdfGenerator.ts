@@ -18,8 +18,8 @@ export const generateInvoicePDF = async (order: Order, user: { name?: string; su
   });
   
   try {
-    const coronaUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/logo-corona.png';
-    const lettersUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20solo%20letras.png';
+    const coronaUrl = '/assets/logo/logo-corona.png';
+    const lettersUrl = '/logo.png';
     
     const loadImg = (url: string): Promise<HTMLImageElement | null> => new Promise((resolve) => {
       const img = new Image();

@@ -139,6 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const host = parsed.hostname.toLowerCase();
       const allowed =
         host.endsWith('.r2.dev') ||
+        // legado: URLs antiguas de productos aún pueden apuntar aquí
         host.endsWith('.supabase.co') ||
         host.endsWith('.insforge.app') ||
         host === 'www.modasmelomerezco.es' ||

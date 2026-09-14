@@ -113,7 +113,7 @@ export const discountCodes = {
     if (error) {
       if (isDiscountTableMissing(error)) {
         console.warn(
-          '[discountCodes] Tabla no encontrada. Ejecuta supabase/migrations/discount_codes.sql en Supabase.'
+          '[discountCodes] Tabla no encontrada. Aplica supabase/migrations/discount_codes.sql en la base Postgres.'
         );
         return [];
       }
@@ -145,7 +145,7 @@ export const discountCodes = {
     if (error) {
       if (isDiscountTableMissing(error)) {
         throw new Error(
-          'La tabla de descuentos no existe. Ejecuta supabase/migrations/discount_codes.sql en Supabase.'
+          'La tabla de descuentos no existe. Aplica supabase/migrations/discount_codes.sql en la base Postgres.'
         );
       }
       if (error.code === '23505') {
@@ -181,7 +181,7 @@ export const discountCodes = {
     if (error) {
       if (isDiscountTableMissing(error)) {
         throw new Error(
-          'La tabla de descuentos no existe. Ejecuta supabase/migrations/discount_codes.sql en Supabase.'
+          'La tabla de descuentos no existe. Aplica supabase/migrations/discount_codes.sql en la base Postgres.'
         );
       }
       if (error.code === '23505') {
@@ -205,7 +205,7 @@ export const discountCodes = {
     if (error) {
       if (isDiscountTableMissing(error)) {
         throw new Error(
-          'La tabla de descuentos no existe. Ejecuta supabase/migrations/discount_codes.sql en Supabase.'
+          'La tabla de descuentos no existe. Aplica supabase/migrations/discount_codes.sql en la base Postgres.'
         );
       }
       throw error;
@@ -233,7 +233,7 @@ export const discountCodes = {
     if (error) {
       if (isDiscountTableMissing(error)) {
         console.warn(
-          '[discountCodes] Tablas no encontradas. Ejecuta supabase/migrations/discount_codes.sql en Supabase.'
+          '[discountCodes] Tablas no encontradas. Aplica supabase/migrations/discount_codes.sql en la base Postgres.'
         );
         return { valid: false, message: 'Descuento no válido' };
       }

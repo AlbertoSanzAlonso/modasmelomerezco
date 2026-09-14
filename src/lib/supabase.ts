@@ -4,7 +4,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials missing in .env. Please configure them in your local .env file.');
+  console.warn(
+    'Database credentials missing in .env (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). Configure them locally.'
+  );
 }
 
 // Fallback dummy credentials to prevent instant crash of Vite at startup

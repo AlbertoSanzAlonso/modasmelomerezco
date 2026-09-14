@@ -67,7 +67,7 @@ async function requireAdmin(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    return { ok: false, status: 500, message: 'Supabase no configurado' };
+    return { ok: false, status: 500, message: 'Base de datos no configurada' };
   }
 
   // Validar JWT con service role (más fiable en serverless que anon key).

@@ -1,5 +1,5 @@
 -- Slugs SEO-friendly para URLs de producto (/producto/{slug})
--- Ejecutar en el SQL Editor de Supabase
+-- Aplicar en la base Postgres del proyecto
 
 create or replace function public.slugify_product_name(input text)
 returns text

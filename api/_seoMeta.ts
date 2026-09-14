@@ -105,7 +105,7 @@ function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-function getSupabase() {
+function getDbClient() {
   const url = process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
@@ -113,8 +113,8 @@ function getSupabase() {
 }
 
 async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
+  const db = getDbClient();
+  if (!db) return null;
 
   const select =
     'product_id, slug, name, description, price, is_published, product_images(image_url)';
@@ -129,7 +129,7 @@ async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
     product_images?: { image_url?: string }[] | null;
   } | null = null;
 
-  const bySlug = await supabase
+  const bySlug = await db
     .from('products')
     .select(select)
     .eq('slug', slugOrId)
@@ -139,7 +139,7 @@ async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
   if (bySlug.data) {
     product = bySlug.data;
   } else if (isProductUuid(slugOrId)) {
-    const byId = await supabase
+    const byId = await db
       .from('products')
       .select(select)
       .eq('product_id', slugOrId)

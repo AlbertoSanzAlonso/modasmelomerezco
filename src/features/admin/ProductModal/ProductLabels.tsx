@@ -61,7 +61,7 @@ export const ProductLabels: React.FC<ProductLabelsProps> = ({
         message:
           error instanceof Error
             ? error.message
-            : 'Ejecuta supabase/migrations/labels.sql en Supabase.',
+            : 'Aplica supabase/migrations/labels.sql en la base Postgres.',
         type: 'warning',
       });
     } finally {

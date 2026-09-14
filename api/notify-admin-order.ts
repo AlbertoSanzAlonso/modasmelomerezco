@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    return res.status(500).json({ message: 'Supabase no configurado' });
+    return res.status(500).json({ message: 'Base de datos no configurada' });
   }
 
   const supabase = createClient(supabaseUrl, serviceKey);

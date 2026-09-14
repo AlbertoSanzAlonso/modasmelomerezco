@@ -1,5 +1,5 @@
 -- Estado agotado del producto (independiente del stock numérico).
--- Por defecto false = en stock. Ejecutar una vez en el SQL Editor de Supabase.
+-- Por defecto false = en stock. Aplicar una vez en la base Postgres del proyecto.
 
 alter table products
   add column if not exists is_sold_out boolean not null default false;

@@ -220,8 +220,8 @@ export const DailySalesTab: React.FC = () => {
       openModal({
         title: 'Inventario actualizado',
         message:
-          'Las ventas de tienda se han restado del stock. Si un artículo se queda sin unidades, se marca como Agotado en admin y en la tienda.',
-        type: 'success',
+          'Las ventas de tienda se han restado del stock. Si un artículo se queda sin unidades, se marca como Agotado.',
+        type: 'info',
       });
     },
     onError: (err: Error) => {

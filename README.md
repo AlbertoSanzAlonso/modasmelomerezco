@@ -1,6 +1,6 @@
 # Modas Me Lo Merezco
 
-Boutique de moda femenina online. Proyecto construido con React, Vite, Tailwind CSS v4 y Framer Motion.
+Boutique de moda femenina online. Proyecto construido con React, Vite, Tailwind CSS v4 y Framer Motion. Imágenes de producto en Cloudflare R2; deploy en Vercel.
 
 ## Características
 

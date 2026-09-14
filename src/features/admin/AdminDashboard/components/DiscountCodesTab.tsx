@@ -316,7 +316,7 @@ export const DiscountCodesTab: React.FC = () => {
               ) : codes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-12 text-center text-sm text-gray-400 italic">
-                    No hay códigos. Crea el primero arriba o ejecuta la migración SQL en Supabase.
+                    No hay códigos. Crea el primero arriba o aplica la migración SQL en la base Postgres.
                   </td>
                 </tr>
               ) : (

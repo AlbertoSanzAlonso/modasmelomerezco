@@ -141,7 +141,7 @@ function createProductId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function assertNoSupabaseError(
+function assertDbError(
   error: { message?: string; code?: string } | null,
   context: string
 ): void {
@@ -149,14 +149,14 @@ function assertNoSupabaseError(
   if (error.code === '23505') {
     if (isVariantIdConflict(error)) {
       throw new Error(
-        `[${context}] Error interno al crear variantes (contador de IDs desincronizado). Inténtalo de nuevo; si persiste, ejecuta supabase/migrations/fix_product_variants_sequence.sql en Supabase.`
+        `[${context}] Error interno al crear variantes (contador de IDs desincronizado). Inténtalo de nuevo; si persiste, aplica supabase/migrations/fix_product_variants_sequence.sql en la base Postgres.`
       );
     }
     throw new Error(
       `[${context}] Ya existe esa combinación de talla y color. Revisa el inventario y guarda de nuevo.`
     );
   }
-  throw new Error(`[${context}] ${error.message || 'Error de Supabase'}`);
+  throw new Error(`[${context}] ${error.message || 'Error de base de datos'}`);
 }
 
 type VariantDbRow = {
@@ -223,7 +223,7 @@ async function getNextVariantId(): Promise<number> {
     .limit(1)
     .maybeSingle();
 
-  assertNoSupabaseError(error, 'product_variants max id');
+  assertDbError(error, 'product_variants max id');
   return (data?.variant_id ?? 0) + 1;
 }
 
@@ -239,7 +239,7 @@ async function updateVariantRow(
       color_id: row.color_id,
     })
     .eq('variant_id', variantId);
-  assertNoSupabaseError(error, 'product_variants update');
+  assertDbError(error, 'product_variants update');
 }
 
 async function updateVariantByNaturalKey(row: VariantDbRow): Promise<boolean> {
@@ -248,7 +248,7 @@ async function updateVariantByNaturalKey(row: VariantDbRow): Promise<boolean> {
     .select('variant_id, size, color_id')
     .eq('product_id', row.product_id);
 
-  assertNoSupabaseError(fetchError, 'product_variants select');
+  assertDbError(fetchError, 'product_variants select');
 
   const key = variantSizeColorKey(row.size, row.color_id);
   const match = (data ?? []).find(
@@ -283,11 +283,14 @@ async function insertVariantRow(row: VariantDbRow): Promise<void> {
     if (updated) return;
   }
 
-  assertNoSupabaseError(error, 'product_variants insert');
+  assertDbError(error, 'product_variants insert');
 }
 
-/** Si el producto no tiene unidades en ninguna variante, lo marca como agotado. */
-async function markSoldOutIfNoStock(product_id: string): Promise<void> {
+/**
+ * Alinea `is_sold_out` con el stock real de variantes:
+ * total 0 → agotado; total > 0 → en stock (p. ej. al reponer editando el producto).
+ */
+async function syncSoldOutFromStock(product_id: string): Promise<void> {
   const { data: variants, error } = await supabase
     .from('product_variants')
     .select('stock')
@@ -299,13 +302,13 @@ async function markSoldOutIfNoStock(product_id: string): Promise<void> {
     (sum, v) => sum + (v.stock ?? 0),
     0
   );
-  if (total > 0) return;
+  const is_sold_out = total <= 0;
 
   const { error: soldOutError } = await supabase
     .from('products')
-    .update({ is_sold_out: true })
+    .update({ is_sold_out })
     .eq('product_id', product_id)
-    .eq('is_sold_out', false);
+    .neq('is_sold_out', is_sold_out);
 
   if (soldOutError) throw soldOutError;
 }
@@ -324,7 +327,7 @@ async function deleteVariantRow(variantId: number): Promise<void> {
     return;
   }
 
-  assertNoSupabaseError(error, 'product_variants delete');
+  assertDbError(error, 'product_variants delete');
 }
 
 async function syncProductVariants(
@@ -341,7 +344,7 @@ async function syncProductVariants(
     .select('variant_id, size, color_id')
     .eq('product_id', product_id);
 
-  assertNoSupabaseError(fetchError, 'product_variants select');
+  assertDbError(fetchError, 'product_variants select');
 
   const existingRows = existing ?? [];
   const existingColoredCount = existingRows.filter((r) => r.color_id != null).length;
@@ -450,7 +453,7 @@ async function syncProductDiscountCodes(
   }
 }
 
-// Helper para normalizar los datos de Supabase al tipo Product de nuestra app
+// Helper para normalizar los datos de la API al tipo Product de nuestra app
 const normalise = (p: any): Product => ({
   ...p,
   slug: (typeof p.slug === 'string' && p.slug.trim()) || p.product_id,
@@ -585,7 +588,7 @@ export const products = {
     }
 
     if (labelId && isMissingRelation(lastError as { code?: string; message?: string }, 'product_labels')) {
-      console.warn('[labels] Filtro por etiqueta ignorado: ejecuta supabase/migrations/labels.sql');
+      console.warn('[labels] Filtro por etiqueta ignorado: aplica supabase/migrations/labels.sql en la base Postgres');
       return { products: [], total: 0 };
     }
 
@@ -718,7 +721,7 @@ export const products = {
 
       if (insertErr) {
         console.warn(
-          '[embedding] No se guardó en Supabase (el producto sí se guardó):',
+          '[embedding] No se guardó el embedding (el producto sí se guardó):',
           insertErr.message
         );
         return;
@@ -768,7 +771,7 @@ export const products = {
       const { error: imagesError } = await supabase
         .from('product_images')
         .insert(imageRecords);
-      assertNoSupabaseError(imagesError, 'product_images insert');
+      assertDbError(imagesError, 'product_images insert');
     }
 
     // 4. Create color associations if any
@@ -780,7 +783,7 @@ export const products = {
       const { error: colorsError } = await supabase
         .from('product_colors')
         .insert(colorRecords);
-      assertNoSupabaseError(colorsError, 'product_colors insert');
+      assertDbError(colorsError, 'product_colors insert');
     }
 
     await syncProductLabels(product.product_id, labels);
@@ -808,6 +811,11 @@ export const products = {
       filteredUpdates.slug = await ensureUniqueProductSlug(updates.name, product_id);
     }
 
+    // Si vienen variantes, el flag agotado lo decide el stock (no el valor viejo del form)
+    if (variants) {
+      delete filteredUpdates.is_sold_out;
+    }
+
     const { data: product, error } = await supabase
       .from('products')
       .update(filteredUpdates)
@@ -820,6 +828,8 @@ export const products = {
     // 2. Update variants if provided
     if (variants) {
       await syncProductVariants(product_id, variants, _syncOptions);
+      // Al reponer stock editando el producto, quitar cartel Agotado (y viceversa)
+      await syncSoldOutFromStock(product_id);
     }
 
     // 3. Update images only when explicitly provided (never from restock/agotado)
@@ -828,13 +838,13 @@ export const products = {
         .from('product_images')
         .delete()
         .eq('product_id', product_id);
-      assertNoSupabaseError(deleteImagesError, 'product_images delete');
+      assertDbError(deleteImagesError, 'product_images delete');
       if (images.length > 0) {
         const imageRecords = toProductImageRecords(product_id, images, image_color_ids);
         const { error: insertImagesError } = await supabase
           .from('product_images')
           .insert(imageRecords);
-        assertNoSupabaseError(insertImagesError, 'product_images insert');
+        assertDbError(insertImagesError, 'product_images insert');
       }
     }
 
@@ -844,7 +854,7 @@ export const products = {
         .from('product_colors')
         .delete()
         .eq('product_id', product_id);
-      assertNoSupabaseError(deleteColorsError, 'product_colors delete');
+      assertDbError(deleteColorsError, 'product_colors delete');
       if (colors.length > 0) {
         const colorRecords = colors.map((c: any) => ({
           product_id,
@@ -853,7 +863,7 @@ export const products = {
         const { error: insertColorsError } = await supabase
           .from('product_colors')
           .insert(colorRecords);
-        assertNoSupabaseError(insertColorsError, 'product_colors insert');
+        assertDbError(insertColorsError, 'product_colors insert');
       }
     }
 
@@ -913,7 +923,7 @@ export const products = {
 
     if (updateError) throw updateError;
 
-    await markSoldOutIfNoStock(variant.product_id);
+    await syncSoldOutFromStock(variant.product_id);
   },
 
   /** Marca agotado sin tocar unidades (el stock se conserva). */
@@ -1010,7 +1020,7 @@ export const products = {
       .from('product_colors')
       .delete()
       .eq('product_id', product_id);
-    assertNoSupabaseError(deleteColorsError, 'product_colors delete');
+    assertDbError(deleteColorsError, 'product_colors delete');
     if (derived.length > 0) {
       const { error: insertColorsError } = await supabase
         .from('product_colors')
@@ -1020,7 +1030,7 @@ export const products = {
             color_id: c.id,
           }))
         );
-      assertNoSupabaseError(insertColorsError, 'product_colors insert');
+      assertDbError(insertColorsError, 'product_colors insert');
     }
 
     return products.getById(product_id);

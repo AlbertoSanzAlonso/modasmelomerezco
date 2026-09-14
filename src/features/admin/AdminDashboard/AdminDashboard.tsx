@@ -221,7 +221,7 @@ export const AdminDashboard: React.FC = () => {
         } catch {
           openModal({
             title: 'Error',
-            message: 'No se pudo marcar como agotado. ¿Ejecutaste la migración products_is_sold_out.sql?',
+            message: 'No se pudo marcar como agotado. ¿Aplicaste la migración products_is_sold_out.sql en la base Postgres?',
             type: 'warning',
           });
         }

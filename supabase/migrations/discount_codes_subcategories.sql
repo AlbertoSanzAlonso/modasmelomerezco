@@ -1,5 +1,5 @@
 -- Vincular códigos de descuento a subcategorías completas (pantalones, bolsos, etc.)
--- Ejecutar en el SQL Editor de Supabase después de discount_codes.sql
+-- Aplicar en la base Postgres después de discount_codes.sql
 
 create table if not exists subcategory_discount_codes (
   discount_code_id integer not null references discount_codes(id) on delete cascade,

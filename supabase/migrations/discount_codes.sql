@@ -1,5 +1,5 @@
 -- Códigos de descuento (uno a muchos con productos vía tabla puente)
--- Ejecutar TODO este archivo en el SQL Editor de Supabase (una sola vez)
+-- Aplicar TODO este archivo en la base Postgres del proyecto (una sola vez)
 
 create table if not exists discount_codes (
   id serial primary key,

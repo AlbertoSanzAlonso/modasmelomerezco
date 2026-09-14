@@ -109,7 +109,7 @@ export interface DiscountCode {
   subcategory_ids?: number[];
 }
 
-/** Descuento aplicado en carrito (tras validar contra Supabase) */
+/** Descuento aplicado en carrito (tras validar en base de datos) */
 export interface AppliedDiscount {
   code: string;
   discount_code_id: number;

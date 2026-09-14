@@ -11,7 +11,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function isSupabaseStorageUrl(url: string): boolean {
+function isLegacyStorageUrl(url: string): boolean {
   return (
     url.includes('.supabase.co/storage/') ||
     url.includes(`/object/public/${SUPABASE_BUCKET}/`)
@@ -62,7 +62,7 @@ async function deleteFromR2(url: string): Promise<void> {
   }
 }
 
-async function deleteFromSupabase(url: string): Promise<void> {
+async function deleteFromLegacyStorage(url: string): Promise<void> {
   try {
     const marker = `/object/public/${SUPABASE_BUCKET}/`;
     const idx = url.indexOf(marker);
@@ -94,7 +94,7 @@ export const storage = {
   },
 
   /**
-   * Borra un archivo. Soporta URLs de R2 y, en legado, Supabase Storage.
+   * Borra un archivo. Preferente Cloudflare R2; mantiene borrado legado de URLs antiguas de storage.
    */
   delete: async (url: string): Promise<void> => {
     if (!url?.trim()) return;
@@ -102,8 +102,8 @@ export const storage = {
       await deleteFromR2(url);
       return;
     }
-    if (isSupabaseStorageUrl(url)) {
-      await deleteFromSupabase(url);
+    if (isLegacyStorageUrl(url)) {
+      await deleteFromLegacyStorage(url);
     }
   },
 };

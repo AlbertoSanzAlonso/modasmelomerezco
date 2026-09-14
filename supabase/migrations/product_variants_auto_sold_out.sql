@@ -1,6 +1,6 @@
 -- Si el stock total de un producto llega a 0, marca products.is_sold_out = true.
 -- No desmarca automáticamente al reponer (sigue siendo manual / restockWithSizes).
--- Ejecutar una vez en el SQL Editor de Supabase.
+-- Aplicar una vez en la base Postgres del proyecto.
 
 create or replace function public.sync_product_sold_out_from_stock()
 returns trigger

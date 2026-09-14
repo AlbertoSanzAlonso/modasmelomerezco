@@ -1,6 +1,6 @@
 -- Colores propios de un artículo (creados desde el selector del modal).
 -- product_id null = color legacy/global; con valor = solo ese producto.
--- Ejecutar una vez en el SQL Editor de Supabase.
+-- Aplicar una vez en la base Postgres del proyecto.
 -- Seguro si ya se ejecutó parcialmente (falló el índice por duplicados).
 
 alter table colors

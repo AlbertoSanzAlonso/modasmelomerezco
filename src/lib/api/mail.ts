@@ -5,6 +5,7 @@ import {
   buildOrderItemsEmailTableHead,
   buildOrderTotalsEmailHtml,
 } from '@/lib/orderEmailHtml';
+import { SITE_LOGO } from '@/lib/seo/constants';
 
 export interface SendEmailParams {
   to: string;
@@ -46,7 +47,7 @@ export const mailApi = {
 
   sendOrderConfirmation: async (order: any, customerEmail: string) => {
     const orderId = order.order_id.split('-')[0].toUpperCase();
-    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = SITE_LOGO;
     const { user } = useAuthStore.getState();
     
     // Generate PDF Invoice
@@ -116,7 +117,7 @@ export const mailApi = {
 
   sendPaymentReminder: async (order: any, customerEmail: string, paymentLink: string) => {
     const orderId = order.order_id.split('-')[0].toUpperCase();
-    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = SITE_LOGO;
     const name =
       order.customer?.name ||
       [order.guest_name, order.guest_surname].filter(Boolean).join(' ').trim() ||
@@ -159,7 +160,7 @@ export const mailApi = {
   },
 
   sendPasswordRecovery: async (email: string, resetLink: string) => {
-    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = SITE_LOGO;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 10px;">
@@ -186,7 +187,7 @@ export const mailApi = {
 
   sendStatusUpdate: async (order: any, customerEmail: string, newStatus: string) => {
     const orderId = order.order_id.split('-')[0].toUpperCase();
-    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = SITE_LOGO;
     const statusMap: Record<string, string> = {
       'Paid': 'Pagado',
       'Shipped': 'Enviado',
@@ -242,7 +243,7 @@ export const mailApi = {
   },
 
   sendNewsletter: async (to: string, subject: string, content: string, origin: string = 'https://modasmelomerezco.es') => {
-    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = SITE_LOGO;
     const unsubscribeUrl = `${origin}/desuscribir?email=${encodeURIComponent(to)}`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px; background-color: #fff;">
@@ -279,7 +280,7 @@ export const mailApi = {
   },
 
   sendConfirmationEmail: async (to: string, token: string, origin: string = 'https://modasmelomerezco.es') => {
-    const logoUrl = 'https://aoyafhjpgmxcygqnklvl.supabase.co/storage/v1/object/public/assets/logo/LOGO%20MELOMEREZCO%20completo%20color.png';
+    const logoUrl = SITE_LOGO;
     const confirmUrl = `${origin}/confirmar-suscripcion?token=${token}`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 10px; background-color: #fff;">

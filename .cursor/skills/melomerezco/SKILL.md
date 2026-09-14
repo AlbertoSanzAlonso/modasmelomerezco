@@ -1,8 +1,9 @@
 ---
 name: melomerezco
 description: >-
-  Proyecto Modas Me lo Merezco: React/Vite, Supabase, admin tienda, checkout Redsys/Nacex.
-  Usar para contexto general del repo, rutas de features o convenciones del proyecto.
+  Proyecto Modas Me lo Merezco: React/Vite, Cloudflare R2, admin tienda,
+  checkout Redsys/Nacex. Usar para contexto general del repo, rutas de features
+  o convenciones del proyecto.
 ---
 
 # Modas Me lo Merezco
@@ -10,8 +11,10 @@ description: >-
 ## Stack
 
 - **Frontend:** React + Vite + TypeScript + Tailwind + Zustand + TanStack Query
-- **Backend datos:** Supabase (`src/lib/supabase.ts`, `src/lib/api/*`)
 - **Deploy:** Vercel (API en `api/`)
+- **Imágenes de producto:** Cloudflare R2 (`api/_r2.ts`, subida vía `/api/chat` action `upload-image`; cliente en `src/lib/api/storage.ts`)
+- **Datos / Auth:** Postgres + Auth vía cliente `@supabase/supabase-js` en `src/lib/supabase.ts` y `src/lib/api/*` (nombres de env legacy `VITE_SUPABASE_*`). **No** se usa Supabase Storage ni el panel/SQL Editor de Supabase.
+- **Migraciones SQL:** carpeta `supabase/migrations/` (nombre histórico). Aplicar el SQL en la base Postgres del proyecto; no indicar “ejecutar en Supabase”.
 - **Pagos:** Redsys; **envío:** Nacex (`api/nacex.ts`)
 
 ## Estructura
@@ -26,19 +29,21 @@ description: >-
 
 - Plantilla: `.env.example` (commitear)
 - **No commitear:** `.env`, `.env.preview`, `.env.production`
-- Supabase: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- Datos/Auth (legacy naming): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- Cloudflare R2 (imágenes, sin prefijo `VITE_`): `R2_ACCOUNT_ID`, `R2_ENDPOINT`, `R2_BUCKET`, `R2_PUBLIC_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
 
 ## Convenciones
 
 - Responder al usuario en **español** si no indica otro idioma.
 - Commits/PRs: mensajes claros; no incluir secretos en git.
 - Inventario productos: leer skill `melomerezco-inventario` antes de tocar stock/colores/variantes.
+- Logos y assets de marca: servir desde el sitio (`/logo.png`, `/assets/logo/…`), nunca URLs de `*.supabase.co/storage/…`.
 
 ## SEO
 
 ### Middleware de inyección (`middleware.ts`)
 - Intercepta peticiones de crawlers (Googlebot, Bingbot, redes sociales) y sirve HTML con meta tags inyectados vía `api/_injectSeoHtml.ts`.
-- Los datos SEO se resuelven desde `api/_seoMeta.ts` (productos: consulta Supabase; categorías/páginas estáticas: diccionario local).
+- Los datos SEO se resuelven desde `api/_seoMeta.ts` (productos: consulta Postgres vía cliente de datos; categorías/páginas estáticas: diccionario local).
 - Para productos no encontrados/no publicados → 404 a crawlers.
 - Configuración de rutas interceptadas: `middleware.ts:config.matcher`.
 
@@ -56,7 +61,7 @@ description: >-
 | Categoría | `BreadcrumbList` | `CategoryPage.tsx:184` |
 
 ### Sitemap
-- Generado dinámicamente en `api/sitemap.ts` (páginas estáticas + productos publicados desde Supabase).
+- Generado dinámicamente en `api/sitemap.ts` (páginas estáticas + productos publicados).
 - Expuesto en `/sitemap.xml` vía rewrite en `vercel.json`.
 - Excluye productos con nombre "test" o "prueba".
 
@@ -76,7 +81,3 @@ description: >-
 - **Canonical:** siempre sin query params.
 - **Productos no publicados:** middleware devuelve 404 a crawlers; SPA muestra página con `noindex`.
 - **No duplicar:** no incluir URLs con filtros (`?sub=`, `?color=`) en sitemap ni en navegación principal.
-
-## MCP Supabase (opcional)
-
-Para conectar Cursor a Supabase vía MCP, configurar en `.cursor/mcp.json` el servidor oficial `@supabase/mcp-server-supabase` con PAT en variable de entorno (no commitear token). Proyecto ref visible en URL: `aoyafhjpgmxcygqnklvl`.

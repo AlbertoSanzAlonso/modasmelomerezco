@@ -1,5 +1,5 @@
 -- Variantes: color_id FK nullable (NULL = solo talla, sin selector de color en tienda)
--- Ejecutar TODO este archivo en el SQL Editor de Supabase (una sola vez)
+-- Aplicar TODO este archivo en la base Postgres del proyecto (una sola vez)
 
 alter table product_variants
   add column if not exists color_id integer references colors(id) on delete restrict;

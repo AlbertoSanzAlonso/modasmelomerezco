@@ -30,7 +30,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
   if (!isLoading && !hasProducts) return null;
 
   return (
-    <section id="ofertas" className="pt-8 pb-16 md:pt-16 md:pb-20 bg-accent-dark">
+    <section id="ofertas" className="pt-2 pb-16 md:pt-4 md:pb-20 bg-accent-dark">
       <div className="max-w-[1800px] mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-8 md:mb-4 gap-8">
           <div className="flex flex-col items-center md:items-start">

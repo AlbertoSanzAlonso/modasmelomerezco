@@ -27,7 +27,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
   };
 
   return (
-    <section id="novedades" className="pt-16 pb-16 md:pt-40 md:pb-20 bg-accent-dark">
+    <section id="novedades" className="pt-16 pb-4 md:pt-40 md:pb-6 bg-accent-dark">
       <div className="max-w-[1800px] mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-8 md:mb-4 gap-8">
           <div className="flex flex-col items-center md:items-start">
@@ -60,7 +60,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
 
             <motion.div 
               ref={scrollContainerRef}
-              className="flex gap-5 md:gap-10 overflow-x-auto pb-8 md:pb-16 no-scrollbar snap-x snap-mandatory"
+              className="flex gap-5 md:gap-10 overflow-x-auto pb-4 md:pb-6 no-scrollbar snap-x snap-mandatory"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.1 }}

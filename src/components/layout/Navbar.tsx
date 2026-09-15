@@ -46,7 +46,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
               <Link
                 to="/#rebajas"
-                className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
+                className="inline-flex items-center gap-1.5 text-[20px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
               >
                 <BadgePercent className="w-7 h-7 shrink-0" strokeWidth={2.5} aria-hidden />
                 Rebajas

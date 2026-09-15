@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/useCartStore";
 // Sub-components
 import { HeroSection } from './components/HeroSection';
 import { NewArrivalsSection } from './components/NewArrivalsSection';
+import { OffersSection } from './components/OffersSection';
 import { FeaturedSection } from './components/FeaturedSection';
 import { NewsletterSection } from './components/NewsletterSection';
 import { useScrollRestoration } from "@/lib/useScrollRestoration";
@@ -26,12 +27,20 @@ const HomePage = () => {
     }
   });
 
+  const { data: offerProducts, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ['products', 'on-offer'],
+    queryFn: async () => {
+      const offers = await api.products.getOnOffer(true);
+      return offers.slice(0, 8);
+    }
+  });
+
   // Restore scroll position
   useScrollRestoration('homepage', products);
 
   React.useEffect(() => {
-    if (hash === '#novedades') {
-      const element = document.getElementById('novedades');
+    if (hash === '#novedades' || hash === '#ofertas') {
+      const element = document.getElementById(hash.slice(1));
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: 'smooth' });
@@ -71,6 +80,11 @@ const HomePage = () => {
       <NewArrivalsSection 
         products={products} 
         isLoading={isLoading} 
+      />
+
+      <OffersSection
+        products={offerProducts}
+        isLoading={isLoadingOffers}
       />
 
       <FeaturedSection />

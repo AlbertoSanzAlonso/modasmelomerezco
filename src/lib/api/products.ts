@@ -726,6 +726,18 @@ export const products = {
     return [];
   },
 
+  getOnOffer: async (publishedOnly = true): Promise<Product[]> => {
+    for (const select of [PRODUCT_SELECT_WITH_LABELS, PRODUCT_SELECT_BASE]) {
+      let query = supabase.from('products').select(select).eq('is_on_offer', true);
+      if (publishedOnly !== undefined) query = query.eq('is_published', publishedOnly);
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (!error) return (data || []).map(normalise);
+      if (!isMissingRelation(error, 'product_labels')) throw error;
+    }
+    return [];
+  },
+
   syncEmbedding: async (
     productId: string,
     name: string,

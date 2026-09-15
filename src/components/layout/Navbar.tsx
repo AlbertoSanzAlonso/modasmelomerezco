@@ -1,6 +1,6 @@
 import { type FC, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Search, Menu, X, User as UserIcon, Heart } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, User as UserIcon, Heart, BadgePercent } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
@@ -46,8 +46,9 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
               <Link
                 to="/#rebajas"
-                className="text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
+                className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
               >
+                <BadgePercent className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
                 Rebajas
               </Link>
             </div>
@@ -159,16 +160,21 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                       <Link 
                         to={item.to} 
                         onClick={(e) => { item.onClick?.(e); setIsMenuOpen(false); }}
-                        className={`text-2xl tracking-[0.25em] uppercase transition-all inline-block group ${
+                        className={`text-2xl tracking-[0.25em] uppercase transition-all group ${
                           item.accent
-                            ? 'font-black text-primary hover:tracking-[0.35em] hover:opacity-80'
-                            : 'font-light text-secondary hover:text-primary'
+                            ? 'inline-flex items-center gap-3 font-black text-primary hover:tracking-[0.35em] hover:opacity-80'
+                            : 'inline-block font-light text-secondary hover:text-primary'
                         }`}
                       >
-                        {item.label}
-                        {!item.accent && (
-                          <div className="h-px w-0 group-hover:w-full bg-primary transition-all duration-300" />
+                        {item.accent && (
+                          <BadgePercent className="w-6 h-6 shrink-0" strokeWidth={2.5} aria-hidden />
                         )}
+                        <span>
+                          {item.label}
+                          {!item.accent && (
+                            <div className="h-px w-0 group-hover:w-full bg-primary transition-all duration-300" />
+                          )}
+                        </span>
                       </Link>
                     </motion.div>
                   ))}

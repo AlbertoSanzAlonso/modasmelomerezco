@@ -28,7 +28,7 @@ export const ProductOffer: React.FC<ProductOfferProps> = ({
     <div className="space-y-8 border-t border-(--border-main) pt-12">
       <div className="space-y-3">
         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary block">
-          Oferta
+          Rebaja
         </label>
         <p className="text-[10px] text-gray-500 uppercase tracking-wider">
           Activa un precio tachado en tienda sumando un porcentaje o una cantidad en euros al
@@ -49,7 +49,7 @@ export const ProductOffer: React.FC<ProductOfferProps> = ({
             htmlFor="is_on_offer"
             className="text-[10px] font-black uppercase tracking-[0.4em] cursor-pointer text-(--text-main)"
           >
-            Activar oferta
+            Activar rebaja
           </label>
         </div>
 

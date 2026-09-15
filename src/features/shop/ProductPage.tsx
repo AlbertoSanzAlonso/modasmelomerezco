@@ -542,7 +542,7 @@ const ProductPage = () => {
               <h1 className="mb-4 text-3xl leading-none font-black tracking-tighter uppercase italic sm:text-4xl lg:mb-3 lg:text-4xl xl:text-5xl">{product.name}</h1>
               {onOffer && (
                 <span className="mb-3 inline-block bg-secondary text-white text-[10px] font-bold px-3 py-1 uppercase tracking-widest italic">
-                  Oferta
+                  Rebaja
                 </span>
               )}
               <div className="flex flex-wrap items-baseline gap-3">

@@ -39,8 +39,9 @@ const HomePage = () => {
   useScrollRestoration('homepage', products);
 
   React.useEffect(() => {
-    if (hash === '#novedades' || hash === '#ofertas') {
-      const element = document.getElementById(hash.slice(1));
+    if (hash === '#novedades' || hash === '#rebajas' || hash === '#ofertas') {
+      const targetId = hash === '#ofertas' ? 'rebajas' : hash.slice(1);
+      const element = document.getElementById(targetId);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: 'smooth' });

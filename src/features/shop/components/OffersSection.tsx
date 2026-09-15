@@ -30,12 +30,12 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
   if (!isLoading && !hasProducts) return null;
 
   return (
-    <section id="ofertas" className="pt-2 pb-16 md:pt-4 md:pb-20 bg-accent-dark">
+    <section id="rebajas" className="pt-2 pb-16 md:pt-4 md:pb-20 bg-accent-dark">
       <div className="max-w-[1800px] mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-8 md:mb-4 gap-8">
           <div className="flex flex-col items-center md:items-start">
             <span className="text-primary font-black tracking-[0.4em] uppercase text-xs mb-4 block">Precio especial</span>
-            <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic text-secondary">Ofertas</h3>
+            <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic text-secondary">Rebajas</h3>
           </div>
           <Link to="/categoria/ropa" className="group flex items-center gap-2 text-xs font-bold tracking-[0.2em] uppercase border-b border-secondary/10 pb-1 text-secondary hover:text-primary transition-all">
             Ver colección completa <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

@@ -410,8 +410,8 @@ export const useProductForm = (
       if (!Number.isFinite(value) || value <= 0) {
         openError(
           formData.offer_type === 'fixed'
-            ? 'Indica una cantidad en euros mayor que 0 para la oferta.'
-            : 'Indica un porcentaje mayor que 0 para la oferta.'
+            ? 'Indica una cantidad en euros mayor que 0 para la rebaja.'
+            : 'Indica un porcentaje mayor que 0 para la rebaja.'
         );
         return;
       }

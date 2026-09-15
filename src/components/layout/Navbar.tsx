@@ -44,7 +44,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
               <Link to="/categoria/calzado" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Calzado</Link>
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
-              <Link to="/#ofertas" className="text-[10px] font-bold tracking-[0.3em] uppercase text-primary hover:text-primary/80 transition-colors">Ofertas</Link>
+              <Link to="/#rebajas" className="text-[10px] font-bold tracking-[0.3em] uppercase text-primary hover:text-primary/80 transition-colors">Rebajas</Link>
             </div>
             <div className="shrink-0">
               <Link to="/" className="group flex flex-col items-center leading-none">
@@ -142,7 +142,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                     { to: "/categoria/complementos", label: "Complementos" },
                     { to: "/categoria/calzado", label: "Calzado" },
                     { to: "/#novedades", label: "Novedades" },
-                    { to: "/#ofertas", label: "Ofertas", accent: true },
+                    { to: "/#rebajas", label: "Rebajas", accent: true },
                   ].map((item) => (
                     <motion.div
                       key={item.label}

@@ -117,7 +117,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         >
           {onOffer && (
             <span className="bg-secondary text-white text-[8px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 uppercase tracking-widest italic">
-              Oferta
+              Rebaja
             </span>
           )}
           {isNew && (

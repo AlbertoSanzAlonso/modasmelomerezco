@@ -179,7 +179,7 @@ export const ProductLabels: React.FC<ProductLabelsProps> = ({
             type="text"
             autoComplete="off"
             className="w-full bg-(--bg-main) border border-(--border-main) px-4 py-3 text-xs font-bold focus:border-primary outline-none rounded-xl"
-            placeholder="Ej: Verano, Oferta, Nuevo..."
+            placeholder="Ej: Verano, Rebaja, Nuevo..."
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}
             onKeyDown={(e) => {

@@ -230,9 +230,9 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             }
             className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
           >
-            <option value="">Todas las ofertas</option>
-            <option value="true">Solo en oferta</option>
-            <option value="false">Sin oferta</option>
+            <option value="">Todas las rebajas</option>
+            <option value="true">Solo en rebaja</option>
+            <option value="false">Sin rebaja</option>
           </select>
 
           <div className="relative col-span-2 md:flex-1 md:min-w-[200px]">
@@ -439,7 +439,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                       )}
                       {hasActiveOffer(product) && (
                         <span className="text-[9px] font-black uppercase px-3 py-1 bg-secondary/10 text-secondary border border-secondary/30 rounded-full whitespace-nowrap">
-                          Oferta
+                          Rebaja
                         </span>
                       )}
                       {product.is_new && (
@@ -608,7 +608,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                       )}
                       {hasActiveOffer(product) && (
                         <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-secondary/10 text-secondary border border-secondary/30 rounded-full">
-                          Oferta
+                          Rebaja
                         </span>
                       )}
                       {product.is_new && (

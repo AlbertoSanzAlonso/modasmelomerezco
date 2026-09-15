@@ -46,7 +46,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
               <Link
                 to="/#rebajas"
-                className="group relative text-[10px] font-bold tracking-[0.3em] uppercase text-primary underline underline-offset-4 decoration-primary/70 transition-all duration-300 hover:tracking-[0.4em] hover:decoration-2 hover:underline-offset-8"
+                className="text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
               >
                 Rebajas
               </Link>
@@ -159,10 +159,10 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                       <Link 
                         to={item.to} 
                         onClick={(e) => { item.onClick?.(e); setIsMenuOpen(false); }}
-                        className={`text-2xl font-light tracking-[0.25em] uppercase transition-all inline-block group ${
+                        className={`text-2xl tracking-[0.25em] uppercase transition-all inline-block group ${
                           item.accent
-                            ? 'text-primary underline underline-offset-8 decoration-primary/70 hover:tracking-[0.35em] hover:decoration-2'
-                            : 'text-secondary hover:text-primary'
+                            ? 'font-black text-primary hover:tracking-[0.35em] hover:opacity-80'
+                            : 'font-light text-secondary hover:text-primary'
                         }`}
                       >
                         {item.label}

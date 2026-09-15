@@ -44,6 +44,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
               <Link to="/categoria/calzado" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Calzado</Link>
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
+              <Link to="/#ofertas" className="text-[10px] font-bold tracking-[0.3em] uppercase text-primary hover:text-primary/80 transition-colors">Ofertas</Link>
             </div>
             <div className="shrink-0">
               <Link to="/" className="group flex flex-col items-center leading-none">
@@ -141,6 +142,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                     { to: "/categoria/complementos", label: "Complementos" },
                     { to: "/categoria/calzado", label: "Calzado" },
                     { to: "/#novedades", label: "Novedades" },
+                    { to: "/#ofertas", label: "Ofertas", accent: true },
                   ].map((item) => (
                     <motion.div
                       key={item.label}
@@ -152,7 +154,11 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                       <Link 
                         to={item.to} 
                         onClick={(e) => { item.onClick?.(e); setIsMenuOpen(false); }}
-                        className="text-2xl font-light tracking-[0.25em] uppercase text-secondary hover:text-primary transition-all inline-block group"
+                        className={`text-2xl font-light tracking-[0.25em] uppercase transition-all inline-block group ${
+                          item.accent
+                            ? 'text-primary hover:text-primary/80'
+                            : 'text-secondary hover:text-primary'
+                        }`}
                       >
                         {item.label}
                         <div className="h-px w-0 group-hover:w-full bg-primary transition-all duration-300" />

@@ -32,7 +32,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
   return (
     <section id="ofertas" className="pt-8 pb-16 md:pt-16 md:pb-20 bg-accent-dark">
       <div className="max-w-[1800px] mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-12 md:mb-24 gap-8">
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-8 md:mb-4 gap-8">
           <div className="flex flex-col items-center md:items-start">
             <span className="text-primary font-black tracking-[0.4em] uppercase text-xs mb-4 block">Precio especial</span>
             <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic text-secondary">Ofertas</h3>
@@ -43,14 +43,14 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
         </div>
 
         {isLoading ? (
-          <div className="flex gap-6 md:gap-12 overflow-hidden">
+          <div className="flex gap-5 md:gap-10 overflow-hidden">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="w-[140px] sm:w-[240px] md:w-[320px] aspect-3/4 bg-white/5 animate-pulse rounded-2xl shrink-0" />
             ))}
           </div>
         ) : (
           <>
-            <div className="hidden md:flex justify-center gap-12 mb-10">
+            <div className="hidden md:flex justify-center gap-12 mb-8">
               <button onClick={() => scroll('left')} className="group flex items-center gap-4 text-primary transition-all">
                 <div className="w-12 h-px bg-primary/20 group-hover:w-20 transition-all origin-right" />
                 <ArrowRight className="w-8 h-8 rotate-180 stroke-[1px]" />

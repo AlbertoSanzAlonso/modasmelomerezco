@@ -48,7 +48,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                 to="/#rebajas"
                 className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
               >
-                <BadgePercent className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                <BadgePercent className="w-7 h-7 shrink-0" strokeWidth={2.5} aria-hidden />
                 Rebajas
               </Link>
             </div>
@@ -167,7 +167,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                         }`}
                       >
                         {item.accent && (
-                          <BadgePercent className="w-6 h-6 shrink-0" strokeWidth={2.5} aria-hidden />
+                          <BadgePercent className="w-12 h-12 shrink-0" strokeWidth={2.5} aria-hidden />
                         )}
                         <span>
                           {item.label}

@@ -438,12 +438,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                         </span>
                       )}
                       {hasActiveOffer(product) && (
-                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-secondary/10 text-secondary border border-secondary/30 rounded-full whitespace-nowrap">
-                          Rebaja
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary text-white rounded-full whitespace-nowrap">
+                          Rebajas
                         </span>
                       )}
                       {product.is_new && (
-                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full whitespace-nowrap">Novedad</span>
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-secondary text-white rounded-full whitespace-nowrap">Novedad</span>
                       )}
                     </div>
                   </td>
@@ -607,8 +607,8 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                         </span>
                       )}
                       {hasActiveOffer(product) && (
-                        <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-secondary/10 text-secondary border border-secondary/30 rounded-full">
-                          Rebaja
+                        <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-primary text-white rounded-full">
+                          Rebajas
                         </span>
                       )}
                       {product.is_new && (

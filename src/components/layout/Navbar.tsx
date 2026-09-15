@@ -44,7 +44,12 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
               <Link to="/categoria/calzado" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Calzado</Link>
               <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
-              <Link to="/#rebajas" className="text-[10px] font-bold tracking-[0.3em] uppercase text-primary hover:text-primary/80 transition-colors">Rebajas</Link>
+              <Link
+                to="/#rebajas"
+                className="group relative text-[10px] font-bold tracking-[0.3em] uppercase text-primary underline underline-offset-4 decoration-primary/70 transition-all duration-300 hover:tracking-[0.4em] hover:decoration-2 hover:underline-offset-8"
+              >
+                Rebajas
+              </Link>
             </div>
             <div className="shrink-0">
               <Link to="/" className="group flex flex-col items-center leading-none">
@@ -156,12 +161,14 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                         onClick={(e) => { item.onClick?.(e); setIsMenuOpen(false); }}
                         className={`text-2xl font-light tracking-[0.25em] uppercase transition-all inline-block group ${
                           item.accent
-                            ? 'text-primary hover:text-primary/80'
+                            ? 'text-primary underline underline-offset-8 decoration-primary/70 hover:tracking-[0.35em] hover:decoration-2'
                             : 'text-secondary hover:text-primary'
                         }`}
                       >
                         {item.label}
-                        <div className="h-px w-0 group-hover:w-full bg-primary transition-all duration-300" />
+                        {!item.accent && (
+                          <div className="h-px w-0 group-hover:w-full bg-primary transition-all duration-300" />
+                        )}
                       </Link>
                     </motion.div>
                   ))}

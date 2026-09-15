@@ -27,7 +27,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
   };
 
   return (
-    <section id="novedades" className="pt-16 pb-4 md:pt-40 md:pb-6 bg-accent-dark">
+    <section id="novedades" className="pt-10 pb-4 md:pt-24 md:pb-6 bg-accent-dark">
       <div className="max-w-[1800px] mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-8 md:mb-4 gap-8">
           <div className="flex flex-col items-center md:items-start">

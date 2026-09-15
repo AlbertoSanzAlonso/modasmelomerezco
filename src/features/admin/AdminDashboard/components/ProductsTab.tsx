@@ -49,6 +49,9 @@ interface ProductsTabProps {
 
 const calculateStock = (product: Product) => getProductTotalStock(product);
 
+const filterControlClass =
+  'px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-(--border-main) rounded-xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer';
+
 export const ProductsTab: React.FC<ProductsTabProps> = ({
   products,
   totalProducts,
@@ -177,7 +180,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 e.target.value === '' ? undefined : parseInt(e.target.value, 10)
               )
             }
-            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className={filterControlClass}
           >
             <option value="">Todas las categorías</option>
             {categories.map((cat) => (
@@ -190,7 +193,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
           <select 
             value={statusFilter === undefined ? '' : statusFilter.toString()}
             onChange={(e) => onStatusFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
-            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className={filterControlClass}
           >
             <option value="">Todos los Estados</option>
             <option value="true">Publicados</option>
@@ -204,7 +207,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 e.target.value === '' ? undefined : e.target.value === 'true'
               )
             }
-            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className={filterControlClass}
           >
             <option value="">Todo el stock</option>
             <option value="true">Solo agotados</option>
@@ -214,7 +217,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
           <select 
             value={isNewFilter === undefined ? '' : isNewFilter.toString()}
             onChange={(e) => onIsNewFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}
-            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className={filterControlClass}
           >
             <option value="">Todas las Fechas</option>
             <option value="true">Solo Novedades</option>
@@ -228,7 +231,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 e.target.value === '' ? undefined : e.target.value === 'true'
               )
             }
-            className="px-3 py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white cursor-pointer"
+            className={filterControlClass}
           >
             <option value="">Todas las rebajas</option>
             <option value="true">Solo en rebaja</option>
@@ -244,7 +247,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               placeholder="Buscar por título..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="block w-full pl-10 pr-4 py-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-primary bg-white shadow-sm transition-all"
+              className="block w-full pl-10 pr-4 py-3 text-xs border border-(--border-main) rounded-xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) shadow-sm transition-all placeholder:text-gray-400"
             />
             {(isLoading || isDownloading) && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -274,7 +277,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                     className={`px-4 py-2 border text-[10px] font-black uppercase tracking-wider rounded-xl transition-all select-none ${
                       selected
                         ? 'bg-primary text-white border-primary shadow-lg shadow-primary/15'
-                        : 'bg-white text-(--text-main) border-gray-200 hover:border-primary/50'
+                        : 'bg-(--bg-card) text-(--text-main) border-(--border-main) hover:border-primary/50'
                     }`}
                   >
                     {label.name}
@@ -429,7 +432,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                         {product.is_published ? (
                           <span className="text-[9px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full cursor-pointer hover:bg-green-500/20 whitespace-nowrap">Publicado</span>
                         ) : (
-                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-gray-100 text-gray-400 border border-gray-200 rounded-full cursor-pointer hover:bg-gray-200 whitespace-nowrap">Borrador</span>
+                          <span className="text-[9px] font-black uppercase px-3 py-1 bg-(--bg-main) text-gray-400 border border-(--border-main) rounded-full cursor-pointer hover:border-gray-400/40 whitespace-nowrap">Borrador</span>
                         )}
                       </button>
                       {isProductSoldOut(product) && (
@@ -443,7 +446,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                         </span>
                       )}
                       {product.is_new && (
-                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-secondary text-white rounded-full whitespace-nowrap">Novedad</span>
+                        <span className="text-[9px] font-black uppercase px-3 py-1 bg-secondary text-accent rounded-full whitespace-nowrap">Novedad</span>
                       )}
                     </div>
                   </td>
@@ -529,7 +532,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               <button
                 key={p}
                 onClick={() => onPageChange(p)}
-                className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all ${productPage === p ? 'bg-primary text-white shadow-lg scale-110' : 'bg-white border border-gray-200 text-gray-400 hover:border-primary/30'}`}
+                className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all ${productPage === p ? 'bg-primary text-white shadow-lg scale-110' : 'bg-(--bg-card) border border-(--border-main) text-gray-400 hover:border-primary/30'}`}
               >
                 {p}
               </button>

@@ -73,9 +73,11 @@ const ProductPage = () => {
     }
   };
   const [activeImage, setActiveImage] = useState(0);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [isLandscapeImage, setIsLandscapeImage] = useState(false);
-  const [landscapeAspect, setLandscapeAspect] = useState<string | undefined>();
+  const [galleryLayout, setGalleryLayout] = useState<{
+    ready: boolean;
+    isLandscape: boolean;
+    aspect?: string;
+  }>({ ready: false, isLandscape: false });
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -83,9 +85,8 @@ const ProductPage = () => {
   const galleryDidSwipe = useRef(false);
 
   const changeActiveImage = (next: number | ((prev: number) => number)) => {
-    setImageLoaded(false);
-    setIsLandscapeImage(false);
-    setLandscapeAspect(undefined);
+    // Mantener el aspect anterior mientras carga para no hacer flash de tamaño
+    setGalleryLayout((prev) => ({ ...prev, ready: false }));
     setActiveImage(next);
   };
 
@@ -177,7 +178,8 @@ const ProductPage = () => {
   useEffect(() => {
     setSelectedSize('');
     setSelectedColorId(null);
-    changeActiveImage(0);
+    setGalleryLayout({ ready: false, isLandscape: false });
+    setActiveImage(0);
   }, [id]);
 
   useEffect(() => {
@@ -217,6 +219,49 @@ const ProductPage = () => {
     if (imageIdx < 0) return;
     changeActiveImage(imageIdx);
   }, [selectedColorId, product?.image_color_ids, product?.product_id]);
+
+  // Precargar dimensiones y solo revelar la foto cuando el aspect ya está aplicado
+  useEffect(() => {
+    if (!product) return;
+    const images = product.images.length > 0 ? product.images : [PRODUCT_PLACEHOLDER];
+    const src = images[activeImage] ?? images[0];
+    if (!src) return;
+
+    let cancelled = false;
+    let revealFrame1 = 0;
+    let revealFrame2 = 0;
+    setGalleryLayout((prev) => ({ ...prev, ready: false }));
+
+    const probe = new Image();
+    probe.onload = () => {
+      if (cancelled) return;
+      const landscape = probe.naturalWidth > probe.naturalHeight;
+      // Primero fijamos el contenedor; en el siguiente frame mostramos la imagen
+      setGalleryLayout({
+        ready: false,
+        isLandscape: landscape,
+        aspect: landscape ? `${probe.naturalWidth} / ${probe.naturalHeight}` : undefined,
+      });
+      revealFrame1 = requestAnimationFrame(() => {
+        revealFrame2 = requestAnimationFrame(() => {
+          if (cancelled) return;
+          setGalleryLayout((prev) => ({ ...prev, ready: true }));
+        });
+      });
+    };
+    probe.onerror = () => {
+      if (cancelled) return;
+      console.error('Error loading image in ProductPage');
+      setGalleryLayout({ ready: true, isLandscape: false, aspect: undefined });
+    };
+    probe.src = src;
+
+    return () => {
+      cancelled = true;
+      if (revealFrame1) cancelAnimationFrame(revealFrame1);
+      if (revealFrame2) cancelAnimationFrame(revealFrame2);
+    };
+  }, [product?.product_id, activeImage, product?.images]);
 
   // Save the last viewed product ID for scroll restoration
   useEffect(() => {
@@ -427,13 +472,13 @@ const ProductPage = () => {
           <div className="flex flex-col gap-6 -mx-6 lg:col-span-5 lg:mx-0 lg:items-center lg:gap-3">
             <div 
               className={`relative w-full cursor-pointer overflow-hidden bg-white touch-pan-y ${
-                isLandscapeImage
+                galleryLayout.isLandscape
                   ? 'lg:max-w-full'
                   : 'aspect-3/4 lg:max-w-[min(100%,440px)]'
               }`}
               style={
-                isLandscapeImage && landscapeAspect
-                  ? { aspectRatio: landscapeAspect }
+                galleryLayout.isLandscape && galleryLayout.aspect
+                  ? { aspectRatio: galleryLayout.aspect }
                   : undefined
               }
               onClick={() => {
@@ -478,7 +523,9 @@ const ProductPage = () => {
                   className="w-14 h-14 object-contain"
                   animate={{
                     scale: [1, 1.12, 1],
-                    opacity: [0.12, 0.28, 0.12],
+                    opacity: galleryLayout.ready
+                      ? [0.08, 0.16, 0.08]
+                      : [0.22, 0.42, 0.22],
                   }}
                   transition={{
                     duration: 1.8,
@@ -487,40 +534,24 @@ const ProductPage = () => {
                   }}
                 />
               </div>
-              <AnimatePresence mode="wait">
-                <motion.img 
+              {galleryLayout.ready && (
+                <motion.img
                   key={activeImage}
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: imageLoaded ? 1 : 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.35 }}
-                  src={displayImages[activeImage]} 
-                  alt={product.name} 
-                  onLoad={(e) => {
-                    const { naturalWidth, naturalHeight } = e.currentTarget;
-                    const landscape = naturalWidth > naturalHeight;
-                    setIsLandscapeImage(landscape);
-                    setLandscapeAspect(
-                      landscape ? `${naturalWidth} / ${naturalHeight}` : undefined,
-                    );
-                    setImageLoaded(true);
-                  }}
-                  onError={() => {
-                    console.error("Error loading image in ProductPage");
-                    setIsLandscapeImage(false);
-                    setLandscapeAspect(undefined);
-                    setImageLoaded(true);
-                  }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                  src={displayImages[activeImage]}
+                  alt={product.name}
                   draggable={false}
                   className={`relative z-[1] h-full w-full select-none ${
-                    isLandscapeImage ? 'object-contain' : 'object-cover object-top'
+                    galleryLayout.isLandscape ? 'object-contain' : 'object-cover object-top'
                   } ${soldOut ? 'grayscale-[0.25]' : ''}`}
                   loading="eager"
                   fetchPriority="high"
                 />
-              </AnimatePresence>
+              )}
 
-              {soldOut && imageLoaded && (
+              {soldOut && galleryLayout.ready && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                   <div className="absolute inset-0 bg-black/40" />
                   <span className="relative px-8 py-3 bg-black/85 text-white text-sm sm:text-base font-black uppercase tracking-[0.4em] italic shadow-xl">
@@ -529,7 +560,7 @@ const ProductPage = () => {
                 </div>
               )}
               
-              {imageLoaded && (
+              {galleryLayout.ready && (
                 <div className="absolute bottom-4 right-4 w-1/6 max-w-[120px] pointer-events-none opacity-60 select-none z-10">
                   <img 
                     src="/LOGO%20MELOMEREZCO%20corona%20blanco.png" 
@@ -548,7 +579,7 @@ const ProductPage = () => {
               )}
             </div>
             <div className={`hidden w-full gap-2 overflow-x-auto pb-1 lg:flex lg:justify-center ${
-              isLandscapeImage ? 'max-w-full' : 'max-w-[min(100%,440px)]'
+              galleryLayout.isLandscape ? 'max-w-full' : 'max-w-[min(100%,440px)]'
             }`}>
               {displayImages.map((img: string, idx: number) => (
                 <div 

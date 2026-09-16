@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -51,21 +52,25 @@ export function publicUrlForKey(key: string): string {
 
 /** Extrae la key de una URL pública R2 o de un path relativo. */
 export function keyFromPublicUrl(urlOrKey: string): string | null {
-  const raw = urlOrKey.trim();
+  const raw = urlOrKey.trim().split('?')[0];
   if (!raw) return null;
+
+  try {
+    const u = new URL(raw);
+    if (u.hostname.endsWith('.r2.dev')) {
+      return decodeURIComponent(u.pathname.replace(/^\//, ''));
+    }
+  } catch {
+    // no es URL absoluta
+  }
 
   try {
     const publicBase = getPublicBase();
     if (raw.startsWith(publicBase + '/') || raw === publicBase) {
       return decodeURIComponent(raw.slice(publicBase.length).replace(/^\//, ''));
     }
-
-    const u = new URL(raw);
-    if (u.hostname.endsWith('.r2.dev')) {
-      return decodeURIComponent(u.pathname.replace(/^\//, ''));
-    }
   } catch {
-    // path relativo
+    // R2_PUBLIC_URL ausente o URL no absoluta
   }
 
   if (!/^https?:\/\//i.test(raw)) {
@@ -107,4 +112,42 @@ export async function deleteObject(keyOrUrl: string): Promise<void> {
       Key: key,
     }),
   );
+}
+
+/** Descarga un objeto R2 por key/URL pública. `null` si no existe. */
+export async function getObject(
+  keyOrUrl: string,
+): Promise<{ body: Buffer; contentType: string } | null> {
+  const key = keyFromPublicUrl(keyOrUrl) || keyOrUrl.replace(/^\/+/, '');
+  if (!key) return null;
+
+  try {
+    const out = await getR2Client().send(
+      new GetObjectCommand({
+        Bucket: getBucket(),
+        Key: key,
+      }),
+    );
+    const bytes = await out.Body?.transformToByteArray();
+    if (!bytes?.length) return null;
+    return {
+      body: Buffer.from(bytes),
+      contentType: out.ContentType || 'application/octet-stream',
+    };
+  } catch (error: unknown) {
+    const status =
+      error &&
+      typeof error === 'object' &&
+      '$metadata' in error &&
+      (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+        ?.httpStatusCode;
+    const name =
+      error && typeof error === 'object' && 'name' in error
+        ? String((error as { name?: string }).name)
+        : '';
+    if (status === 404 || name === 'NoSuchKey' || name === 'NotFound') {
+      return null;
+    }
+    throw error;
+  }
 }

@@ -74,6 +74,25 @@ export const useProductForm = (
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   const cropObjectUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** URLs a borrar en R2 solo tras guardar el producto (evita 404 si se cancela el modal). */
+  const pendingImageDeletesRef = useRef<string[]>([]);
+
+  const queueImageDelete = (url: string | null | undefined) => {
+    const clean = url?.trim().split('?')[0];
+    if (!clean) return;
+    if (clean.startsWith('blob:') || clean.startsWith('data:')) return;
+    if (!pendingImageDeletesRef.current.includes(clean)) {
+      pendingImageDeletesRef.current.push(clean);
+    }
+  };
+
+  const flushPendingImageDeletes = () => {
+    const urls = pendingImageDeletesRef.current;
+    pendingImageDeletesRef.current = [];
+    for (const url of urls) {
+      api.storage.delete(url).catch(() => undefined);
+    }
+  };
 
   const revokeCropObjectUrl = () => {
     if (cropObjectUrlRef.current) {
@@ -278,8 +297,8 @@ export const useProductForm = (
             image_color_ids: alignImageColorIds(newImages.length, prev.image_color_ids),
           };
         });
-        if (previousUrl && previousUrl !== cacheBustedUrl) {
-          api.storage.delete(previousUrl).catch(() => undefined);
+        if (previousUrl && previousUrl.split('?')[0] !== publicUrl) {
+          queueImageDelete(previousUrl);
         }
       } else {
         setFormData((prev) => {
@@ -372,7 +391,7 @@ export const useProductForm = (
       images: newImages,
       image_color_ids: newColorIds,
     }));
-    api.storage.delete(imageUrl).catch(console.warn);
+    queueImageDelete(imageUrl);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -475,29 +494,37 @@ export const useProductForm = (
       setIsSubmitting(false);
     };
 
-    const persistForm = (allowColorRemoval = false) => {
+    const persistForm = async (allowColorRemoval = false) => {
       const images = formData.images || [];
       lockSubmit();
-      onSave({
-        ...formData,
-        details: trimmedDetails,
-        is_on_offer: !!formData.is_on_offer,
-        offer_type: formData.is_on_offer
-          ? formData.offer_type === 'fixed'
-            ? 'fixed'
-            : 'percent'
-          : 'percent',
-        offer_value: formData.is_on_offer ? Number(formData.offer_value) || 0 : 0,
-        images,
-        image_color_ids: alignImageColorIds(images.length, formData.image_color_ids),
-        variants: validVariants,
-        colors,
-        labels: formData.labels || [],
-        discountCodes: formData.discountCodes || [],
-        ...(allowColorRemoval
-          ? { _syncOptions: { allowColorRemoval: true } }
-          : {}),
-      } as Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } });
+      try {
+        await Promise.resolve(
+          onSave({
+            ...formData,
+            details: trimmedDetails,
+            is_on_offer: !!formData.is_on_offer,
+            offer_type: formData.is_on_offer
+              ? formData.offer_type === 'fixed'
+                ? 'fixed'
+                : 'percent'
+              : 'percent',
+            offer_value: formData.is_on_offer ? Number(formData.offer_value) || 0 : 0,
+            images,
+            image_color_ids: alignImageColorIds(images.length, formData.image_color_ids),
+            variants: validVariants,
+            colors,
+            labels: formData.labels || [],
+            discountCodes: formData.discountCodes || [],
+            ...(allowColorRemoval
+              ? { _syncOptions: { allowColorRemoval: true } }
+              : {}),
+          } as Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } })
+        );
+        flushPendingImageDeletes();
+      } catch (error) {
+        console.error('Error saving product:', error);
+        unlockSubmit();
+      }
     };
 
     lockSubmit();
@@ -527,7 +554,9 @@ export const useProductForm = (
             message:
               'Vas a quitar todas las variantes de color de este producto. ¿Continuar?',
             type: 'confirm',
-            onConfirm: () => persistForm(true),
+            onConfirm: () => {
+              void persistForm(true);
+            },
           });
           return;
         }
@@ -541,7 +570,7 @@ export const useProductForm = (
       }
     }
 
-    persistForm();
+    await persistForm();
   };
 
   return {

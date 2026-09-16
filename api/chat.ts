@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import sharp from 'sharp';
-import { deleteObject, uploadObject } from './_r2.js';
+import { deleteObject, getObject, isR2PublicUrl, uploadObject } from './_r2.js';
 
 /** Un solo endpoint: chat/embed + convert-webp + R2 upload (límite Hobby: máx. 12 functions). */
 export const config = {
@@ -148,17 +148,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ message: 'Host not allowed' });
       }
 
-      const upstream = await fetch(parsed.toString(), {
-        headers: { Accept: 'image/*,*/*' },
-      });
-      if (!upstream.ok) {
-        return res.status(502).json({
-          message: `No se pudo descargar la imagen (${upstream.status})`,
+      let buffer: Buffer;
+      let contentType: string;
+
+      // R2 público no envía CORS; además el GET público puede 404 si el objeto
+      // se borró. Preferimos GetObject autenticado.
+      if (isR2PublicUrl(rawUrl) || host.endsWith('.r2.dev')) {
+        const obj = await getObject(rawUrl);
+        if (!obj) {
+          return res.status(404).json({
+            message:
+              'La imagen ya no existe en el almacenamiento. Elimínala y sube una nueva.',
+          });
+        }
+        buffer = obj.body;
+        contentType = obj.contentType;
+      } else {
+        const upstream = await fetch(parsed.toString(), {
+          headers: { Accept: 'image/*,*/*' },
         });
+        if (!upstream.ok) {
+          const status = upstream.status === 404 ? 404 : 502;
+          return res.status(status).json({
+            message:
+              upstream.status === 404
+                ? 'La imagen ya no existe. Elimínala y sube una nueva.'
+                : `No se pudo descargar la imagen (${upstream.status})`,
+          });
+        }
+        contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+        buffer = Buffer.from(await upstream.arrayBuffer());
       }
 
-      const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
-      const buffer = Buffer.from(await upstream.arrayBuffer());
       if (buffer.length < 24) {
         return res.status(400).json({ message: 'Image too small' });
       }

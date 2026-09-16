@@ -654,7 +654,7 @@ export const AdminDashboard: React.FC = () => {
             if (saveMutation.isPending) return;
             setIsModalOpen(false);
           }}
-          onSave={(data) => saveMutation.mutate(data)}
+          onSave={(data) => saveMutation.mutateAsync(data)}
           isSaving={saveMutation.isPending}
         />
       )}

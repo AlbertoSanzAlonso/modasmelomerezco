@@ -4,7 +4,7 @@ import type { Product, Category, Subcategory } from "@/types/index";
 export interface ProductModalProps {
   product?: Product | null;
   onClose: () => void;
-  onSave: (product: Partial<Product>) => void;
+  onSave: (product: Partial<Product>) => void | Promise<unknown>;
   isSaving?: boolean;
 }
 

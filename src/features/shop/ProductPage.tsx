@@ -74,6 +74,8 @@ const ProductPage = () => {
   };
   const [activeImage, setActiveImage] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isLandscapeImage, setIsLandscapeImage] = useState(false);
+  const [landscapeAspect, setLandscapeAspect] = useState<string | undefined>();
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -82,6 +84,8 @@ const ProductPage = () => {
 
   const changeActiveImage = (next: number | ((prev: number) => number)) => {
     setImageLoaded(false);
+    setIsLandscapeImage(false);
+    setLandscapeAspect(undefined);
     setActiveImage(next);
   };
 
@@ -422,7 +426,16 @@ const ProductPage = () => {
           {/* Left: Gallery */}
           <div className="flex flex-col gap-6 -mx-6 lg:col-span-5 lg:mx-0 lg:items-center lg:gap-3">
             <div 
-              className="relative aspect-3/4 w-full cursor-pointer overflow-hidden bg-white touch-pan-y lg:max-w-[min(100%,440px)]"
+              className={`relative w-full cursor-pointer overflow-hidden bg-white touch-pan-y ${
+                isLandscapeImage
+                  ? 'lg:max-w-full'
+                  : 'aspect-3/4 lg:max-w-[min(100%,440px)]'
+              }`}
+              style={
+                isLandscapeImage && landscapeAspect
+                  ? { aspectRatio: landscapeAspect }
+                  : undefined
+              }
               onClick={() => {
                 if (galleryDidSwipe.current) {
                   galleryDidSwipe.current = false;
@@ -483,13 +496,25 @@ const ProductPage = () => {
                   transition={{ duration: 0.35 }}
                   src={displayImages[activeImage]} 
                   alt={product.name} 
-                  onLoad={() => setImageLoaded(true)}
+                  onLoad={(e) => {
+                    const { naturalWidth, naturalHeight } = e.currentTarget;
+                    const landscape = naturalWidth > naturalHeight;
+                    setIsLandscapeImage(landscape);
+                    setLandscapeAspect(
+                      landscape ? `${naturalWidth} / ${naturalHeight}` : undefined,
+                    );
+                    setImageLoaded(true);
+                  }}
                   onError={() => {
                     console.error("Error loading image in ProductPage");
+                    setIsLandscapeImage(false);
+                    setLandscapeAspect(undefined);
                     setImageLoaded(true);
                   }}
                   draggable={false}
-                  className={`relative z-[1] h-full w-full object-cover object-top select-none ${soldOut ? 'grayscale-[0.25]' : ''}`}
+                  className={`relative z-[1] h-full w-full select-none ${
+                    isLandscapeImage ? 'object-contain' : 'object-cover object-top'
+                  } ${soldOut ? 'grayscale-[0.25]' : ''}`}
                   loading="eager"
                   fetchPriority="high"
                 />
@@ -522,7 +547,9 @@ const ProductPage = () => {
                 </div>
               )}
             </div>
-            <div className="hidden w-full max-w-[min(100%,440px)] gap-2 overflow-x-auto pb-1 lg:flex lg:justify-center">
+            <div className={`hidden w-full gap-2 overflow-x-auto pb-1 lg:flex lg:justify-center ${
+              isLandscapeImage ? 'max-w-full' : 'max-w-[min(100%,440px)]'
+            }`}>
               {displayImages.map((img: string, idx: number) => (
                 <div 
                   key={idx}

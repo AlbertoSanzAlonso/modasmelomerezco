@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { canFulfillOrder } from '../src/lib/orderPayment.js';
 
 /** Versión del handler (comprobar en Network → respuesta JSON tras redeploy). */
-const NACEX_API_VERSION = '2026-05-recogida-v4';
+const NACEX_API_VERSION = '2026-09-latin1-v5';
 const NACEX_WS_URL = 'https://pda.nacex.com/nacex_ws/ws';
 
 /** Evita romper el formato pipe-separated de Nacex. */
@@ -31,7 +31,42 @@ function parsePutExpedicionResponse(raw: string): {
   return null;
 }
 
-/** Codifica cada valor como la librería PHP oficial (clave=urlencode(valor)). */
+/**
+ * Codifica un valor como la librería PHP oficial: utf8_decode + urlencode.
+ * Nacex interpreta el payload en ISO-8859-1; encodeURIComponent manda UTF-8
+ * y en la etiqueta aparece mojibake (á → Ã¡, ° → Â°).
+ */
+function encodeNacexValue(value: string): string {
+  let out = '';
+  for (const char of value) {
+    const code = char.codePointAt(0)!;
+    if (code === 0x20) {
+      out += '+';
+      continue;
+    }
+    // Igual que PHP urlencode: A-Z a-z 0-9 - _ .
+    if (
+      (code >= 0x30 && code <= 0x39) ||
+      (code >= 0x41 && code <= 0x5a) ||
+      (code >= 0x61 && code <= 0x7a) ||
+      code === 0x2d ||
+      code === 0x5f ||
+      code === 0x2e
+    ) {
+      out += char;
+      continue;
+    }
+    if (code <= 0xff) {
+      out += `%${code.toString(16).toUpperCase().padStart(2, '0')}`;
+      continue;
+    }
+    // Fuera de Latin-1 (como utf8_decode → ?)
+    out += '%3F';
+  }
+  return out;
+}
+
+/** Codifica cada par clave=valor (valores en ISO-8859-1 percent-encoded). */
 function encodeNacexData(pairs: string[]): string {
   return pairs
     .map((pair) => {
@@ -39,7 +74,7 @@ function encodeNacexData(pairs: string[]): string {
       if (eq === -1) return pair;
       const key = pair.slice(0, eq);
       const value = pair.slice(eq + 1);
-      return `${key}=${encodeURIComponent(value)}`;
+      return `${key}=${encodeNacexValue(value)}`;
     })
     .join('|');
 }

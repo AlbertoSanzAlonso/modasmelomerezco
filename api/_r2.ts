@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { getCanonicalSiteUrl } from './_siteUrl.js';
 
 function requiredEnv(name: string): string {
   const value = process.env[name]?.trim();
@@ -45,18 +46,32 @@ function getR2Client(): S3Client {
   return client;
 }
 
+/** URL pública servida por nuestro dominio (proxy). r2.dev público está caído/timeout. */
 export function publicUrlForKey(key: string): string {
   const cleanKey = key.replace(/^\/+/, '');
-  return `${getPublicBase()}/${cleanKey}`;
+  return `${getCanonicalSiteUrl()}/api/chat?k=${encodeURIComponent(cleanKey)}`;
 }
 
-/** Extrae la key de una URL pública R2 o de un path relativo. */
+/** Extrae la key de una URL de proxy, R2 pública o de un path relativo. */
 export function keyFromPublicUrl(urlOrKey: string): string | null {
-  const raw = urlOrKey.trim().split('?')[0];
+  const raw = urlOrKey.trim();
   if (!raw) return null;
 
+  // Proxy del sitio: /api/chat?k=<key> (absoluta o relativa)
   try {
-    const u = new URL(raw);
+    const u = new URL(raw, getCanonicalSiteUrl());
+    if (u.pathname === '/api/chat' || u.pathname.endsWith('/api/chat')) {
+      const k = u.searchParams.get('k')?.trim();
+      if (k) return decodeURIComponent(k).replace(/^\/+/, '');
+    }
+  } catch {
+    // seguir con otros formatos
+  }
+
+  const withoutQuery = raw.split('?')[0];
+
+  try {
+    const u = new URL(withoutQuery);
     if (u.hostname.endsWith('.r2.dev')) {
       return decodeURIComponent(u.pathname.replace(/^\//, ''));
     }
@@ -66,22 +81,24 @@ export function keyFromPublicUrl(urlOrKey: string): string | null {
 
   try {
     const publicBase = getPublicBase();
-    if (raw.startsWith(publicBase + '/') || raw === publicBase) {
-      return decodeURIComponent(raw.slice(publicBase.length).replace(/^\//, ''));
+    if (withoutQuery.startsWith(publicBase + '/') || withoutQuery === publicBase) {
+      return decodeURIComponent(withoutQuery.slice(publicBase.length).replace(/^\//, ''));
     }
   } catch {
     // R2_PUBLIC_URL ausente o URL no absoluta
   }
 
-  if (!/^https?:\/\//i.test(raw)) {
-    return raw.replace(/^\/+/, '');
+  if (!/^https?:\/\//i.test(withoutQuery)) {
+    return withoutQuery.replace(/^\/+/, '');
   }
 
   return null;
 }
 
 export function isR2PublicUrl(url: string): boolean {
-  return keyFromPublicUrl(url) != null && /^https?:\/\//i.test(url.trim());
+  return keyFromPublicUrl(url) != null && (
+    /^https?:\/\//i.test(url.trim()) || url.trim().startsWith('/api/chat')
+  );
 }
 
 export async function uploadObject(options: {

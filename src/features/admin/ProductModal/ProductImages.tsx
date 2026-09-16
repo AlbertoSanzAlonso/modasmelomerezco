@@ -4,10 +4,11 @@ import { Plus, Loader2, Crop, Star, Trash2, RotateCcw } from 'lucide-react';
 import type { Color } from '@/types';
 import { getColorDisplayName } from '@/lib/productVariants';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
+import { toDisplayImageUrl, toStoredImageUrl } from '@/lib/mediaUrl';
 
 function sameImageUrl(a?: string | null, b?: string | null): boolean {
   if (!a || !b) return false;
-  return a.trim().split('?')[0] === b.trim().split('?')[0];
+  return toStoredImageUrl(a) === toStoredImageUrl(b);
 }
 
 interface ProductImagesProps {
@@ -66,7 +67,7 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
           return (
             <div key={idx} className="space-y-2 min-w-0">
               <div className="relative aspect-3/4 bg-(--bg-card) border border-(--border-main) rounded-2xl overflow-hidden group">
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <img src={toDisplayImageUrl(img) || img} alt="" className="w-full h-full object-cover" />
 
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-3">
                   <div className="flex gap-2">

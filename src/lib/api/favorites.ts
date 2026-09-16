@@ -3,6 +3,7 @@ import { supabase } from '../supabase';
 import type { Product } from '@/types';
 import { mapProductVariant } from './products';
 import { deriveProductColors, hasColorVariants } from '../productVariants';
+import { toDisplayImageUrl } from '../mediaUrl';
 import type { Color } from '@/types';
 
 const normaliseProduct = (p: any): Product => {
@@ -24,9 +25,9 @@ const normaliseProduct = (p: any): Product => {
       if (p.product_images?.length > 0) {
         return p.product_images
           .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
-          .map((img: any) => img.image_url);
+          .map((img: any) => toDisplayImageUrl(img.image_url));
       }
-      return p.images || [];
+      return (p.images || []).map((url: string) => toDisplayImageUrl(url));
     })(),
     variants,
     colors,

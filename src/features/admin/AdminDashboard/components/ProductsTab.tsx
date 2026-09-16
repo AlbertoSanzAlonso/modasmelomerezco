@@ -13,6 +13,7 @@ import { hasActiveOffer } from '@/lib/productOffer';
 import { useCartStore } from '@/store/useCartStore';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
+import { toDisplayImageUrl } from '@/lib/mediaUrl';
 
 interface ProductsTabProps {
   products?: Product[];
@@ -422,7 +423,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                       <div 
                         className="w-12 h-16 shrink-0 bg-black overflow-hidden border border-(--border-main) rounded-xl shadow-sm group-hover:scale-105 transition-transform"
                       >
-                        <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover transition-all" />
+                        <img src={toDisplayImageUrl(product.images?.[0]) || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover transition-all" />
                       </div>
                       <p className="text-sm font-bold uppercase italic text-(--text-main) truncate min-w-0" title={product.name}>{product.name}</p>
                     </div>
@@ -613,7 +614,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                />
              </div>
              <div className="w-20 h-28 bg-black overflow-hidden border border-(--border-main) rounded-xl shrink-0 relative">
-               <img src={product.images?.[0] || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
+               <img src={toDisplayImageUrl(product.images?.[0]) || PRODUCT_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
                {isProductSoldOut(product) && (
                  <span className="absolute inset-x-0 bottom-0 bg-black/70 text-white text-[7px] font-black uppercase tracking-widest text-center py-1">
                    Agotado

@@ -7,6 +7,7 @@ import { getCartItemKey, formatOrderItemDetails, getProductUrlWithVariant } from
 import { getDiscountedLineTotal } from '@/lib/cartDiscount';
 import { CartDiscountField } from '@/components/shop/CartDiscountField';
 import { Button } from "@/components/ui/Button";
+import { toDisplayImageUrl } from '@/lib/mediaUrl';
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                         className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
                         aria-label={`Ver detalle de ${item.name}`}
                       >
-                        <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
+                        <img src={toDisplayImageUrl(item.images[0]) || item.images[0]} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
                       </Link>
                       <div className="flex-1 flex flex-col justify-between">
                         <div>

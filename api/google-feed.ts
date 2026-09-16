@@ -1,9 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { getCanonicalSiteUrl } from './_siteUrl.js';
+import { keyFromPublicUrl, publicUrlForKey } from './_r2.js';
 
 const SITE_URL = getCanonicalSiteUrl();
 const SITE_NAME = 'Modas Me lo Merezco';
+
+function toFeedImageUrl(url?: string | null): string {
+  const raw = (url || '').trim();
+  if (!raw) return `${SITE_URL}/logo.png`;
+  const key = keyFromPublicUrl(raw);
+  if (key) return publicUrlForKey(key);
+  if (raw.startsWith('http')) return raw;
+  return `${SITE_URL}${raw.startsWith('/') ? raw : `/${raw}`}`;
+}
 
 /** IDs de la taxonomía de Google Product Category (Apparel & Accessories). */
 const GPC = {
@@ -107,23 +117,19 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     })
     .map((p: any) => {
       const images = (p.product_images || []) as { image_url?: string }[];
-      const firstImage = images[0]?.image_url;
+      const firstImage = toFeedImageUrl(images[0]?.image_url);
 
-      const additionalImages = images.slice(1).map((img: { image_url?: string }) => {
-        const url = img.image_url || '';
-        return url.startsWith('http') ? url : `${SITE_URL}${url}`;
-      });
+      const additionalImages = images
+        .slice(1)
+        .map((img: { image_url?: string }) => toFeedImageUrl(img.image_url))
+        .filter((url) => url && url !== `${SITE_URL}/logo.png`);
 
       const totalStock = (p.product_variants || []).reduce(
         (acc: number, v: any) => acc + (v.stock || 0), 0,
       );
       const availability = totalStock > 0 ? 'in_stock' : 'out_of_stock';
 
-      const imageLink = firstImage
-        ? firstImage.startsWith('http')
-          ? firstImage
-          : `${SITE_URL}${firstImage}`
-        : `${SITE_URL}/logo.png`;
+      const imageLink = firstImage;
 
       const googleCategory = resolveGoogleProductCategory(p.name || '', p.category, p.subcategory);
       const productType = resolveProductType(p.category, p.subcategory);

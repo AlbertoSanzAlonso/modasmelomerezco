@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
+import { toDisplayImageUrl } from '@/lib/mediaUrl';
 
 interface ProductImageProps {
   src?: string;
@@ -14,6 +15,8 @@ interface ProductImageProps {
   width?: number;
   height?: number;
 }
+
+const LOAD_TIMEOUT_MS = 15000;
 
 export const ProductImage: React.FC<ProductImageProps> = ({ 
   src, 
@@ -29,17 +32,37 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
-  
-  const isPlaceholder = !src || src === PRODUCT_PLACEHOLDER || error;
-  const imageSrc = error ? PRODUCT_PLACEHOLDER : (src || PRODUCT_PLACEHOLDER);
+  const displaySrc = toDisplayImageUrl(src);
+  const isPlaceholder = !displaySrc || displaySrc === PRODUCT_PLACEHOLDER || error;
+  const imageSrc = isPlaceholder ? PRODUCT_PLACEHOLDER : displaySrc;
+
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+  }, [src]);
 
   // Handle cached images
   useEffect(() => {
-    if (imgRef.current?.complete) {
+    if (isPlaceholder) {
+      setLoaded(true);
+      return;
+    }
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
       setLoaded(true);
       onLoad?.();
     }
-  }, [imageSrc, onLoad]);
+  }, [imageSrc, isPlaceholder, onLoad]);
+
+  // Si la URL remota cuelga (p. ej. r2.dev caído), no dejar el loader infinito
+  useEffect(() => {
+    if (isPlaceholder || loaded) return;
+    const timer = window.setTimeout(() => {
+      setError(true);
+      setLoaded(true);
+      onLoad?.();
+    }, LOAD_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [imageSrc, isPlaceholder, loaded, onLoad]);
 
   const handleLoad = () => {
     setLoaded(true);

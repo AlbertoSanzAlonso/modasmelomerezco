@@ -10,7 +10,7 @@
 ## Reglas rápidas
 
 - Inventario: una fila en `product_variants` = talla + color + stock; color por defecto **Neutro**.
-- Imágenes de producto: **Cloudflare R2** (no Supabase Storage).
+- Imágenes de producto: **Cloudflare R2** (no Supabase Storage). La URL pública `*.r2.dev` puede fallar; la tienda las sirve por proxy `GET /api/chat?k=<key>`.
 - Migraciones SQL en `supabase/migrations/` (carpeta de nombre histórico): aplicarlas en la base Postgres; no usar panel/SQL Editor de Supabase.
 - Logos/assets de marca: `/logo.png` o `/assets/logo/…` del sitio, nunca URLs `*.supabase.co/storage/…`.
 - No commitear archivos `.env` con credenciales.

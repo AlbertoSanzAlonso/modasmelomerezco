@@ -12,6 +12,7 @@ import {
   UNIQUE_SIZE_LABEL,
 } from '../productVariants';
 import { isProductUuid, slugifyProductName } from '../productSlug';
+import { toDisplayImageUrl, toStoredImageUrl } from '../mediaUrl';
 import type { Color, ProductVariant } from '@/types';
 
 const PRODUCT_SELECT_BASE =
@@ -516,9 +517,9 @@ const normalise = (p: any): Product => ({
     if (p.product_images && p.product_images.length > 0) {
       return p.product_images
         .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
-        .map((img: any) => img.image_url);
+        .map((img: any) => toDisplayImageUrl(img.image_url));
     }
-    return p.images || [];
+    return (p.images || []).map((url: string) => toDisplayImageUrl(url));
   })(),
   image_originals: (() => {
     if (p.product_images && p.product_images.length > 0) {
@@ -528,7 +529,7 @@ const normalise = (p: any): Product => ({
           const url = typeof img.original_image_url === 'string'
             ? img.original_image_url.trim()
             : '';
-          return url || null;
+          return url ? toDisplayImageUrl(url) : null;
         });
     }
     const urls: string[] = p.images || [];
@@ -536,7 +537,9 @@ const normalise = (p: any): Product => ({
     if (fromProduct?.length) {
       return urls.map((_, i) => {
         const url = fromProduct[i];
-        return typeof url === 'string' && url.trim() ? url.trim() : null;
+        return typeof url === 'string' && url.trim()
+          ? toDisplayImageUrl(url.trim())
+          : null;
       });
     }
     return urls.map(() => null);
@@ -595,12 +598,12 @@ function toProductImageRecords(
     const originalRaw = imageOriginals?.[index];
     const original =
       typeof originalRaw === 'string' && originalRaw.trim()
-        ? originalRaw.trim().split('?')[0]
+        ? toStoredImageUrl(originalRaw)
         : null;
     return {
       product_id,
-      image_url: url,
-      original_image_url: original,
+      image_url: toStoredImageUrl(url),
+      original_image_url: original || null,
       orden: index,
       is_main: index === 0,
       color_id: normalizeColorId(imageColorIds?.[index] ?? null),

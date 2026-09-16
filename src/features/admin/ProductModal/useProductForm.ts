@@ -13,14 +13,32 @@ import {
 } from '@/lib/productVariants';
 import { toWebpBlob } from '@/utils/toWebp';
 import { resolveImageForCrop } from '@/utils/resolveImageForCrop';
+import { toDisplayImageUrl, toStoredImageUrl } from '@/lib/mediaUrl';
 
 function stripImageQuery(url: string): string {
-  return url.trim().split('?')[0];
+  return toStoredImageUrl(url) || url.trim().split('?')[0];
 }
 
 function sameImageUrl(a?: string | null, b?: string | null): boolean {
   if (!a || !b) return false;
   return stripImageQuery(a) === stripImageQuery(b);
+}
+
+function withCacheBust(url: string): string {
+  const base = toDisplayImageUrl(url) || url.trim();
+  try {
+    const u = new URL(
+      base,
+      typeof window !== 'undefined' ? window.location.origin : 'https://www.modasmelomerezco.es'
+    );
+    u.searchParams.set('v', String(Date.now()));
+    if (base.startsWith('/')) {
+      return `${u.pathname}?${u.searchParams.toString()}`;
+    }
+    return u.toString();
+  } catch {
+    return base;
+  }
 }
 
 function newDraftProductId(): string {
@@ -333,8 +351,8 @@ export const useProductForm = (
       const imageFile = new File([webpBlob], fileName, { type: 'image/webp' });
 
       const publicUrl = await api.storage.upload(imageFile, fileName);
-      const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
-      const originalForForm = originalPublicUrl;
+      const cacheBustedUrl = withCacheBust(publicUrl);
+      const originalForForm = toDisplayImageUrl(originalPublicUrl) || originalPublicUrl;
 
       if (editIndex !== null) {
         setFormData((prev) => {
@@ -470,7 +488,7 @@ export const useProductForm = (
     if (!original || !previousUrl) return;
     if (sameImageUrl(original, previousUrl)) return;
 
-    const restoredUrl = `${stripImageQuery(original)}?v=${Date.now()}`;
+    const restoredUrl = withCacheBust(original);
     setFormData((prev) => {
       const images = [...(prev.images || [])];
       if (index < 0 || index >= images.length) return prev;

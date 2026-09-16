@@ -11,6 +11,7 @@ import { OrderItemVariantInfo } from '@/components/orders/OrderItemVariantInfo';
 import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { useCartStore } from '@/store/useCartStore';
+import { toDisplayImageUrl } from '@/lib/mediaUrl';
 
 interface OrderDetailsModalProps {
   order: Order;
@@ -226,7 +227,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 <div key={idx} className="p-4 flex items-center gap-4 border-b border-(--border-main) last:border-0">
                   <div className="w-12 h-16 bg-secondary/5 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border border-(--border-main)">
                     {item.image_url ? (
-                      <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                      <img src={toDisplayImageUrl(item.image_url) || item.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="flex flex-col items-center justify-center p-1 text-center">
                         <img src="/assets/logo/LOGO MELOMEREZCO corona.svg" alt="" className="w-6 h-6 opacity-20" />

@@ -4,6 +4,7 @@ import { Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
+import { toDisplayImageUrl } from '@/lib/mediaUrl';
 import { api } from '@/lib/api';
 import {
   findVariant,
@@ -293,7 +294,7 @@ export const DailySalesTab: React.FC = () => {
                       className="w-full flex items-center gap-3 p-3 text-left hover:bg-primary/5 transition-colors"
                     >
                       <img
-                        src={p.images?.[0] || PRODUCT_PLACEHOLDER}
+                        src={toDisplayImageUrl(p.images?.[0]) || PRODUCT_PLACEHOLDER}
                         alt=""
                         className="w-12 h-12 object-cover rounded-xl bg-(--bg-main)"
                       />
@@ -316,7 +317,7 @@ export const DailySalesTab: React.FC = () => {
             <div className="p-6 sm:p-8 space-y-6">
               <div className="flex items-center gap-4">
                 <img
-                  src={selectedProduct.images?.[0] || PRODUCT_PLACEHOLDER}
+                  src={toDisplayImageUrl(selectedProduct.images?.[0]) || PRODUCT_PLACEHOLDER}
                   alt=""
                   className="w-16 h-16 object-cover rounded-2xl bg-(--bg-main)"
                 />

@@ -20,10 +20,14 @@ function isLegacyStorageUrl(url: string): boolean {
 
 function isR2PublicUrl(url: string): boolean {
   try {
-    const u = new URL(url);
-    return u.hostname.endsWith('.r2.dev');
-  } catch {
+    const u = new URL(url, 'https://www.modasmelomerezco.es');
+    if (u.hostname.endsWith('.r2.dev')) return true;
+    if (u.pathname === '/api/chat' || u.pathname.endsWith('/api/chat')) {
+      return !!u.searchParams.get('k');
+    }
     return false;
+  } catch {
+    return url.includes('.r2.dev') || url.includes('/api/chat?k=');
   }
 }
 

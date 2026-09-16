@@ -5,6 +5,7 @@ import { getCartItemKey, formatOrderItemDetails } from '@/lib/productVariants';
 import { getDiscountedLineTotal } from '@/lib/cartDiscount';
 import { useCartStore } from '@/store/useCartStore';
 import { CartDiscountField } from '@/components/shop/CartDiscountField';
+import { toDisplayImageUrl } from '@/lib/mediaUrl';
 
 interface CheckoutSummaryProps {
   items: CartItem[];
@@ -35,7 +36,7 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
             return (
             <div key={getCartItemKey(item.product_id, item.selectedVariant)} className="flex gap-4">
               <div className="w-16 aspect-3/4 bg-secondary/10 rounded-lg overflow-hidden">
-                <img src={item.images && item.images.length > 0 ? item.images[0] : undefined} alt="" className="w-full h-full object-cover" />
+                <img src={item.images && item.images.length > 0 ? toDisplayImageUrl(item.images[0]) || item.images[0] : undefined} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 flex flex-col justify-center text-secondary">
                 <p className="text-[10px] font-black uppercase tracking-tight">{item.name}</p>

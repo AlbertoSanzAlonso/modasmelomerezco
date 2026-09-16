@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getCanonicalSiteUrl } from './_siteUrl.js';
 import { isProductUuid } from './_productUuid.js';
+import { keyFromPublicUrl, publicUrlForKey } from './_r2.js';
 
 const SITE_URL = getCanonicalSiteUrl();
 const SITE_NAME = 'Modas Me lo Merezco';
@@ -105,6 +106,15 @@ function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
+function toSeoImageUrl(url?: string | null): string {
+  const raw = (url || '').trim();
+  if (!raw) return DEFAULT_OG_IMAGE;
+  const key = keyFromPublicUrl(raw);
+  if (key) return publicUrlForKey(key);
+  if (raw.startsWith('http')) return raw;
+  return absoluteUrl(raw);
+}
+
 function getDbClient() {
   const url = process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -155,11 +165,7 @@ async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
 
   const images = (product.product_images as { image_url?: string }[] | null) ?? [];
   const firstImage = images[0]?.image_url;
-  const ogImage = firstImage
-    ? firstImage.startsWith('http')
-      ? firstImage
-      : absoluteUrl(firstImage)
-    : DEFAULT_OG_IMAGE;
+  const ogImage = toSeoImageUrl(firstImage);
 
   const description = truncateDescription(
     product.description ||
@@ -177,11 +183,7 @@ async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
     '@type': 'Product',
     name: productName,
     description: description || `${productName}. Compra online en ${SITE_NAME}.`,
-    image: firstImage
-      ? firstImage.startsWith('http')
-        ? firstImage
-        : absoluteUrl(firstImage)
-      : undefined,
+    image: firstImage ? toSeoImageUrl(firstImage) : undefined,
     sku: product.product_id,
     url: canonical,
     offers: {

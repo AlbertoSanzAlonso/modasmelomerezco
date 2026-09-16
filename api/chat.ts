@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import sharp from 'sharp';
-import { deleteObject, getObject, isR2PublicUrl, uploadObject } from './_r2.js';
+import { deleteObject, getObject, isR2PublicUrl, keyFromPublicUrl, uploadObject } from './_r2.js';
 
 /** Un solo endpoint: chat/embed + convert-webp + R2 upload (límite Hobby: máx. 12 functions). */
 export const config = {
@@ -24,7 +24,7 @@ function setCors(req: VercelRequest, res: VercelResponse) {
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
@@ -47,11 +47,53 @@ function guessContentType(fileName: string, fallback?: string): string {
   }
 }
 
+function mediaKeyFromQuery(req: VercelRequest): string | null {
+  const raw = req.query?.k;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  let key = value.trim();
+  try {
+    key = decodeURIComponent(key);
+  } catch {
+    // ya viene decodificada
+  }
+  key = key.replace(/^\/+/, '');
+  if (!key || key.includes('..') || /^https?:\/\//i.test(key)) return null;
+  return key;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // Proxy de imágenes R2 (r2.dev público no responde)
+  if (req.method === 'GET') {
+    try {
+      const key = mediaKeyFromQuery(req);
+      if (!key) {
+        return res.status(400).json({ message: 'Missing or invalid k' });
+      }
+      const obj = await getObject(key);
+      if (!obj) {
+        return res.status(404).json({ message: 'Image not found' });
+      }
+      const contentType =
+        obj.contentType && obj.contentType !== 'application/octet-stream'
+          ? obj.contentType
+          : guessContentType(key, obj.contentType);
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).send(obj.body);
+    } catch (error: unknown) {
+      console.error('serve-image error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Error serving image';
+      return res.status(500).json({ message });
+    }
   }
 
   if (req.method !== 'POST') {
@@ -143,7 +185,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         host.endsWith('.supabase.co') ||
         host.endsWith('.insforge.app') ||
         host === 'www.modasmelomerezco.es' ||
-        host === 'modasmelomerezco.es';
+        host === 'modasmelomerezco.es' ||
+        host === 'localhost' ||
+        host.endsWith('.vercel.app');
       if (!allowed) {
         return res.status(400).json({ message: 'Host not allowed' });
       }
@@ -151,10 +195,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let buffer: Buffer;
       let contentType: string;
 
-      // R2 público no envía CORS; además el GET público puede 404 si el objeto
-      // se borró. Preferimos GetObject autenticado.
-      if (isR2PublicUrl(rawUrl) || host.endsWith('.r2.dev')) {
-        const obj = await getObject(rawUrl);
+      // R2 vía API autenticada (público r2.dev caído / sin CORS)
+      const r2Key =
+        keyFromPublicUrl(rawUrl) ||
+        (host.endsWith('.r2.dev')
+          ? decodeURIComponent(parsed.pathname.replace(/^\//, ''))
+          : null);
+      if (r2Key && (isR2PublicUrl(rawUrl) || host.endsWith('.r2.dev') || parsed.pathname.endsWith('/api/chat'))) {
+        const obj = await getObject(r2Key);
         if (!obj) {
           return res.status(404).json({
             message:

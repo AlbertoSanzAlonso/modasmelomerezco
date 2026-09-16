@@ -9,9 +9,19 @@ import {
   normalizeVariantsForForm,
   variantHasColor,
   alignImageColorIds,
+  alignImageOriginals,
 } from '@/lib/productVariants';
 import { toWebpBlob } from '@/utils/toWebp';
 import { resolveImageForCrop } from '@/utils/resolveImageForCrop';
+
+function stripImageQuery(url: string): string {
+  return url.trim().split('?')[0];
+}
+
+function sameImageUrl(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  return stripImageQuery(a) === stripImageQuery(b);
+}
 
 function newDraftProductId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -46,6 +56,7 @@ export const useProductForm = (
     category_id: undefined,
     subcategory_id: undefined,
     images: [],
+    image_originals: [],
     image_color_ids: [],
     stock: 0,
     is_new: false,
@@ -177,6 +188,7 @@ export const useProductForm = (
           ...fresh,
           variants,
           images,
+          image_originals: alignImageOriginals(images.length, fresh.image_originals),
           image_color_ids: alignImageColorIds(images.length, fresh.image_color_ids),
         });
       })
@@ -234,11 +246,16 @@ export const useProductForm = (
       .replace(/^_|_$/g, '');
   };
 
-  const buildImageFileName = (productName: string, index: number): string => {
+  const buildImageFileName = (
+    productName: string,
+    index: number,
+    kind: 'display' | 'original' = 'display'
+  ): string => {
     const baseName = sanitizeName(productName) || 'product';
     const productKey = sanitizeName(formData.product_id || 'draft') || 'draft';
+    const suffix = kind === 'original' ? '_orig' : '';
     // Carpeta + timestamp: evita pisar archivos de otras piezas (o de este mismo producto)
-    return `${productKey}/${Date.now()}_${baseName}_${index}.webp`;
+    return `${productKey}/${Date.now()}_${baseName}_${index}${suffix}.webp`;
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -271,12 +288,44 @@ export const useProductForm = (
     const editIndex = editingImageIndex;
     const previousUrl =
       editIndex !== null ? formData.images?.[editIndex] ?? null : null;
+    const existingOriginal =
+      editIndex !== null
+        ? alignImageOriginals(
+            (formData.images || []).length,
+            formData.image_originals
+          )[editIndex]
+        : null;
 
     try {
       setIsUploading(true);
       const productName = formData.name || 'product';
       const currentImages = formData.images || [];
       const targetIndex = editIndex !== null ? editIndex : currentImages.length;
+
+      // Guardar original la primera vez; en recortes posteriores se reutiliza
+      let originalPublicUrl = existingOriginal
+        ? stripImageQuery(existingOriginal)
+        : null;
+      if (!originalPublicUrl) {
+        const originalRes = await fetch(cropSrc);
+        if (!originalRes.ok) {
+          throw new Error(`No se pudo leer la imagen original (HTTP ${originalRes.status})`);
+        }
+        const originalBlob = await originalRes.blob();
+        if (!originalBlob.size) {
+          throw new Error('La imagen original está vacía');
+        }
+        const originalWebp = await toWebpBlob(originalBlob);
+        const originalFileName = buildImageFileName(
+          productName,
+          targetIndex,
+          'original'
+        );
+        const originalFile = new File([originalWebp], originalFileName, {
+          type: 'image/webp',
+        });
+        originalPublicUrl = await api.storage.upload(originalFile, originalFileName);
+      }
 
       // Siempre convertir a WebP real (cabecera RIFF/WEBP) antes de subir
       const webpBlob = await toWebpBlob(croppedBlob);
@@ -285,19 +334,33 @@ export const useProductForm = (
 
       const publicUrl = await api.storage.upload(imageFile, fileName);
       const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
+      const originalForForm = originalPublicUrl;
 
       if (editIndex !== null) {
         setFormData((prev) => {
           const newImages = [...(prev.images || [])];
           if (editIndex < 0 || editIndex >= newImages.length) return prev;
           newImages[editIndex] = cacheBustedUrl;
+          const originals = alignImageOriginals(
+            newImages.length,
+            prev.image_originals
+          );
+          originals[editIndex] = originalForForm;
           return {
             ...prev,
             images: newImages,
-            image_color_ids: alignImageColorIds(newImages.length, prev.image_color_ids),
+            image_originals: originals,
+            image_color_ids: alignImageColorIds(
+              newImages.length,
+              prev.image_color_ids
+            ),
           };
         });
-        if (previousUrl && previousUrl.split('?')[0] !== publicUrl) {
+        if (
+          previousUrl &&
+          !sameImageUrl(previousUrl, publicUrl) &&
+          !sameImageUrl(previousUrl, originalForForm)
+        ) {
           queueImageDelete(previousUrl);
         }
       } else {
@@ -306,8 +369,18 @@ export const useProductForm = (
           return {
             ...prev,
             images: newImages,
+            image_originals: [
+              ...alignImageOriginals(
+                (prev.images || []).length,
+                prev.image_originals
+              ),
+              originalForForm,
+            ],
             image_color_ids: [
-              ...alignImageColorIds((prev.images || []).length, prev.image_color_ids),
+              ...alignImageColorIds(
+                (prev.images || []).length,
+                prev.image_color_ids
+              ),
               null,
             ],
           };
@@ -331,14 +404,18 @@ export const useProductForm = (
   const handleSetPrincipal = (index: number) => {
     const newImages = [...(formData.images || [])];
     const newColorIds = alignImageColorIds(newImages.length, formData.image_color_ids);
+    const newOriginals = alignImageOriginals(newImages.length, formData.image_originals);
     const [selected] = newImages.splice(index, 1);
     const [selectedColor] = newColorIds.splice(index, 1);
+    const [selectedOriginal] = newOriginals.splice(index, 1);
     newImages.unshift(selected);
     newColorIds.unshift(selectedColor ?? null);
+    newOriginals.unshift(selectedOriginal ?? null);
     setFormData((prev) => ({
       ...prev,
       images: newImages,
       image_color_ids: newColorIds,
+      image_originals: newOriginals,
     }));
   };
 
@@ -355,11 +432,16 @@ export const useProductForm = (
     const url = formData.images?.[index];
     if (!url) return;
 
+    const original =
+      alignImageOriginals((formData.images || []).length, formData.image_originals)[
+        index
+      ] || url;
+
     try {
       setIsUploading(true);
       setEditingImageIndex(index);
       revokeCropObjectUrl();
-      const objectUrl = await resolveImageForCrop(url);
+      const objectUrl = await resolveImageForCrop(original);
       cropObjectUrlRef.current = objectUrl;
       setCropSrc(objectUrl);
     } catch (error) {
@@ -378,20 +460,54 @@ export const useProductForm = (
     }
   };
 
+  const handleRestoreOriginal = (index: number) => {
+    const originals = alignImageOriginals(
+      (formData.images || []).length,
+      formData.image_originals
+    );
+    const original = originals[index];
+    const previousUrl = formData.images?.[index];
+    if (!original || !previousUrl) return;
+    if (sameImageUrl(original, previousUrl)) return;
+
+    const restoredUrl = `${stripImageQuery(original)}?v=${Date.now()}`;
+    setFormData((prev) => {
+      const images = [...(prev.images || [])];
+      if (index < 0 || index >= images.length) return prev;
+      images[index] = restoredUrl;
+      return {
+        ...prev,
+        images,
+        image_originals: alignImageOriginals(images.length, prev.image_originals),
+      };
+    });
+    queueImageDelete(previousUrl);
+  };
+
   const removeImage = async (index: number) => {
     const imageUrl = formData.images?.[index];
     if (!imageUrl) return;
+    const originals = alignImageOriginals(
+      (formData.images || []).length,
+      formData.image_originals
+    );
+    const originalUrl = originals[index];
     const newImages = (formData.images || []).filter((_, i) => i !== index);
     const newColorIds = alignImageColorIds(
       (formData.images || []).length,
       formData.image_color_ids
     ).filter((_, i) => i !== index);
+    const newOriginals = originals.filter((_, i) => i !== index);
     setFormData((prev) => ({
       ...prev,
       images: newImages,
       image_color_ids: newColorIds,
+      image_originals: newOriginals,
     }));
     queueImageDelete(imageUrl);
+    if (originalUrl && !sameImageUrl(originalUrl, imageUrl)) {
+      queueImageDelete(originalUrl);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -511,6 +627,7 @@ export const useProductForm = (
             offer_value: formData.is_on_offer ? Number(formData.offer_value) || 0 : 0,
             images,
             image_color_ids: alignImageColorIds(images.length, formData.image_color_ids),
+            image_originals: alignImageOriginals(images.length, formData.image_originals),
             variants: validVariants,
             colors,
             labels: formData.labels || [],
@@ -595,6 +712,7 @@ export const useProductForm = (
     handleSetPrincipal,
     handleImageColorChange,
     handleEditImage,
+    handleRestoreOriginal,
     removeImage,
     handleSubmit
   };

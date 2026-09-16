@@ -520,6 +520,27 @@ const normalise = (p: any): Product => ({
     }
     return p.images || [];
   })(),
+  image_originals: (() => {
+    if (p.product_images && p.product_images.length > 0) {
+      return p.product_images
+        .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
+        .map((img: any) => {
+          const url = typeof img.original_image_url === 'string'
+            ? img.original_image_url.trim()
+            : '';
+          return url || null;
+        });
+    }
+    const urls: string[] = p.images || [];
+    const fromProduct: (string | null)[] | undefined = p.image_originals;
+    if (fromProduct?.length) {
+      return urls.map((_, i) => {
+        const url = fromProduct[i];
+        return typeof url === 'string' && url.trim() ? url.trim() : null;
+      });
+    }
+    return urls.map(() => null);
+  })(),
   image_color_ids: (() => {
     if (p.product_images && p.product_images.length > 0) {
       return p.product_images
@@ -567,15 +588,24 @@ const normalise = (p: any): Product => ({
 function toProductImageRecords(
   product_id: string,
   images: string[],
-  imageColorIds?: (number | null)[]
+  imageColorIds?: (number | null)[],
+  imageOriginals?: (string | null)[]
 ) {
-  return images.map((url: string, index: number) => ({
-    product_id,
-    image_url: url,
-    orden: index,
-    is_main: index === 0,
-    color_id: normalizeColorId(imageColorIds?.[index] ?? null),
-  }));
+  return images.map((url: string, index: number) => {
+    const originalRaw = imageOriginals?.[index];
+    const original =
+      typeof originalRaw === 'string' && originalRaw.trim()
+        ? originalRaw.trim().split('?')[0]
+        : null;
+    return {
+      product_id,
+      image_url: url,
+      original_image_url: original,
+      orden: index,
+      is_main: index === 0,
+      color_id: normalizeColorId(imageColorIds?.[index] ?? null),
+    };
+  });
 }
 
 export const products = {
@@ -811,7 +841,7 @@ export const products = {
   create: async (
     productData: Omit<Product, 'product_id' | 'slug'> & { product_id?: string; slug?: string },
   ): Promise<Product> => {
-    const { variants, images, image_color_ids, colors, labels, discountCodes, ...pData } = productData as any;
+    const { variants, images, image_color_ids, image_originals, colors, labels, discountCodes, ...pData } = productData as any;
     const productId = pData.product_id || createProductId();
     const slug =
       (typeof pData.slug === 'string' && pData.slug.trim()) ||
@@ -841,7 +871,8 @@ export const products = {
       const imageRecords = toProductImageRecords(
         product.product_id,
         images,
-        image_color_ids
+        image_color_ids,
+        image_originals
       );
       const { error: imagesError } = await supabase
         .from('product_images')
@@ -877,7 +908,7 @@ export const products = {
   },
 
   update: async (product_id: string, updates: Partial<Product> & { _syncOptions?: { allowColorRemoval?: boolean } }): Promise<Product> => {
-    const { variants, images, image_color_ids, colors, labels, discountCodes, _syncOptions, ...pUpdates } = updates as any;
+    const { variants, images, image_color_ids, image_originals, colors, labels, discountCodes, _syncOptions, ...pUpdates } = updates as any;
 
     // 1. Update product table
     const filteredUpdates = cleanProductTablePayload(pUpdates);
@@ -915,7 +946,12 @@ export const products = {
         .eq('product_id', product_id);
       assertDbError(deleteImagesError, 'product_images delete');
       if (images.length > 0) {
-        const imageRecords = toProductImageRecords(product_id, images, image_color_ids);
+        const imageRecords = toProductImageRecords(
+          product_id,
+          images,
+          image_color_ids,
+          image_originals
+        );
         const { error: insertImagesError } = await supabase
           .from('product_images')
           .insert(imageRecords);

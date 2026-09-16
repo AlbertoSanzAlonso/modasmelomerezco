@@ -1,12 +1,18 @@
 
 import React from 'react';
-import { Plus, Loader2, Crop, Star, Trash2 } from 'lucide-react';
+import { Plus, Loader2, Crop, Star, Trash2, RotateCcw } from 'lucide-react';
 import type { Color } from '@/types';
 import { getColorDisplayName } from '@/lib/productVariants';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 
+function sameImageUrl(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  return a.trim().split('?')[0] === b.trim().split('?')[0];
+}
+
 interface ProductImagesProps {
   images: string[];
+  imageOriginals: (string | null)[];
   imageColorIds: (number | null)[];
   colors: Color[];
   productName?: string;
@@ -14,6 +20,7 @@ interface ProductImagesProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onEditImage: (index: number) => void;
+  onRestoreOriginal: (index: number) => void;
   onSetPrincipal: (index: number) => void;
   onRemoveImage: (index: number) => void;
   onImageColorChange: (index: number, colorId: number | null) => void;
@@ -21,6 +28,7 @@ interface ProductImagesProps {
 
 export const ProductImages: React.FC<ProductImagesProps> = ({
   images,
+  imageOriginals,
   imageColorIds,
   colors,
   productName,
@@ -28,6 +36,7 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
   fileInputRef,
   onFileChange,
   onEditImage,
+  onRestoreOriginal,
   onSetPrincipal,
   onRemoveImage,
   onImageColorChange,
@@ -52,6 +61,8 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
         {images.map((img, idx) => {
           const colorId = imageColorIds[idx] ?? null;
           const linked = colorId != null ? colors.find((c) => c.id === colorId) : null;
+          const original = imageOriginals[idx] ?? null;
+          const canRestore = !!original && !sameImageUrl(original, img);
           return (
             <div key={idx} className="space-y-2 min-w-0">
               <div className="relative aspect-3/4 bg-(--bg-card) border border-(--border-main) rounded-2xl overflow-hidden group">
@@ -67,6 +78,16 @@ export const ProductImages: React.FC<ProductImagesProps> = ({
                     >
                       <Crop className="w-4 h-4" />
                     </button>
+                    {canRestore && (
+                      <button
+                        type="button"
+                        onClick={() => onRestoreOriginal(idx)}
+                        className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-md transition-all"
+                        title="Volver al original"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    )}
                     {idx !== 0 && (
                       <button
                         type="button"

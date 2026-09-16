@@ -2,6 +2,8 @@ export interface ProductImage {
   id?: number;
   product_id?: string;
   image_url: string;
+  /** Versión sin recortar; si existe, el crop se reabre desde aquí */
+  original_image_url?: string | null;
   orden?: number;
   is_main?: boolean;
   alt_text?: string;
@@ -52,6 +54,11 @@ export interface Product {
   subcategory?: string;
   /** Assembled from product_images rows, sorted by orden */
   images: string[];
+  /**
+   * Paralelo a `images`: URL original sin recortar (null = no hay original guardado).
+   * El crop se reabre desde aquí; en tienda no se usa.
+   */
+  image_originals?: (string | null)[];
   /**
    * Paralelo a `images`: color asociado a cada foto (null = sin asociación).
    * En tienda, al elegir un color se muestra la primera foto con ese color_id.

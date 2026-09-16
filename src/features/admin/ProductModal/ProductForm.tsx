@@ -11,7 +11,7 @@ import { ProductDetailsField } from './ProductDetailsField';
 import { ProductPublishOptions } from './ProductPublishOptions';
 import { ProductFooter } from './ProductFooter';
 import type { Category, Subcategory, Color, Label, DiscountCode } from '@/types/index';
-import { alignImageColorIds, deriveProductColors } from '@/lib/productVariants';
+import { alignImageColorIds, alignImageOriginals, deriveProductColors } from '@/lib/productVariants';
 
 interface ProductFormProps {
   formData: any;
@@ -29,6 +29,7 @@ interface ProductFormProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEditImage: (idx: number) => void;
+  handleRestoreOriginal: (idx: number) => void;
   handleSetPrincipal: (idx: number) => void;
   handleImageColorChange: (idx: number, colorId: number | null) => void;
   removeImage: (idx: number) => void;
@@ -52,6 +53,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   fileInputRef,
   handleFileChange,
   handleEditImage,
+  handleRestoreOriginal,
   handleSetPrincipal,
   handleImageColorChange,
   removeImage,
@@ -63,11 +65,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     formData.variants || [],
     availableColors
   );
+  const imageOriginals = alignImageOriginals(
+    (formData.images || []).length,
+    formData.image_originals
+  );
 
   return (
     <form onSubmit={onSubmit} autoComplete="off" className="p-6 md:p-12 pt-4 space-y-10 md:space-y-12">
       <ProductImages 
         images={formData.images || []}
+        imageOriginals={imageOriginals}
         imageColorIds={alignImageColorIds(
           (formData.images || []).length,
           formData.image_color_ids
@@ -78,6 +85,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         fileInputRef={fileInputRef}
         onFileChange={handleFileChange}
         onEditImage={handleEditImage}
+        onRestoreOriginal={handleRestoreOriginal}
         onSetPrincipal={handleSetPrincipal}
         onRemoveImage={removeImage}
         onImageColorChange={handleImageColorChange}

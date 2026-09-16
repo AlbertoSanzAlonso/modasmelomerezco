@@ -29,6 +29,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
     handleSetPrincipal,
     handleImageColorChange,
     handleEditImage,
+    handleRestoreOriginal,
     removeImage,
     handleSubmit
   } = useProductForm(product, onSave, isSaving);
@@ -75,6 +76,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, on
               fileInputRef={fileInputRef}
               handleFileChange={handleFileChange}
               handleEditImage={handleEditImage}
+              handleRestoreOriginal={handleRestoreOriginal}
               handleSetPrincipal={handleSetPrincipal}
               handleImageColorChange={handleImageColorChange}
               removeImage={removeImage}

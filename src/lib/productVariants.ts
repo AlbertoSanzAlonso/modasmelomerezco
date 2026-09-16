@@ -432,6 +432,19 @@ export function alignImageColorIds(
   });
 }
 
+/** Alinea `image_originals` con la longitud de `images`. */
+export function alignImageOriginals(
+  imageCount: number,
+  originals?: (string | null)[] | null
+): (string | null)[] {
+  const urls = originals ? [...originals] : [];
+  while (urls.length < imageCount) urls.push(null);
+  return urls.slice(0, imageCount).map((url) => {
+    const clean = url?.trim();
+    return clean ? clean : null;
+  });
+}
+
 /** Índice de la primera foto asociada a un color, o -1 si no hay. */
 export function findImageIndexForColor(
   imageColorIds: (number | null)[] | undefined | null,

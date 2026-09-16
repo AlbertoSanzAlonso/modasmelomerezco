@@ -30,7 +30,8 @@ description: >-
 - **Eliminar color:** en las fichas del inventario (propios y genéricos), botón X + confirmación. API `colors.delete(id, { productId })` quita variantes/`product_colors` de ese artículo; si un genérico sigue en otros productos, falla.
 - **Estampados:** `colors.swatch_url` = URL de muestra; si existe, el selector muestra la imagen en lugar del hex. Migración: `colors_swatch_url.sql`.
 - **Foto por color:** `product_images.color_id` (nullable). En admin, cada foto de la galería puede asociarse a un color del inventario; en la ficha, al elegir ese color se muestra esa foto. Migración: `product_images_color_id.sql`. El producto expone `image_color_ids` paralelo a `images`.
-- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`, `isOwnedProductColor`, `alignImageColorIds`, `findImageIndexForColor`).
+- **Original del crop:** `product_images.original_image_url` (nullable). Al confirmar un crop (con zoom) se guarda también la versión sin recortar; al reabrir el crop se usa el original; en galería hay «Volver al original». Migración: `product_images_original_url.sql`. El producto expone `image_originals` paralelo a `images`.
+- **Helpers:** `src/lib/productVariants.ts` (`buildScopedColorName`, `getColorDisplayName`, `isOwnedProductColor`, `alignImageColorIds`, `alignImageOriginals`, `findImageIndexForColor`).
 - Al crear un color propio, las tallas se expanden para poder asignarlo al momento.
 
 ## Admin (`ProductInventory.tsx`)

@@ -252,8 +252,15 @@ export const AdminDashboard: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (product: Product) => {
-      if (product.images?.length) {
-        await Promise.allSettled(product.images.map((url) => api.storage.delete(url)));
+      const urls = [
+        ...(product.images || []),
+        ...(product.image_originals || []).filter(
+          (url): url is string => typeof url === 'string' && !!url.trim()
+        ),
+      ];
+      const unique = [...new Set(urls.map((u) => u.trim().split('?')[0]))];
+      if (unique.length) {
+        await Promise.allSettled(unique.map((url) => api.storage.delete(url)));
       }
       return api.products.delete(product.product_id);
     },
@@ -367,7 +374,16 @@ export const AdminDashboard: React.FC = () => {
       onConfirm: async () => {
         const productsToDelete = products?.filter(p => selectedIds.includes(p.product_id)) || [];
         await Promise.all(productsToDelete.map(async (p) => {
-          if (p.images?.length) await Promise.allSettled(p.images.map(u => api.storage.delete(u)));
+          const urls = [
+            ...(p.images || []),
+            ...(p.image_originals || []).filter(
+              (url): url is string => typeof url === 'string' && !!url.trim()
+            ),
+          ];
+          const unique = [...new Set(urls.map((u) => u.trim().split('?')[0]))];
+          if (unique.length) {
+            await Promise.allSettled(unique.map((url) => api.storage.delete(url)));
+          }
           return api.products.delete(p.product_id);
         }));
         queryClient.invalidateQueries({ queryKey: ['admin-products'] });

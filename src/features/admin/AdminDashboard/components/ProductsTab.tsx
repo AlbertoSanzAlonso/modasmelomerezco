@@ -10,6 +10,7 @@ import { downloadProductImagesAsZip } from '@/utils/imageDownloader';
 import { getProductTotalStock, isProductSoldOut } from '@/lib/productVariants';
 import { getProductPath } from '@/lib/productSlug';
 import { hasActiveOffer } from '@/lib/productOffer';
+import { useCartStore } from '@/store/useCartStore';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 
@@ -123,6 +124,16 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     try {
       const selectedProducts = products.filter(p => selectedIds.includes(p.product_id));
       await downloadProductImagesAsZip(selectedProducts);
+    } catch (error) {
+      console.error('Bulk download failed:', error);
+      useCartStore.getState().openModal({
+        title: 'Error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'No se pudo descargar las fotos.',
+        type: 'error',
+      });
     } finally {
       setIsDownloading(false);
     }
@@ -133,6 +144,16 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     setIsDownloading(true);
     try {
       await downloadProductImagesAsZip([product]);
+    } catch (error) {
+      console.error('Download failed:', error);
+      useCartStore.getState().openModal({
+        title: 'Error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'No se pudo descargar las fotos.',
+        type: 'error',
+      });
     } finally {
       setIsDownloading(false);
     }

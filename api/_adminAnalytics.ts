@@ -26,6 +26,12 @@ interface DeviceRow {
   visitors: number;
 }
 
+interface ReferrerRow {
+  referrerHostname: string;
+  pageviews: number;
+  visitors: number;
+}
+
 function parseRange(raw: string | string[] | undefined): RangeDays {
   const value = Array.isArray(raw) ? raw[0] : raw;
   return value === '30' ? 30 : 7;
@@ -188,7 +194,7 @@ export async function handleAdminAnalytics(
   const detailUntil = selectedDay || chartBounds.until;
 
   try {
-    const [totalsRes, dailyRes, pathsRes, devicesRes] = await Promise.all([
+    const [totalsRes, dailyRes, pathsRes, devicesRes, referrersRes] = await Promise.all([
       queryVercelAnalytics<{ data: VisitTotals }>('visits/count', {
         since: detailSince,
         until: detailUntil,
@@ -211,6 +217,12 @@ export async function handleAdminAnalytics(
         by: 'deviceType',
         limit: 10,
       }),
+      queryVercelAnalytics<{ data: ReferrerRow[] }>('visits/aggregate', {
+        since: detailSince,
+        until: detailUntil,
+        by: 'referrerHostname',
+        limit: 10,
+      }),
     ]);
 
     const daily = (Array.isArray(dailyRes.data) ? dailyRes.data : []).map((row) => ({
@@ -231,6 +243,12 @@ export async function handleAdminAnalytics(
       visitors: asNumber(row.visitors),
     }));
 
+    const referrers = (Array.isArray(referrersRes.data) ? referrersRes.data : []).map((row) => ({
+      hostname: (row.referrerHostname || '').trim() || '(directo)',
+      pageviews: asNumber(row.pageviews),
+      visitors: asNumber(row.visitors),
+    }));
+
     return res.status(200).json({
       range: days,
       day: selectedDay,
@@ -245,6 +263,7 @@ export async function handleAdminAnalytics(
       daily,
       topPaths,
       devices,
+      referrers,
     });
   } catch (error) {
     const err = error as Error & { code?: string; status?: number };

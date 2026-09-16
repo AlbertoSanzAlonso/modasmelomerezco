@@ -80,8 +80,20 @@ export const ProfilePage: React.FC = () => {
     try {
       await api.customers.update(user.customer_id, profileData);
       updateUser(profileData);
+      openModal({
+        title: 'Perfil actualizado',
+        message: 'Tus datos se han guardado correctamente.',
+        type: 'info',
+        actionLabel: 'Aceptar',
+      });
     } catch (error) {
       console.error(error);
+      openModal({
+        title: 'Error al guardar',
+        message: 'No se han podido guardar los cambios. Inténtalo de nuevo.',
+        type: 'error',
+        actionLabel: 'Entendido',
+      });
     } finally {
       setIsLoading(false);
     }

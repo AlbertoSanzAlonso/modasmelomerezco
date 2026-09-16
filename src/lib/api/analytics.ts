@@ -25,6 +25,12 @@ export interface AnalyticsDeviceRow {
   visitors: number;
 }
 
+export interface AnalyticsReferrerRow {
+  hostname: string;
+  pageviews: number;
+  visitors: number;
+}
+
 export interface AdminAnalyticsResponse {
   range: AnalyticsRange;
   day: string | null;
@@ -36,6 +42,7 @@ export interface AdminAnalyticsResponse {
   daily: AnalyticsDailyPoint[];
   topPaths: AnalyticsPathRow[];
   devices: AnalyticsDeviceRow[];
+  referrers: AnalyticsReferrerRow[];
 }
 
 export class AnalyticsApiError extends Error {

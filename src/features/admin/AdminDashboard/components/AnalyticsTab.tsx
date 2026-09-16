@@ -4,6 +4,7 @@ import { BarChart3, Eye, Globe2, Loader2, Smartphone, Users, X } from 'lucide-re
 import { api } from '@/lib/api';
 import { AnalyticsApiError, type AnalyticsRange } from '@/lib/api/analytics';
 import { useAdminStore } from '@/store/useAdminStore';
+import { ReferrerOriginMark } from './ReferrerOriginMark';
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('es-ES').format(value);
@@ -34,14 +35,6 @@ function deviceLabel(device: string): string {
     unknown: 'Desconocido',
   };
   return map[device.toLowerCase()] || device;
-}
-
-function referrerLabel(hostname: string): string {
-  const value = hostname.trim().toLowerCase();
-  if (!value || value === '(directo)' || value === 'direct' || value === '(none)') {
-    return 'Directo / sin referrer';
-  }
-  return hostname;
 }
 
 export const AnalyticsTab: React.FC = () => {
@@ -253,7 +246,7 @@ export const AnalyticsTab: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl overflow-hidden shadow-sm">
               <div className="p-8 border-b border-(--border-main)">
                 <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
@@ -298,6 +291,43 @@ export const AnalyticsTab: React.FC = () => {
 
             <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl overflow-hidden shadow-sm">
               <div className="p-8 border-b border-(--border-main) flex items-center gap-3">
+                <Globe2 className="w-4 h-4 text-primary" />
+                <div>
+                  <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
+                    Orígenes de tráfico
+                  </h3>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
+                    {selectedDay
+                      ? formatDayFull(selectedDay)
+                      : 'De dónde vienen'}
+                  </p>
+                </div>
+              </div>
+              <div className="divide-y divide-(--border-main)">
+                {(data.referrers?.length ?? 0) === 0 && (
+                  <p className="p-8 text-center text-gray-500 text-xs font-bold uppercase italic">
+                    Sin datos de orígenes
+                  </p>
+                )}
+                {(data.referrers ?? []).map((row) => (
+                  <div
+                    key={row.hostname}
+                    className="px-8 py-5 flex items-center justify-between gap-4"
+                  >
+                    <ReferrerOriginMark hostname={row.hostname} className="min-w-0" />
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-black text-primary">{formatNumber(row.pageviews)}</p>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-widest">
+                        {formatNumber(row.visitors)} visit.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-8 border-b border-(--border-main) flex items-center gap-3">
                 <Smartphone className="w-4 h-4 text-primary" />
                 <div>
                   <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
@@ -330,56 +360,6 @@ export const AnalyticsTab: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-
-          <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl overflow-hidden shadow-sm">
-            <div className="p-8 border-b border-(--border-main) flex items-center gap-3">
-              <Globe2 className="w-4 h-4 text-primary" />
-              <div>
-                <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
-                  Orígenes de tráfico
-                </h3>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-                  {selectedDay
-                    ? formatDayFull(selectedDay)
-                    : 'Sitios desde los que llegan las visitas'}
-                </p>
-              </div>
-            </div>
-            <div className="divide-y divide-(--border-main)">
-              {(data.referrers?.length ?? 0) === 0 && (
-                <p className="p-8 text-center text-gray-500 text-xs font-bold uppercase italic">
-                  Sin datos de orígenes
-                </p>
-              )}
-              {(data.referrers ?? []).map((row) => {
-                const label = referrerLabel(row.hostname);
-                const isDirect = label === 'Directo / sin referrer';
-                return (
-                  <div
-                    key={row.hostname}
-                    className="px-8 py-5 flex items-center justify-between gap-4"
-                  >
-                    <p
-                      className={`text-xs font-bold truncate ${
-                        isDirect
-                          ? 'uppercase tracking-widest text-gray-500'
-                          : 'text-(--text-main)'
-                      }`}
-                      title={label}
-                    >
-                      {label}
-                    </p>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-black text-primary">{formatNumber(row.pageviews)}</p>
-                      <p className="text-[9px] text-gray-500 uppercase tracking-widest">
-                        {formatNumber(row.visitors)} visit.
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>

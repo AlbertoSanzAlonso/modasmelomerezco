@@ -74,7 +74,7 @@ export const FavoritesPage: React.FC = () => {
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-4 px-10 py-5 bg-secondary text-white font-black uppercase italic tracking-[0.2em] text-[10px] rounded-full hover:bg-primary transition-all shadow-xl hover:scale-105 active:scale-95"
+            className="inline-flex items-center gap-4 px-10 py-5 bg-(--text-main) text-(--bg-main) font-black uppercase italic tracking-[0.2em] text-[10px] rounded-full hover:bg-primary hover:text-white transition-all shadow-xl hover:scale-105 active:scale-95"
           >
             Explorar Colección
             <ArrowRight className="w-4 h-4" />

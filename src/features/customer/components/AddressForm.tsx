@@ -35,7 +35,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
             required
             value={formData.type || ''}
             onChange={(e) => setFormData({...formData, type: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
             placeholder="Ej: Casa, Trabajo..."
           />
         </div>
@@ -47,7 +47,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
               maxLength={5}
               value={formData.zip || ''}
               onChange={(e) => setFormData({...formData, zip: e.target.value.replace(/\D/g, '')})}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+              className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
               placeholder="Ej: 28001"
             />
             {isLocating && <Loader2 className="w-4 h-4 animate-spin text-primary absolute right-4 top-1/2 -translate-y-1/2" />}
@@ -59,7 +59,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
             required
             value={formData.province || ''}
             onChange={(e) => onProvinceChange(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none appearance-none cursor-pointer text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none appearance-none cursor-pointer text-(--text-main)"
           >
             <option value="" disabled>Selecciona provincia</option>
             {PROVINCES.map(prov => (
@@ -75,7 +75,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
               list="profile-cities"
               value={formData.city || ''}
               onChange={(e) => onCityChange(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+              className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
               placeholder="Escribe o selecciona tu ciudad"
             />
             <datalist id="profile-cities">
@@ -91,7 +91,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
             required
             value={formData.street || ''}
             onChange={(e) => setFormData({...formData, street: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="space-y-2">
@@ -99,7 +99,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
           <input 
             value={formData.floor || ''}
             onChange={(e) => setFormData({...formData, floor: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="space-y-2">
@@ -109,13 +109,13 @@ export const AddressForm: React.FC<AddressFormProps> = ({
               value={formData.door || ''}
               placeholder="Pta"
               onChange={(e) => setFormData({...formData, door: e.target.value})}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+              className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
             />
             <input 
               value={formData.stair || ''}
               placeholder="Esc"
               onChange={(e) => setFormData({...formData, stair: e.target.value})}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+              className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
             />
           </div>
         </div>

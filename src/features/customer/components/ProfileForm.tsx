@@ -37,7 +37,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             type="text" 
             value={profileData.name}
             onChange={(e) => setProfileData({...profileData, name: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="space-y-2">
@@ -46,12 +46,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             type="text" 
             value={profileData.surname}
             onChange={(e) => setProfileData({...profileData, surname: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="space-y-2">
           <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest px-1">Email</label>
-          <input type="text" value={user?.email} disabled className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold opacity-60 text-secondary" />
+          <input type="text" value={user?.email} disabled className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold opacity-60 text-(--text-main)" />
         </div>
         <div className="space-y-2">
           <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest px-1">Teléfono</label>
@@ -59,7 +59,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             type="tel" 
             value={profileData.phone}
             onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <button

@@ -43,7 +43,7 @@ export const AddCardForm: React.FC<AddCardFormProps> = ({
             placeholder="0000 0000 0000 0000"
             value={formData.number}
             onChange={(e) => setFormData({...formData, number: e.target.value.replace(/\D/g, '').slice(0, 16)})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="space-y-2">
@@ -56,7 +56,7 @@ export const AddCardForm: React.FC<AddCardFormProps> = ({
             placeholder="MM"
             value={formData.exp_month}
             onChange={(e) => setFormData({...formData, exp_month: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="space-y-2">
@@ -69,7 +69,7 @@ export const AddCardForm: React.FC<AddCardFormProps> = ({
             placeholder="YYYY"
             value={formData.exp_year}
             onChange={(e) => setFormData({...formData, exp_year: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main)"
           />
         </div>
         <div className="md:col-span-2 space-y-2">
@@ -77,7 +77,7 @@ export const AddCardForm: React.FC<AddCardFormProps> = ({
           <select 
             value={formData.brand}
             onChange={(e) => setFormData({...formData, brand: e.target.value})}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-secondary appearance-none"
+            className="w-full bg-(--bg-main) border border-(--border-main) rounded-xl px-4 py-3 text-sm font-bold focus:border-primary/50 outline-none text-(--text-main) appearance-none"
           >
             <option value="Visa">Visa</option>
             <option value="Mastercard">Mastercard</option>

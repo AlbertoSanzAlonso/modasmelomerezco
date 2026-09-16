@@ -26,7 +26,7 @@ export const OrderTotalsSummary: React.FC<OrderTotalsSummaryProps> = ({
 
   const rowClass =
     variant === 'card'
-      ? 'flex justify-between text-xs font-bold uppercase text-secondary/60'
+      ? 'flex justify-between text-xs font-bold uppercase text-(--text-main)/60'
       : 'flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500';
 
   return (
@@ -62,7 +62,7 @@ export const OrderTotalsSummary: React.FC<OrderTotalsSummaryProps> = ({
       <div
         className={
           variant === 'card'
-            ? 'flex justify-between text-lg font-black uppercase text-secondary pt-3 border-t border-secondary/5'
+            ? 'flex justify-between text-lg font-black uppercase text-(--text-main) pt-3 border-t border-(--border-main)'
             : 'flex justify-between text-sm font-black uppercase pt-2 border-t border-(--border-main)'
         }
       >

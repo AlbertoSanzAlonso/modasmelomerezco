@@ -13,6 +13,7 @@ function needsCorsProxy(url: string): boolean {
   try {
     const host = new URL(url).hostname.toLowerCase();
     return (
+      host === 'media.modasmelomerezco.es' ||
       host.endsWith('.r2.dev') ||
       host.endsWith('.supabase.co') ||
       host.endsWith('.insforge.app')

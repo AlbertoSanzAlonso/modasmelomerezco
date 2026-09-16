@@ -186,6 +186,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         host.endsWith('.insforge.app') ||
         host === 'www.modasmelomerezco.es' ||
         host === 'modasmelomerezco.es' ||
+        host === 'media.modasmelomerezco.es' ||
         host === 'localhost' ||
         host.endsWith('.vercel.app');
       if (!allowed) {
@@ -195,13 +196,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let buffer: Buffer;
       let contentType: string;
 
-      // R2 vía API autenticada (público r2.dev caído / sin CORS)
+      // R2 vía API autenticada (CDN media / r2.dev / proxy)
       const r2Key =
         keyFromPublicUrl(rawUrl) ||
-        (host.endsWith('.r2.dev')
+        (host.endsWith('.r2.dev') || host === 'media.modasmelomerezco.es'
           ? decodeURIComponent(parsed.pathname.replace(/^\//, ''))
           : null);
-      if (r2Key && (isR2PublicUrl(rawUrl) || host.endsWith('.r2.dev') || parsed.pathname.endsWith('/api/chat'))) {
+      if (
+        r2Key &&
+        (isR2PublicUrl(rawUrl) ||
+          host.endsWith('.r2.dev') ||
+          host === 'media.modasmelomerezco.es' ||
+          parsed.pathname.endsWith('/api/chat'))
+      ) {
         const obj = await getObject(r2Key);
         if (!obj) {
           return res.status(404).json({

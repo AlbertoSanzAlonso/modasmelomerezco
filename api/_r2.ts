@@ -46,10 +46,10 @@ function getR2Client(): S3Client {
   return client;
 }
 
-/** URL pública servida por nuestro dominio (proxy). r2.dev público está caído/timeout. */
+/** URL pública del objeto en el CDN de R2 (dominio custom). */
 export function publicUrlForKey(key: string): string {
   const cleanKey = key.replace(/^\/+/, '');
-  return `${getCanonicalSiteUrl()}/api/chat?k=${encodeURIComponent(cleanKey)}`;
+  return `${getPublicBase()}/${cleanKey}`;
 }
 
 /** Extrae la key de una URL de proxy, R2 pública o de un path relativo. */
@@ -72,7 +72,8 @@ export function keyFromPublicUrl(urlOrKey: string): string | null {
 
   try {
     const u = new URL(withoutQuery);
-    if (u.hostname.endsWith('.r2.dev')) {
+    const host = u.hostname.toLowerCase();
+    if (host.endsWith('.r2.dev') || host === 'media.modasmelomerezco.es') {
       return decodeURIComponent(u.pathname.replace(/^\//, ''));
     }
   } catch {

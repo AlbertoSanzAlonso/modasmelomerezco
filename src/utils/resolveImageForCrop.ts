@@ -10,6 +10,7 @@ function needsCorsProxy(url: string): boolean {
     const host = new URL(url).hostname.toLowerCase();
     // R2 público (*.r2.dev) no envía Access-Control-Allow-Origin
     return (
+      host === 'media.modasmelomerezco.es' ||
       host.endsWith('.r2.dev') ||
       host.endsWith('.supabase.co') ||
       host.endsWith('.insforge.app')

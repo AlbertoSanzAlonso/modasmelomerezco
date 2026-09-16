@@ -97,6 +97,8 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         src={imageSrc}
         alt={alt}
         loading={loading}
+        decoding="async"
+        fetchPriority={loading === 'eager' ? 'high' : undefined}
         width={width}
         height={height}
         onLoad={handleLoad}

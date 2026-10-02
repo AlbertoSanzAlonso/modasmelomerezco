@@ -7,7 +7,7 @@ export const NACEX_CONFIG = {
   cliente: "00472",
   codigoPostalRecogida: "29631",
   nombreRecogida: "Modas Me lo Merezco",
-  direccionRecogida: "C/ Aragon, 2, L2",
+  direccionRecogida: "C/ Sol, 5",
   poblacionRecogida: "Benalmadena",
   entorno: "produccion", // Cambia a "produccion" cuando corresponda
 };

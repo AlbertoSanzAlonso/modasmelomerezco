@@ -54,7 +54,7 @@ const ShippingPage: FC = () => {
               </p>
               <div className="pt-4 space-y-1">
                 <p className="text-secondary font-medium text-sm uppercase tracking-wider">Modas Me lo Merezco</p>
-                <p className="text-secondary/60 text-xs">C/ Aragón, 2, L2 – Benalmádena</p>
+                <p className="text-secondary/60 text-xs">C/ Sol, 5 – Benalmádena</p>
               </div>
             </section>
 

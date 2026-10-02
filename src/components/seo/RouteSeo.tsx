@@ -101,7 +101,7 @@ const HOME_JSON_LD = [
     ],
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Calle Aragón, 2, Local 2',
+      streetAddress: 'Calle Sol, 5',
       addressLocality: 'Benalmádena',
       addressRegion: 'Málaga',
       postalCode: '29631',

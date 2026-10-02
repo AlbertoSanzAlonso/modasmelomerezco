@@ -339,7 +339,7 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
           email: 'info@modasmelomerezco.es',
           address: {
             '@type': 'PostalAddress',
-            streetAddress: 'Calle Aragón, 2, Local 2',
+            streetAddress: 'Calle Sol, 5',
             addressLocality: 'Benalmádena',
             addressRegion: 'Málaga',
             postalCode: '29631',

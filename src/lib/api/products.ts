@@ -867,6 +867,7 @@ export const products = {
     // 2. Create variants if any
     if (variants && variants.length > 0) {
       await syncProductVariants(product.product_id, variants);
+      await syncSoldOutFromStock(product.product_id);
     }
 
     // 3. Create images if any

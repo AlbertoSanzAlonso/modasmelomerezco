@@ -584,11 +584,12 @@ export const useProductForm = (
         }))
     );
 
-    const withStock = validVariants.filter((v) => (v.stock ?? 0) > 0);
-    if (withStock.length === 0) {
-      openError('Indica stock mayor que 0 en al menos una talla.');
+    if (validVariants.length === 0) {
+      openError('Indica al menos una talla.');
       return;
     }
+
+    const totalStock = validVariants.reduce((sum, v) => sum + (v.stock ?? 0), 0);
 
     const seen = new Set<string>();
     for (const v of validVariants) {
@@ -636,6 +637,8 @@ export const useProductForm = (
           onSave({
             ...formData,
             details: trimmedDetails,
+            stock: totalStock,
+            is_sold_out: totalStock <= 0,
             is_on_offer: !!formData.is_on_offer,
             offer_type: formData.is_on_offer
               ? formData.offer_type === 'fixed'
@@ -662,50 +665,67 @@ export const useProductForm = (
       }
     };
 
-    lockSubmit();
+    const continueSave = async () => {
+      lockSubmit();
 
-    if (product?.product_id) {
-      try {
-        const fresh = await api.products.getById(product.product_id);
-        const dbColorCount = countColorVariants(fresh.variants || []);
-        const formColorCount = countColorVariants(validVariants);
+      if (product?.product_id) {
+        try {
+          const fresh = await api.products.getById(product.product_id);
+          const dbColorCount = countColorVariants(fresh.variants || []);
+          const formColorCount = countColorVariants(validVariants);
 
-        if (
-          dbColorCount > 0 &&
-          formColorCount === 0 &&
-          loadedColorVariantCount.current === 0
-        ) {
+          if (
+            dbColorCount > 0 &&
+            formColorCount === 0 &&
+            loadedColorVariantCount.current === 0
+          ) {
+            unlockSubmit();
+            openError(
+              'Los colores no se cargaron correctamente. Cierra el modal y vuelve a abrir el producto antes de guardar.'
+            );
+            return;
+          }
+
+          if (loadedColorVariantCount.current > 0 && formColorCount === 0) {
+            unlockSubmit();
+            useCartStore.getState().openModal({
+              title: 'Eliminar variantes de color',
+              message:
+                'Vas a quitar todas las variantes de color de este producto. ¿Continuar?',
+              type: 'confirm',
+              onConfirm: () => {
+                void persistForm(true);
+              },
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Error verifying product inventory before save:', error);
           unlockSubmit();
           openError(
-            'Los colores no se cargaron correctamente. Cierra el modal y vuelve a abrir el producto antes de guardar.'
+            'No se pudo verificar el inventario. Inténtalo de nuevo en unos segundos.'
           );
           return;
         }
-
-        if (loadedColorVariantCount.current > 0 && formColorCount === 0) {
-          unlockSubmit();
-          useCartStore.getState().openModal({
-            title: 'Eliminar variantes de color',
-            message:
-              'Vas a quitar todas las variantes de color de este producto. ¿Continuar?',
-            type: 'confirm',
-            onConfirm: () => {
-              void persistForm(true);
-            },
-          });
-          return;
-        }
-      } catch (error) {
-        console.error('Error verifying product inventory before save:', error);
-        unlockSubmit();
-        openError(
-          'No se pudo verificar el inventario. Inténtalo de nuevo en unos segundos.'
-        );
-        return;
       }
+
+      await persistForm();
+    };
+
+    if (totalStock <= 0) {
+      useCartStore.getState().openModal({
+        title: 'Guardar como agotado',
+        message:
+          'El stock total es 0. Al guardar, la pieza se marcará como agotada en la tienda (cartel Agotado y sin compra), igual que al usar «Agotar» en el panel. ¿Continuar?',
+        type: 'confirm',
+        onConfirm: () => {
+          void continueSave();
+        },
+      });
+      return;
     }
 
-    await persistForm();
+    await continueSave();
   };
 
   return {

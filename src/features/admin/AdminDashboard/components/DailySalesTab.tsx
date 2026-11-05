@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { Loader2, Minus, Plus, Search, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
@@ -19,17 +19,17 @@ import {
 import { useCartStore } from '@/store/useCartStore';
 import type { Product, ProductVariant } from '@/types';
 
-interface SaleLine {
-  key: string;
+interface StockHistoryEntry {
+  id: string;
   productId: string;
   productName: string;
   imageUrl?: string;
   variantId: string;
   size: string;
-  colorId: number | null;
   colorName: string | null;
-  quantity: number;
-  availableStock: number;
+  delta: number;
+  resultingStock: number;
+  at: number;
 }
 
 function variantDbId(v: ProductVariant): string | null {
@@ -38,8 +38,11 @@ function variantDbId(v: ProductVariant): string | null {
   return null;
 }
 
-function lineKey(productId: string, variantId: string) {
-  return `${productId}::${variantId}`;
+function invalidateStockQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+  queryClient.invalidateQueries({ queryKey: ['products'] });
+  queryClient.invalidateQueries({ queryKey: ['product'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-store-stock-search'] });
 }
 
 export const DailySalesTab: React.FC = () => {
@@ -51,16 +54,23 @@ export const DailySalesTab: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [lines, setLines] = useState<SaleLine[]>([]);
+  const [step, setStep] = useState(1);
+  const [history, setHistory] = useState<StockHistoryEntry[]>([]);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
     return () => window.clearTimeout(t);
   }, [searchTerm]);
 
+  useEffect(() => {
+    if (!statusMessage) return;
+    const t = window.setTimeout(() => setStatusMessage(null), 2000);
+    return () => window.clearTimeout(t);
+  }, [statusMessage]);
+
   const { data: searchData, isFetching: searching } = useQuery({
-    queryKey: ['admin-daily-sales-search', debouncedSearch],
+    queryKey: ['admin-store-stock-search', debouncedSearch],
     queryFn: () =>
       api.products.getAll(undefined, undefined, 1, 12, undefined, debouncedSearch),
     enabled: debouncedSearch.length >= 2,
@@ -88,14 +98,8 @@ export const DailySalesTab: React.FC = () => {
     return findVariant(variants, sizeForSelection);
   }, [variants, sizeForSelection, requiresColor, selectedColorId]);
 
-  const queuedForVariant = activeVariant
-    ? lines
-        .filter((l) => l.variantId === variantDbId(activeVariant))
-        .reduce((sum, l) => sum + l.quantity, 0)
-    : 0;
-
-  const remainingStock = Math.max(0, (activeVariant?.stock ?? 0) - queuedForVariant);
-  const maxQty = Math.max(1, remainingStock || 1);
+  const currentStock = activeVariant?.stock ?? 0;
+  const activeVariantId = activeVariant ? variantDbId(activeVariant) : null;
 
   useEffect(() => {
     if (!selectedProduct) return;
@@ -105,14 +109,14 @@ export const DailySalesTab: React.FC = () => {
   }, [selectedProduct, oneSizeOnly, sizes]);
 
   useEffect(() => {
-    setQuantity(1);
+    setStep(1);
   }, [selectedProduct?.product_id, sizeForSelection, selectedColorId]);
 
   const selectProduct = (product: Product) => {
     setSelectedProduct(product);
     setSelectedSize('');
     setSelectedColorId(null);
-    setQuantity(1);
+    setStep(1);
     setSearchTerm('');
     setDebouncedSearch('');
   };
@@ -130,140 +134,145 @@ export const DailySalesTab: React.FC = () => {
     return selectedProduct?.colors?.find((c) => c.id === colorId) ?? null;
   };
 
-  const handleAddLine = () => {
-    if (!selectedProduct || !activeVariant) {
-      openModal({
-        title: 'Falta selección',
-        message: requiresColor
-          ? 'Elige talla y color antes de añadir.'
-          : 'Elige una talla antes de añadir.',
-        type: 'warning',
-      });
-      return;
-    }
-
-    const vid = variantDbId(activeVariant);
-    if (!vid) {
-      openModal({
-        title: 'Variante no válida',
-        message: 'Esta variante no tiene identificador. Revisa el producto en inventario.',
-        type: 'error',
-      });
-      return;
-    }
-
-    if (remainingStock <= 0) {
-      openModal({
-        title: 'Sin stock',
-        message: 'No quedan unidades de esa talla/color (incluyendo lo ya añadido a la lista).',
-        type: 'warning',
-      });
-      return;
-    }
-
-    const qty = Math.min(Math.max(1, quantity), remainingStock);
-    const key = lineKey(selectedProduct.product_id, vid);
-    const colorName = requiresColor ? colorLabel(activeVariant) : null;
-
-    setLines((prev) => {
-      const existing = prev.find((l) => l.key === key);
-      if (existing) {
-        return prev.map((l) =>
-          l.key === key
-            ? {
-                ...l,
-                quantity: Math.min(l.availableStock, l.quantity + qty),
-              }
-            : l
-        );
-      }
-      return [
+  const patchLocalStock = (variantId: string, newStock: number) => {
+    setSelectedProduct((prev) => {
+      if (!prev) return prev;
+      return {
         ...prev,
-        {
-          key,
-          productId: selectedProduct.product_id,
-          productName: selectedProduct.name,
-          imageUrl: selectedProduct.images?.[0],
-          variantId: vid,
-          size: normalizeSize(activeVariant.size),
-          colorId: activeVariant.color_id ?? null,
-          colorName,
-          quantity: qty,
-          availableStock: activeVariant.stock ?? 0,
-        },
-      ];
+        variants: prev.variants.map((v) =>
+          variantDbId(v) === variantId ? { ...v, stock: newStock } : v
+        ),
+      };
     });
-
-    setQuantity(1);
-    if (!oneSizeOnly) setSelectedSize('');
-    setSelectedColorId(null);
   };
 
-  const removeLine = (key: string) => {
-    setLines((prev) => prev.filter((l) => l.key !== key));
-  };
-
-  const applyMutation = useMutation({
-    mutationFn: async (saleLines: SaleLine[]) => {
-      for (const line of saleLines) {
-        await api.products.decrementStock(line.variantId, line.quantity);
-      }
+  const adjustMutation = useMutation({
+    mutationFn: async ({
+      variantId,
+      delta,
+      meta,
+    }: {
+      variantId: string;
+      delta: number;
+      meta: Omit<StockHistoryEntry, 'id' | 'delta' | 'resultingStock' | 'at'>;
+    }) => {
+      const resultingStock = await api.products.adjustStock(variantId, delta);
+      return { resultingStock, delta, variantId, meta };
     },
-    onSuccess: () => {
-      setLines([]);
-      setSelectedProduct(null);
-      setSelectedSize('');
-      setSelectedColorId(null);
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-daily-sales-search'] });
-      openModal({
-        title: 'Inventario actualizado',
-        message:
-          'Las ventas de tienda se han restado del stock. Si un artículo se queda sin unidades, se marca como Agotado.',
-        type: 'info',
-      });
+    onSuccess: ({ resultingStock, delta, variantId, meta }) => {
+      patchLocalStock(variantId, resultingStock);
+      setHistory((prev) => [
+        {
+          id: `${Date.now()}-${variantId}-${delta}`,
+          ...meta,
+          variantId,
+          delta,
+          resultingStock,
+          at: Date.now(),
+        },
+        ...prev,
+      ].slice(0, 30));
+      setStatusMessage(
+        delta > 0
+          ? `+${delta} → ${resultingStock} uds`
+          : `${delta} → ${resultingStock} uds`
+      );
+      invalidateStockQueries(queryClient);
     },
     onError: (err: Error) => {
       openModal({
         title: 'Error',
-        message: err.message || 'No se pudo restar el stock. Inténtalo de nuevo.',
+        message: err.message || 'No se pudo ajustar el stock. Inténtalo de nuevo.',
         type: 'error',
       });
     },
   });
 
-  const handleSubmit = () => {
-    if (lines.length === 0) return;
-    const totalUnits = lines.reduce((s, l) => s + l.quantity, 0);
-    openModal({
-      title: 'Restar del inventario',
-      message: `¿Restar ${totalUnits} unidad${totalUnits === 1 ? '' : 'es'} en ${lines.length} línea${lines.length === 1 ? '' : 's'}? Esta acción no se puede deshacer desde aquí.`,
-      type: 'confirm',
-      onConfirm: () => applyMutation.mutate(lines),
+  const undoMutation = useMutation({
+    mutationFn: async (entry: StockHistoryEntry) => {
+      const reverseDelta = -entry.delta;
+      const resultingStock = await api.products.adjustStock(
+        entry.variantId,
+        reverseDelta
+      );
+      return { entry, resultingStock, reverseDelta };
+    },
+    onSuccess: ({ entry, resultingStock }) => {
+      if (selectedProduct?.product_id === entry.productId) {
+        patchLocalStock(entry.variantId, resultingStock);
+      }
+      setHistory((prev) => prev.filter((h) => h.id !== entry.id));
+      setStatusMessage(`Deshecho → ${resultingStock} uds`);
+      invalidateStockQueries(queryClient);
+    },
+    onError: (err: Error) => {
+      openModal({
+        title: 'Error',
+        message: err.message || 'No se pudo deshacer el cambio.',
+        type: 'error',
+      });
+    },
+  });
+
+  const applyDelta = (signedStep: number) => {
+    if (!selectedProduct || !activeVariant || !activeVariantId) {
+      openModal({
+        title: 'Falta selección',
+        message: requiresColor
+          ? 'Elige talla y color antes de ajustar.'
+          : 'Elige una talla antes de ajustar.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    const qty = Math.max(1, Math.trunc(step) || 1);
+    if (signedStep < 0 && currentStock <= 0) {
+      openModal({
+        title: 'Sin stock',
+        message: 'No quedan unidades de esa talla/color.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    const delta = signedStep < 0 ? -Math.min(qty, currentStock) : qty;
+
+    adjustMutation.mutate({
+      variantId: activeVariantId,
+      delta,
+      meta: {
+        productId: selectedProduct.product_id,
+        productName: selectedProduct.name,
+        imageUrl: selectedProduct.images?.[0],
+        size: normalizeSize(activeVariant.size),
+        colorName: requiresColor ? colorLabel(activeVariant) : null,
+      },
     });
   };
+
+  const busy = adjustMutation.isPending || undoMutation.isPending;
+  const canAdjust = Boolean(activeVariant && activeVariantId) && !busy;
+  const latestEntry = history[0] ?? null;
 
   return (
     <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 md:gap-0">
         <div>
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">
-            Ventas tienda
+            Stock tienda
           </h2>
           <p className="text-gray-500 text-sm">
-            Selecciona lo vendido en tienda y réstalo del inventario.
+            Suma o resta unidades al momento (venta o entrada).
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Añadir venta */}
         <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl shadow-sm overflow-hidden">
           <div className="p-6 sm:p-8 border-b border-(--border-main)">
             <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
-              Añadir artículo
+              Buscar producto
             </h3>
             <div className="relative mt-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -422,42 +431,96 @@ export const DailySalesTab: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-end gap-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-2">
-                    Cantidad
+              <div className="rounded-3xl border border-(--border-main) bg-(--bg-main) p-6 space-y-5">
+                <div className="text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">
+                    Stock actual
                     {activeVariant && (
                       <span className="ml-2 text-gray-400 normal-case tracking-normal font-bold">
-                        (máx. {remainingStock})
+                        ({formatVariantLabel(
+                          normalizeSize(activeVariant.size),
+                          requiresColor ? colorLabel(activeVariant) : null
+                        )})
                       </span>
                     )}
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxQty}
-                    value={quantity}
-                    disabled={!activeVariant || remainingStock <= 0}
-                    onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
-                      if (Number.isNaN(n)) {
-                        setQuantity(1);
-                        return;
-                      }
-                      setQuantity(Math.min(Math.max(1, n), remainingStock || 1));
-                    }}
-                    className="w-24 px-4 py-3 bg-(--bg-main) border border-(--border-main) rounded-2xl text-sm font-bold focus:outline-none focus:border-primary disabled:opacity-40"
-                  />
+                  </p>
+                  <p
+                    className={`text-5xl font-black tabular-nums tracking-tighter ${
+                      !activeVariant
+                        ? 'text-gray-300'
+                        : currentStock <= 0
+                          ? 'text-red-500'
+                          : 'text-(--text-main)'
+                    }`}
+                  >
+                    {activeVariant ? currentStock : '—'}
+                  </p>
+                  {statusMessage && (
+                    <p className="mt-2 text-xs font-bold uppercase tracking-widest text-primary">
+                      {statusMessage}
+                    </p>
+                  )}
                 </div>
-                <Button
-                  type="button"
-                  onClick={handleAddLine}
-                  disabled={!activeVariant || remainingStock <= 0}
-                  className="gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Añadir
-                </Button>
+
+                <div className="flex flex-wrap items-end justify-center gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-2 text-center">
+                      Paso
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={step}
+                      disabled={busy}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        if (Number.isNaN(n)) {
+                          setStep(1);
+                          return;
+                        }
+                        setStep(Math.min(99, Math.max(1, n)));
+                      }}
+                      className="w-20 px-3 py-3 bg-(--bg-card) border border-(--border-main) rounded-2xl text-sm font-bold text-center focus:outline-none focus:border-primary disabled:opacity-40"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => applyDelta(-1)}
+                    disabled={!canAdjust || currentStock <= 0}
+                    className="min-w-16 h-16 rounded-2xl border-2 border-(--border-main) bg-(--bg-card) flex items-center justify-center text-(--text-main) hover:border-red-400 hover:text-red-500 disabled:opacity-40 disabled:hover:border-(--border-main) disabled:hover:text-(--text-main) transition-colors"
+                    aria-label={`Restar ${step}`}
+                  >
+                    {adjustMutation.isPending ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <Minus className="w-7 h-7" strokeWidth={3} />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyDelta(1)}
+                    disabled={!canAdjust}
+                    className="min-w-16 h-16 rounded-2xl border-2 border-primary bg-primary text-white flex items-center justify-center hover:opacity-90 disabled:opacity-40 transition-opacity"
+                    aria-label={`Sumar ${step}`}
+                  >
+                    {adjustMutation.isPending ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <Plus className="w-7 h-7" strokeWidth={3} />
+                    )}
+                  </button>
+                </div>
+
+                {!activeVariant && (
+                  <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                    {requiresColor
+                      ? 'Elige talla y color para ajustar'
+                      : 'Elige una talla para ajustar'}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -467,73 +530,77 @@ export const DailySalesTab: React.FC = () => {
           )}
         </div>
 
-        {/* Lista de ventas */}
         <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 sm:p-8 border-b border-(--border-main) flex justify-between items-center gap-3">
             <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
-              Lista de ventas
+              Últimos cambios
             </h3>
-            {lines.length > 0 && (
-              <button
+            {latestEntry && (
+              <Button
                 type="button"
-                onClick={() => setLines([])}
-                className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500"
+                variant="outline"
+                className="gap-2 text-[10px] h-9 px-3"
+                disabled={busy}
+                isLoading={undoMutation.isPending}
+                onClick={() => undoMutation.mutate(latestEntry)}
               >
-                Vaciar
-              </button>
+                <Undo2 className="w-3.5 h-3.5" />
+                Deshacer último
+              </Button>
             )}
           </div>
 
           <div className="flex-1 divide-y divide-(--border-main) min-h-[200px]">
-            {lines.length === 0 ? (
+            {history.length === 0 ? (
               <div className="p-12 text-center text-gray-500 text-xs font-bold uppercase italic">
-                Aún no hay ventas en la lista
+                Los ajustes de esta sesión aparecerán aquí
               </div>
             ) : (
-              lines.map((line) => (
+              history.map((entry, index) => (
                 <div
-                  key={line.key}
+                  key={entry.id}
                   className="p-4 sm:p-5 flex items-center gap-3"
                 >
                   <img
-                    src={line.imageUrl || PRODUCT_PLACEHOLDER}
+                    src={toDisplayImageUrl(entry.imageUrl) || PRODUCT_PLACEHOLDER}
                     alt=""
                     className="w-12 h-12 object-cover rounded-xl bg-(--bg-main) shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold uppercase italic truncate">
-                      {line.productName}
+                      {entry.productName}
                     </p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                      {formatVariantLabel(line.size, line.colorName)}
+                      {formatVariantLabel(entry.size, entry.colorName)}
                     </p>
                   </div>
-                  <span className="text-sm font-black text-primary tabular-nums">
-                    ×{line.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeLine(line.key)}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    aria-label="Quitar línea"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="text-right shrink-0">
+                    <p
+                      className={`text-sm font-black tabular-nums ${
+                        entry.delta > 0 ? 'text-emerald-600' : 'text-red-500'
+                      }`}
+                    >
+                      {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold tabular-nums">
+                      → {entry.resultingStock}
+                    </p>
+                  </div>
+                  {index === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => undoMutation.mutate(entry)}
+                      disabled={busy}
+                      className="p-2 text-gray-400 hover:text-primary transition-colors disabled:opacity-40"
+                      aria-label="Deshacer este cambio"
+                      title="Deshacer"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))
             )}
-          </div>
-
-          <div className="p-6 sm:p-8 border-t border-(--border-main)">
-            <Button
-              type="button"
-              className="w-full"
-              disabled={lines.length === 0 || applyMutation.isPending}
-              isLoading={applyMutation.isPending}
-              onClick={handleSubmit}
-            >
-              Restar del inventario
-            </Button>
           </div>
         </div>
       </div>

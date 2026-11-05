@@ -1017,7 +1017,15 @@ export const products = {
     // El embedding se borra solo por CASCADE en la DB
   },
 
-  decrementStock: async (variant_id: string, quantity: number): Promise<void> => {
+  /**
+   * Ajuste rápido de stock (±delta). Nunca baja de 0.
+   * Devuelve el stock resultante y sincroniza `is_sold_out`.
+   */
+  adjustStock: async (variant_id: string, delta: number): Promise<number> => {
+    if (!Number.isFinite(delta) || delta === 0) {
+      throw new Error('Cantidad de ajuste no válida');
+    }
+
     const { data: variant, error: fetchError } = await supabase
       .from('product_variants')
       .select('stock, product_id')
@@ -1029,7 +1037,7 @@ export const products = {
       throw new Error('Variante no encontrada');
     }
 
-    const newStock = Math.max(0, (variant.stock || 0) - quantity);
+    const newStock = Math.max(0, (variant.stock || 0) + Math.trunc(delta));
 
     const { error: updateError } = await supabase
       .from('product_variants')
@@ -1039,6 +1047,11 @@ export const products = {
     if (updateError) throw updateError;
 
     await syncSoldOutFromStock(variant.product_id);
+    return newStock;
+  },
+
+  decrementStock: async (variant_id: string, quantity: number): Promise<void> => {
+    await products.adjustStock(variant_id, -Math.abs(quantity));
   },
 
   /** Marca agotado sin tocar unidades (el stock se conserva). */

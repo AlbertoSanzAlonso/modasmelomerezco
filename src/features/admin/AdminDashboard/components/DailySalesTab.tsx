@@ -54,7 +54,7 @@ export const DailySalesTab: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
-  const [step, setStep] = useState(1);
+  const [quantity, setQuantity] = useState(1);
   const [history, setHistory] = useState<StockHistoryEntry[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -109,14 +109,14 @@ export const DailySalesTab: React.FC = () => {
   }, [selectedProduct, oneSizeOnly, sizes]);
 
   useEffect(() => {
-    setStep(1);
+    setQuantity(1);
   }, [selectedProduct?.product_id, sizeForSelection, selectedColorId]);
 
   const selectProduct = (product: Product) => {
     setSelectedProduct(product);
     setSelectedSize('');
     setSelectedColorId(null);
-    setStep(1);
+    setQuantity(1);
     setSearchTerm('');
     setDebouncedSearch('');
   };
@@ -226,7 +226,7 @@ export const DailySalesTab: React.FC = () => {
       return;
     }
 
-    const qty = Math.max(1, Math.trunc(step) || 1);
+    const qty = Math.max(1, Math.trunc(quantity) || 1);
     if (signedStep < 0 && currentStock <= 0) {
       openModal({
         title: 'Sin stock',
@@ -260,10 +260,10 @@ export const DailySalesTab: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 md:gap-0">
         <div>
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">
-            Stock tienda
+            Tienda
           </h2>
           <p className="text-gray-500 text-sm">
-            Suma o resta unidades al momento (venta o entrada).
+            Registra ventas o reposición de stock al momento.
           </p>
         </div>
       </div>
@@ -462,56 +462,96 @@ export const DailySalesTab: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-end justify-center gap-4">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-2 text-center">
-                      Paso
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={step}
-                      disabled={busy}
-                      onChange={(e) => {
-                        const n = parseInt(e.target.value, 10);
-                        if (Number.isNaN(n)) {
-                          setStep(1);
-                          return;
-                        }
-                        setStep(Math.min(99, Math.max(1, n)));
-                      }}
-                      className="w-20 px-3 py-3 bg-(--bg-card) border border-(--border-main) rounded-2xl text-sm font-bold text-center focus:outline-none focus:border-primary disabled:opacity-40"
-                    />
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-2 text-center">
+                        Cantidad
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          disabled={busy || quantity <= 1}
+                          className="w-11 h-11 rounded-xl border border-(--border-main) bg-(--bg-card) flex items-center justify-center disabled:opacity-40"
+                          aria-label="Bajar cantidad"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={quantity}
+                          disabled={busy}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            if (Number.isNaN(n)) {
+                              setQuantity(1);
+                              return;
+                            }
+                            setQuantity(Math.min(99, Math.max(1, n)));
+                          }}
+                          className="w-20 px-3 py-3 bg-(--bg-card) border border-(--border-main) rounded-2xl text-sm font-bold text-center focus:outline-none focus:border-primary disabled:opacity-40"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setQuantity((q) => Math.min(99, q + 1))}
+                          disabled={busy || quantity >= 99}
+                          className="w-11 h-11 rounded-xl border border-(--border-main) bg-(--bg-card) flex items-center justify-center disabled:opacity-40"
+                          aria-label="Subir cantidad"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => applyDelta(-1)}
-                    disabled={!canAdjust || currentStock <= 0}
-                    className="min-w-16 h-16 rounded-2xl border-2 border-(--border-main) bg-(--bg-card) flex items-center justify-center text-(--text-main) hover:border-red-400 hover:text-red-500 disabled:opacity-40 disabled:hover:border-(--border-main) disabled:hover:text-(--text-main) transition-colors"
-                    aria-label={`Restar ${step}`}
-                  >
-                    {adjustMutation.isPending ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Minus className="w-7 h-7" strokeWidth={3} />
-                    )}
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => applyDelta(-1)}
+                      disabled={!canAdjust || currentStock <= 0}
+                      className="min-h-16 px-4 rounded-2xl border-2 border-(--border-main) bg-(--bg-card) flex flex-col items-center justify-center gap-1 text-(--text-main) hover:border-red-400 hover:text-red-500 disabled:opacity-40 disabled:hover:border-(--border-main) disabled:hover:text-(--text-main) transition-colors"
+                      aria-label={`Venta: restar ${quantity}`}
+                    >
+                      {adjustMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-2 font-black uppercase tracking-widest text-xs">
+                            <Minus className="w-4 h-4" strokeWidth={3} />
+                            Venta
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            −{quantity} uds
+                          </span>
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => applyDelta(1)}
-                    disabled={!canAdjust}
-                    className="min-w-16 h-16 rounded-2xl border-2 border-primary bg-primary text-white flex items-center justify-center hover:opacity-90 disabled:opacity-40 transition-opacity"
-                    aria-label={`Sumar ${step}`}
-                  >
-                    {adjustMutation.isPending ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Plus className="w-7 h-7" strokeWidth={3} />
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => applyDelta(1)}
+                      disabled={!canAdjust}
+                      className="min-h-16 px-4 rounded-2xl border-2 border-primary bg-primary text-white flex flex-col items-center justify-center gap-1 hover:opacity-90 disabled:opacity-40 transition-opacity"
+                      aria-label={`Reposición: sumar ${quantity}`}
+                    >
+                      {adjustMutation.isPending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-2 font-black uppercase tracking-widest text-xs">
+                            <Plus className="w-4 h-4" strokeWidth={3} />
+                            Reposición
+                          </span>
+                          <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                            +{quantity} uds
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {!activeVariant && (

@@ -15,7 +15,7 @@ description: >-
 - Tienda: cartel Agotado + sin compra si `is_sold_out`.
 - Admin: Agotar / En stock (solo si toda la selección es homogénea).
 - Al reponer: modal de tallas → 3 uds por talla × color (`restockWithSizes`).
-- **Auto-agotado:** si el stock total de variantes llega a 0 (stock tienda `adjustStock` / `decrementStock`, y trigger SQL si está aplicado), se pone `is_sold_out = true` automáticamente (admin + catálogo). SQL opcional: `supabase/migrations/product_variants_auto_sold_out.sql` (aplicar en la base Postgres).
+- **Auto-agotado:** si el stock total de variantes llega a 0 (tienda `adjustStock` / `decrementStock`, y trigger SQL si está aplicado), se pone `is_sold_out = true` automáticamente (admin + catálogo). SQL opcional: `supabase/migrations/product_variants_auto_sold_out.sql` (aplicar en la base Postgres).
 - **Auto-reponer:** al guardar el producto en admin con stock total > 0 (`products.update` + variantes), se pone `is_sold_out = false`. También `restockWithSizes` / botón **En stock**.
 
 ## Fuente de verdad
@@ -42,9 +42,9 @@ description: >-
 - Al añadir el primer color a una talla, se elimina la fila `color_id` null y el stock pasa a la nueva línea.
 - Formulario: `useProductForm.ts` → `consolidateVariantsForSave()` + `deriveProductColors()`.
 
-## Stock tienda (física)
+## Tienda (física)
 
-- Pestaña admin **Stock tienda** (`DailySalesTab.tsx`, tab id `daily-sales`): buscar producto → talla/color → botones **− / +** (ajuste inmediato).
+- Pestaña admin **Tienda** (`DailySalesTab.tsx`, tab id `daily-sales`): buscar producto → talla/color → cantidad → **Venta** (−) o **Reposición** (+).
 - Usa `api.products.adjustStock(variant_id, delta)` (delta ±; no crea pedidos). `decrementStock` es wrapper de `adjustStock` negativo.
 - Historial de sesión con deshacer el último cambio (ajuste inverso).
 - Si tras restar el producto queda a 0 uds en todas las variantes, marca `is_sold_out` automáticamente.
@@ -75,7 +75,7 @@ description: >-
 | Helpers | `src/lib/productVariants.ts` |
 | Admin UI | `src/features/admin/ProductModal/ProductInventory.tsx` |
 | Galería ↔ color | `src/features/admin/ProductModal/ProductImages.tsx` |
-| Stock tienda | `src/features/admin/AdminDashboard/components/DailySalesTab.tsx` |
+| Tienda | `src/features/admin/AdminDashboard/components/DailySalesTab.tsx` |
 | Form | `src/features/admin/ProductModal/useProductForm.ts` |
 | API | `src/lib/api/products.ts`, `src/lib/api/colors.ts` |
 | Tienda | `src/features/shop/ProductPage.tsx` |

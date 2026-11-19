@@ -84,6 +84,7 @@ export const AdminDashboard: React.FC = () => {
   const [orderListFilter, setOrderListFilter] = useState<AdminOrderListFilter>('all');
   const [customerPage, setCustomerPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
@@ -198,6 +199,80 @@ export const AdminDashboard: React.FC = () => {
       message: `¿Borrar a "${fullName}"? Se desvincularán sus pedidos y se eliminarán direcciones, favoritos y métodos de pago asociados.`,
       type: 'confirm',
       onConfirm: () => deleteCustomerMutation.mutate(customer.customer_id),
+    });
+  };
+
+  const deleteOrdersMutation = useMutation({
+    mutationFn: (orderIds: string[]) => api.orders.deleteMany(orderIds),
+    onSuccess: (deletedCount, deletedIds) => {
+      const deletedSet = new Set(deletedIds);
+      setSelectedOrderIds((prev) => prev.filter((id) => !deletedSet.has(id)));
+      if (selectedOrder && deletedSet.has(selectedOrder.order_id)) {
+        setShowOrderDetails(false);
+        setSelectedOrder(null);
+      }
+
+      const remainingOnPage = (orders || []).filter((o) => !deletedSet.has(o.order_id)).length;
+      if (remainingOnPage === 0 && orderPage > 1) {
+        setOrderPage((p) => Math.max(1, p - 1));
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
+
+      openModal({
+        title: 'Éxito',
+        message:
+          deletedCount === 1
+            ? 'Pedido eliminado correctamente.'
+            : `${deletedCount} pedidos eliminados correctamente.`,
+        type: 'info',
+      });
+    },
+    onError: (err: Error) => {
+      openModal({
+        title: 'Error',
+        message: err.message || 'No se pudo eliminar el pedido.',
+        type: 'warning',
+      });
+    },
+  });
+
+  const confirmDeleteOrder = (order: Order) => {
+    const shortId = order.order_id.split('-')[0].toUpperCase();
+    const contactName = getOrderContact(order).name?.trim();
+    openModal({
+      title: '¿Eliminar pedido por completo?',
+      message: `Vas a eliminar por completo el pedido #${shortId}${contactName ? ` de ${contactName}` : ''} (${order.total_amount.toFixed(2)}€).\n\nSe borrará definitivamente de la base de datos y dejará de aparecer en el panel y en el historial del cliente. Esta acción no se puede deshacer.`,
+      type: 'confirm',
+      actionLabel: 'Sí, eliminar por completo',
+      onConfirm: () => deleteOrdersMutation.mutate([order.order_id]),
+    });
+  };
+
+  const handleBulkDeleteOrders = () => {
+    if (selectedOrderIds.length === 0) return;
+    const count = selectedOrderIds.length;
+    const idsToDelete = [...selectedOrderIds];
+    const shortIds = idsToDelete.slice(0, 5).map((id) => `#${id.split('-')[0].toUpperCase()}`);
+    const idsSummary =
+      idsToDelete.length > 5
+        ? `${shortIds.join(', ')} y ${idsToDelete.length - 5} más`
+        : shortIds.join(', ');
+
+    openModal({
+      title:
+        count === 1
+          ? '¿Eliminar pedido por completo?'
+          : '¿Eliminar pedidos por completo?',
+      message:
+        count === 1
+          ? `Vas a eliminar por completo el pedido ${idsSummary}.\n\nSe borrará definitivamente de la base de datos y dejará de aparecer en el panel y en el historial del cliente. Esta acción no se puede deshacer.`
+          : `Vas a eliminar por completo ${count} pedidos seleccionados (${idsSummary}).\n\nSe borrarán definitivamente de la base de datos y dejarán de aparecer en el panel y en el historial de los clientes. Esta acción no se puede deshacer.`,
+      type: 'confirm',
+      actionLabel: count === 1 ? 'Sí, eliminar por completo' : `Sí, eliminar ${count} pedidos`,
+      onConfirm: () => deleteOrdersMutation.mutate(idsToDelete),
     });
   };
 
@@ -627,14 +702,36 @@ export const AdminDashboard: React.FC = () => {
             orderPage={orderPage}
             pageSize={pageSize}
             listFilter={orderListFilter}
-            onListFilterChange={setOrderListFilter}
-            onPageChange={setOrderPage}
+            selectedIds={selectedOrderIds}
+            isDeleting={deleteOrdersMutation.isPending}
+            onListFilterChange={(filter) => {
+              setSelectedOrderIds([]);
+              setOrderListFilter(filter);
+            }}
+            onPageChange={(page) => {
+              setSelectedOrderIds([]);
+              setOrderPage(page);
+            }}
             onOrderClick={(order) => { 
               setSelectedOrder(order); 
               setTrackingInfo({ number: order.tracking_number || '', carrier: order.carrier || 'NACEX' });
               setShowOrderDetails(true); 
             }}
             onGenerateLabel={handleGenerateLabel}
+            onToggleSelectAll={() => {
+              const pageIds = orders?.map((o) => o.order_id) || [];
+              const allSelected =
+                pageIds.length > 0 && pageIds.every((id) => selectedOrderIds.includes(id));
+              setSelectedOrderIds(allSelected ? [] : pageIds);
+            }}
+            onToggleSelect={(id) =>
+              setSelectedOrderIds((prev) =>
+                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+              )
+            }
+            onClearSelection={() => setSelectedOrderIds([])}
+            onDeleteOrder={confirmDeleteOrder}
+            onBulkDelete={handleBulkDeleteOrders}
           />
         )}
 
@@ -718,8 +815,13 @@ export const AdminDashboard: React.FC = () => {
         <OrderDetailsModal 
           order={selectedOrder}
           trackingInfo={trackingInfo}
-          onClose={() => setShowOrderDetails(false)}
+          onClose={() => {
+            if (deleteOrdersMutation.isPending) return;
+            setShowOrderDetails(false);
+          }}
           onGenerateLabel={handleGenerateLabel}
+          onDelete={confirmDeleteOrder}
+          isDeleting={deleteOrdersMutation.isPending}
         />
       )}
     </AdminLayout>

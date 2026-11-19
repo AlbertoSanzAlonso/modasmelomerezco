@@ -135,7 +135,7 @@ export const AddToCartModal: React.FC = () => {
                         closeModal();
                       }}
                     >
-                      Confirmar
+                      {modalConfig.actionLabel || 'Confirmar'}
                     </Button>
                     <button 
                       onClick={closeModal}

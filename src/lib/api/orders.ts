@@ -131,5 +131,35 @@ export const orders = {
 
     if (error) throw error;
     return data;
+  },
+
+  delete: async (order_id: string): Promise<void> => {
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('order_id', order_id)
+      .select('order_id');
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('No se pudo eliminar el pedido. Comprueba tus permisos de administrador.');
+    }
+  },
+
+  deleteMany: async (order_ids: string[]): Promise<number> => {
+    const uniqueIds = [...new Set(order_ids.map((id) => id.trim()).filter(Boolean))];
+    if (uniqueIds.length === 0) return 0;
+
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .in('order_id', uniqueIds)
+      .select('order_id');
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('No se pudieron eliminar los pedidos. Comprueba tus permisos de administrador.');
+    }
+    return data.length;
   }
 };

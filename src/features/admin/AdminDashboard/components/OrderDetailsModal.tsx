@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Truck, FileImage, Copy, Check, Mail } from 'lucide-react';
+import { X, Truck, FileImage, Copy, Check, Mail, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { api } from '@/lib/api';
@@ -18,13 +18,17 @@ interface OrderDetailsModalProps {
   trackingInfo: { number: string; carrier: string };
   onClose: () => void;
   onGenerateLabel: (orderId: string) => void;
+  onDelete?: (order: Order) => void;
+  isDeleting?: boolean;
 }
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   order,
   trackingInfo,
   onClose,
-  onGenerateLabel
+  onGenerateLabel,
+  onDelete,
+  isDeleting = false,
 }) => {
   const contact = getOrderContact(order);
   const openModal = useCartStore((s) => s.openModal);
@@ -301,8 +305,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           </div>
         </ScrollArea>
 
-        <footer className="p-8 border-t border-(--border-main) flex justify-end bg-(--bg-main)">
-           <Button variant="outline" onClick={onClose} className="px-10 font-black tracking-widest text-[10px] rounded-xl py-4">CERRAR</Button>
+        <footer className="p-8 border-t border-(--border-main) flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 bg-(--bg-main)">
+          {onDelete ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => onDelete(order)}
+              className="w-full sm:w-auto font-black tracking-widest text-[10px] rounded-xl py-4 text-red-500 border-red-500/30 hover:bg-red-500/10"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {isDeleting ? 'ELIMINANDO…' : 'ELIMINAR PEDIDO'}
+            </Button>
+          ) : (
+            <span />
+          )}
+          <Button variant="outline" onClick={onClose} disabled={isDeleting} className="w-full sm:w-auto px-10 font-black tracking-widest text-[10px] rounded-xl py-4">CERRAR</Button>
         </footer>
       </div>
     </div>

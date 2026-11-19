@@ -5,7 +5,13 @@ import { getDiscountedLineTotal } from '@/lib/cartDiscount';
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { CITIES_BY_PROVINCE } from "@/constants/locations";
-import { fetchRedsysParameters, getRedsysCallbackOrigin, REDSYS_URL_TEST, REDSYS_URL_PROD } from "@/lib/redsys";
+import {
+  fetchRedsysParameters,
+  getRedsysCallbackOrigin,
+  savePendingPaymentOrder,
+  REDSYS_URL_TEST,
+  REDSYS_URL_PROD,
+} from "@/lib/redsys";
 import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
 import type { Address } from '@/types';
 
@@ -314,6 +320,7 @@ export const useCheckoutForm = () => {
         }
       );
 
+      savePendingPaymentOrder(createdOrder.order_id);
       saveGoogleCustomerReviewsPending({
         orderId: createdOrder.order_id,
         email: orderData.customer_email,

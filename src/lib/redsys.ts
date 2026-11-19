@@ -117,3 +117,107 @@ export function getRedsysCallbackOrigin(): string {
   }
   return window.location.origin;
 }
+
+const PENDING_PAYMENT_ORDER_KEY = 'redsys_pending_payment_order';
+const PENDING_PAYMENT_TTL_MS = 60 * 60 * 1000; // 1 hora
+
+const LAST_PAYMENT_CONFIRMATION_KEY = 'redsys_last_payment_confirmation';
+const LAST_PAYMENT_CONFIRMATION_TTL_MS = 30 * 60 * 1000; // 30 minutos
+
+export type PaymentConfirmationResult = 'success' | 'pending';
+
+export type StoredPaymentConfirmation = {
+  result: PaymentConfirmationResult;
+  orderId: string | null;
+};
+
+/**
+ * Guarda el orderId antes de redirigir a Redsys para poder reanudar el pago
+ * desde /pedido-confirmado incluso si Redsys omite parámetros en URLKO.
+ */
+export function savePendingPaymentOrder(orderId: string): void {
+  const trimmed = orderId.trim();
+  if (!trimmed) return;
+  const payload = JSON.stringify({ orderId: trimmed, createdAt: Date.now() });
+  try {
+    sessionStorage.setItem(PENDING_PAYMENT_ORDER_KEY, payload);
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.setItem(PENDING_PAYMENT_ORDER_KEY, payload);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getPendingPaymentOrder(): string | null {
+  const readFrom = (storage: Storage): string | null => {
+    try {
+      const raw = storage.getItem(PENDING_PAYMENT_ORDER_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { orderId?: unknown; createdAt?: unknown };
+      const orderId = typeof parsed.orderId === 'string' ? parsed.orderId.trim() : '';
+      const createdAt = typeof parsed.createdAt === 'number' ? parsed.createdAt : 0;
+      if (!orderId || Date.now() - createdAt > PENDING_PAYMENT_TTL_MS) {
+        storage.removeItem(PENDING_PAYMENT_ORDER_KEY);
+        return null;
+      }
+      return orderId;
+    } catch {
+      return null;
+    }
+  };
+
+  return readFrom(sessionStorage) || readFrom(localStorage);
+}
+
+export function clearPendingPaymentOrder(): void {
+  try {
+    sessionStorage.removeItem(PENDING_PAYMENT_ORDER_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.removeItem(PENDING_PAYMENT_ORDER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function saveLastPaymentConfirmation(data: StoredPaymentConfirmation): void {
+  try {
+    sessionStorage.setItem(
+      LAST_PAYMENT_CONFIRMATION_KEY,
+      JSON.stringify({ ...data, createdAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getLastPaymentConfirmation(): StoredPaymentConfirmation | null {
+  try {
+    const raw = sessionStorage.getItem(LAST_PAYMENT_CONFIRMATION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      result?: unknown;
+      orderId?: unknown;
+      createdAt?: unknown;
+    };
+    const createdAt = typeof parsed.createdAt === 'number' ? parsed.createdAt : 0;
+    if (Date.now() - createdAt > LAST_PAYMENT_CONFIRMATION_TTL_MS) {
+      sessionStorage.removeItem(LAST_PAYMENT_CONFIRMATION_KEY);
+      return null;
+    }
+    if (parsed.result !== 'success' && parsed.result !== 'pending') {
+      return null;
+    }
+    return {
+      result: parsed.result,
+      orderId: typeof parsed.orderId === 'string' && parsed.orderId.trim() ? parsed.orderId.trim() : null,
+    };
+  } catch {
+    return null;
+  }
+}

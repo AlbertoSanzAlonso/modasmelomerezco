@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Loader2, CheckCircle2, XCircle, CreditCard } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, CreditCard, User } from 'lucide-react';
 import { api } from '@/lib/api';
-import { fetchRedsysParameters, getRedsysCallbackOrigin, REDSYS_URL_PROD, REDSYS_URL_TEST } from '@/lib/redsys';
+import {
+  clearPendingPaymentOrder,
+  fetchRedsysParameters,
+  getRedsysCallbackOrigin,
+  savePendingPaymentOrder,
+  REDSYS_URL_PROD,
+  REDSYS_URL_TEST,
+} from '@/lib/redsys';
 import { isOrderPaid } from '@/lib/orderPayment';
 import { getOrderContact } from '@/lib/orderContact';
 import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useCartStore } from '@/store/useCartStore';
 import { Button } from '@/components/ui/Button';
 import type { Order } from '@/types';
 
@@ -18,6 +27,7 @@ function paymentMethodFromOrder(order: Order): 'card' | 'bizum' {
 
 function submitRedsysForm(params: Record<string, string>, order?: Order | null) {
   if (order?.order_id) {
+    savePendingPaymentOrder(order.order_id);
     const email =
       order.customer_email ||
       order.customer?.email ||
@@ -46,6 +56,8 @@ function submitRedsysForm(params: Record<string, string>, order?: Order | null) 
 
 const ResumePaymentPage = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const clearCart = useCartStore((s) => s.clearCart);
   const [status, setStatus] = useState<PageStatus>('loading');
   const [order, setOrder] = useState<Order | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -75,6 +87,8 @@ const ResumePaymentPage = () => {
         setOrder(found);
 
         if (isOrderPaid(found)) {
+          clearPendingPaymentOrder();
+          clearCart();
           setStatus('paid');
           return;
         }
@@ -97,11 +111,15 @@ const ResumePaymentPage = () => {
         if (cancelled) return;
         setRedsysParams(params);
         setStatus('ready');
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Resume payment error:', err);
         if (!cancelled) {
           setStatus('error');
-          setErrorMessage(err?.message || 'No se pudo preparar el pago. Inténtalo de nuevo.');
+          setErrorMessage(
+            err instanceof Error && err.message
+              ? err.message
+              : 'No se pudo preparar el pago. Inténtalo de nuevo.'
+          );
         }
       }
     };
@@ -110,13 +128,14 @@ const ResumePaymentPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [orderId]);
+  }, [orderId, clearCart]);
 
   useEffect(() => {
     if (status !== 'ready' || !redsysParams || autoSubmitted.current) return;
-    autoSubmitted.current = true;
     // Pequeña pausa para que el usuario vea el resumen; el botón queda como respaldo
     const timer = window.setTimeout(() => {
+      if (autoSubmitted.current) return;
+      autoSubmitted.current = true;
       setStatus('redirecting');
       submitRedsysForm(redsysParams, order);
     }, 600);
@@ -125,6 +144,7 @@ const ResumePaymentPage = () => {
 
   const handleManualPay = () => {
     if (!redsysParams) return;
+    autoSubmitted.current = true;
     setStatus('redirecting');
     submitRedsysForm(redsysParams, order);
   };
@@ -153,11 +173,24 @@ const ResumePaymentPage = () => {
             <p className="text-gray-500 text-sm">
               El pedido {shortId ? `#${shortId}` : ''} ya está confirmado. No hace falta volver a pagar.
             </p>
-            <Link to="/">
-              <Button className="w-full py-5 font-black tracking-widest uppercase italic">
-                Ir a la tienda
-              </Button>
-            </Link>
+            <div className="flex flex-col gap-3">
+              {isAuthenticated && (
+                <Link to="/cuenta">
+                  <Button className="w-full py-5 font-black tracking-widest uppercase italic">
+                    <User className="w-4 h-4 mr-2" />
+                    Ir a mi cuenta
+                  </Button>
+                </Link>
+              )}
+              <Link to="/">
+                <Button
+                  variant={isAuthenticated ? 'outline' : 'primary'}
+                  className="w-full py-5 font-black tracking-widest uppercase italic"
+                >
+                  Volver a la web
+                </Button>
+              </Link>
+            </div>
           </>
         )}
 

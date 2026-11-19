@@ -75,6 +75,8 @@ const STATIC_PAGES: Record<
 
 const NOINDEX_PATHS = [
   '/checkout',
+  '/pedido-confirmado',
+  '/pagar',
   '/confirmar-suscripcion',
   '/desuscribir',
   '/favoritos',

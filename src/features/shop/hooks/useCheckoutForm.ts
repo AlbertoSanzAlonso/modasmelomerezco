@@ -5,7 +5,7 @@ import { getDiscountedLineTotal } from '@/lib/cartDiscount';
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import { CITIES_BY_PROVINCE } from "@/constants/locations";
-import { fetchRedsysParameters, REDSYS_URL_TEST, REDSYS_URL_PROD } from "@/lib/redsys";
+import { fetchRedsysParameters, getRedsysCallbackOrigin, REDSYS_URL_TEST, REDSYS_URL_PROD } from "@/lib/redsys";
 import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
 import type { Address } from '@/types';
 
@@ -301,13 +301,14 @@ export const useCheckoutForm = () => {
       const createdOrder = await api.orders.create(orderData);
       queryClient.invalidateQueries({ queryKey: ['orders', user?.email] });
       
+      const callbackOrigin = getRedsysCallbackOrigin();
       const redsysParams = await fetchRedsysParameters(
         createdOrder.order_id,
         finalTotal,
         {
-          urlOk: `${window.location.origin}/api/redsys/return-ok`,
-          urlKo: `${window.location.origin}/api/redsys/return-ko`,
-          urlNotification: `${window.location.origin}/api/webhooks/redsys`, 
+          urlOk: `${callbackOrigin}/api/redsys/return-ok`,
+          urlKo: `${callbackOrigin}/api/redsys/return-ko`,
+          urlNotification: `${callbackOrigin}/api/webhooks/redsys`, 
           productDescription: `Pedido #${createdOrder.order_id.split('-')[0].toUpperCase()}`,
           paymentMethod: paymentMethod
         }

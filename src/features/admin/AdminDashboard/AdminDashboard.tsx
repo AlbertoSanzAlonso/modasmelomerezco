@@ -81,7 +81,7 @@ export const AdminDashboard: React.FC = () => {
   // Pagination and Selection
   const [productPage, setProductPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
-  const [orderListFilter, setOrderListFilter] = useState<AdminOrderListFilter>('fulfilled');
+  const [orderListFilter, setOrderListFilter] = useState<AdminOrderListFilter>('all');
   const [customerPage, setCustomerPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState('');
@@ -105,10 +105,10 @@ export const AdminDashboard: React.FC = () => {
     setOrderPage(1);
   }, [orderListFilter]);
 
-  // Vista general siempre sobre ventas reales (no borradores de cobro)
+  // Vista general muestra todos los pedidos (incluidos pagos pendientes)
   useEffect(() => {
-    if (activeTab !== 'orders' && orderListFilter !== 'fulfilled') {
-      setOrderListFilter('fulfilled');
+    if (activeTab !== 'orders' && orderListFilter !== 'all') {
+      setOrderListFilter('all');
     }
   }, [activeTab, orderListFilter]);
 

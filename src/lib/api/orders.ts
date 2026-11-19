@@ -2,14 +2,14 @@
 import { supabase } from '../supabase';
 import type { Order } from '@/types';
 
-/** Ventas reales vs borradores de cobro (Pending sin pagar). */
-export type AdminOrderListFilter = 'fulfilled' | 'awaiting_payment';
+/** Filtro del listado de pedidos en admin: todos (por defecto), ventas o pago pendiente. */
+export type AdminOrderListFilter = 'all' | 'fulfilled' | 'awaiting_payment';
 
 export const orders = {
   getAll: async (
     page = 1,
     pageSize = 20,
-    listFilter: AdminOrderListFilter = 'fulfilled'
+    listFilter: AdminOrderListFilter = 'all'
   ): Promise<{ orders: Order[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -20,8 +20,7 @@ export const orders = {
 
     if (listFilter === 'awaiting_payment') {
       query = query.eq('order_status', 'Pending');
-    } else {
-      // Ventas: pagados / enviados / entregados (no Pending ni Cancelled)
+    } else if (listFilter === 'fulfilled') {
       query = query.in('order_status', ['Paid', 'Shipped', 'Delivered']);
     }
 

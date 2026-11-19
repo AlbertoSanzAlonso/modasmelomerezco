@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Loader2, CheckCircle2, XCircle, CreditCard } from 'lucide-react';
 import { api } from '@/lib/api';
-import { fetchRedsysParameters, REDSYS_URL_PROD, REDSYS_URL_TEST } from '@/lib/redsys';
+import { fetchRedsysParameters, getRedsysCallbackOrigin, REDSYS_URL_PROD, REDSYS_URL_TEST } from '@/lib/redsys';
 import { isOrderPaid } from '@/lib/orderPayment';
 import { getOrderContact } from '@/lib/orderContact';
 import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
@@ -85,10 +85,11 @@ const ResumePaymentPage = () => {
           return;
         }
 
+        const callbackOrigin = getRedsysCallbackOrigin();
         const params = await fetchRedsysParameters(found.order_id, found.total_amount, {
-          urlOk: `${window.location.origin}/api/redsys/return-ok`,
-          urlKo: `${window.location.origin}/api/redsys/return-ko`,
-          urlNotification: `${window.location.origin}/api/webhooks/redsys`,
+          urlOk: `${callbackOrigin}/api/redsys/return-ok`,
+          urlKo: `${callbackOrigin}/api/redsys/return-ko`,
+          urlNotification: `${callbackOrigin}/api/webhooks/redsys`,
           productDescription: `Pedido #${found.order_id.split('-')[0].toUpperCase()}`,
           paymentMethod: paymentMethodFromOrder(found),
         });

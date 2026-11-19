@@ -17,7 +17,7 @@ export const useAdminData = (
   categoryFilter?: number,
   onOfferFilter?: boolean,
   labelFilter?: number[],
-  orderListFilter: AdminOrderListFilter = 'fulfilled'
+  orderListFilter: AdminOrderListFilter = 'all'
 ) => {
   const queryClient = useQueryClient();
 

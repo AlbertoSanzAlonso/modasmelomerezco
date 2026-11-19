@@ -1,10 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCanonicalSiteUrl } from '../_siteUrl.js';
+import {
+  decodeRedsysMerchantParameters,
+  extractOrderUuidFromParams,
+  extractRedsysPayload,
+  processRedsysPayment,
+} from '../_redsysConfirm.js';
 
 /**
- * Redsys hace POST a URLOK/URLKO. En una SPA el POST puede dejar al usuario
+ * Redsys hace GET/POST a URLOK/URLKO. En una SPA eso puede dejar al usuario
  * “colgado” o perder query params al redirigir a rutas protegidas.
- * Este endpoint acepta GET/POST y responde 303 hacia la página pública de resultado.
+ * Además, en URLOK verificamos la firma HMAC-SHA256 de Redsys y confirmamos
+ * el pedido como respaldo idempotente si el webhook servidor-a-servidor falló
+ * (p. ej. bloqueo de Cloudflare/WAF o fallo temporal).
  */
 function resolveOrigin(req: VercelRequest): string {
   const forwardedHost = req.headers['x-forwarded-host'];
@@ -24,39 +32,27 @@ function resolveOrigin(req: VercelRequest): string {
   return `${proto}://${host}`.replace(/\/$/, '');
 }
 
-function firstString(value: unknown): string | null {
-  if (typeof value === 'string' && value.trim()) return value.trim();
-  if (Array.isArray(value) && typeof value[0] === 'string' && value[0].trim()) {
-    return value[0].trim();
-  }
-  return null;
-}
-
 /** Extrae el UUID del pedido (Ds_MerchantData) del POST/GET de retorno de Redsys. */
 function extractOrderUuidFromRedsysRequest(req: VercelRequest): string | null {
   try {
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const query = (req.query ?? {}) as Record<string, unknown>;
-    const merchantParamsB64 =
-      firstString(body.Ds_MerchantParameters) ||
-      firstString(body.DS_MERCHANTPARAMETERS) ||
-      firstString(query.Ds_MerchantParameters);
-
-    if (!merchantParamsB64) return null;
-
-    const json = Buffer.from(merchantParamsB64, 'base64').toString('utf8');
-    const params = JSON.parse(json) as Record<string, unknown>;
-    const uuid = firstString(params.Ds_MerchantData);
-    return uuid;
+    const payload = extractRedsysPayload(req);
+    if (!payload) return null;
+    const params = decodeRedsysMerchantParameters(payload.merchantParameters);
+    return extractOrderUuidFromParams(params);
   } catch {
     return null;
   }
 }
 
-function redirectToConfirmation(req: VercelRequest, res: VercelResponse, payment: 'success' | 'error') {
+function redirectToConfirmation(
+  req: VercelRequest,
+  res: VercelResponse,
+  payment: 'success' | 'error',
+  orderIdOverride?: string | null
+) {
   const origin = resolveOrigin(req);
   const params = new URLSearchParams({ payment });
-  const orderId = extractOrderUuidFromRedsysRequest(req);
+  const orderId = orderIdOverride ?? extractOrderUuidFromRedsysRequest(req);
   if (orderId) params.set('order', orderId);
 
   const location = `${origin}/pedido-confirmado?${params.toString()}`;
@@ -66,11 +62,25 @@ function redirectToConfirmation(req: VercelRequest, res: VercelResponse, payment
   res.end();
 }
 
-export function handleRedsysOk(req: VercelRequest, res: VercelResponse) {
+export async function handleRedsysOk(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
-  return redirectToConfirmation(req, res, 'success');
+
+  let confirmedOrderId: string | null = null;
+  try {
+    const result = await processRedsysPayment(req, 'return-ok');
+    if ('orderUuid' in result && result.orderUuid) {
+      confirmedOrderId = result.orderUuid;
+    }
+    if (result.status === 'payment_failed') {
+      return redirectToConfirmation(req, res, 'error', confirmedOrderId);
+    }
+  } catch (error) {
+    console.error('[redsys-return-ok] Error confirmando pedido en retorno:', error);
+  }
+
+  return redirectToConfirmation(req, res, 'success', confirmedOrderId);
 }
 
 export function handleRedsysKo(req: VercelRequest, res: VercelResponse) {

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useCartStore } from '@/store/useCartStore';
-import { useAuthStore } from '@/store/useAuthStore';
 import { GoogleCustomerReviewsOptIn } from './components/GoogleCustomerReviewsOptIn';
 import {
   consumeGoogleCustomerReviewsPending,
@@ -18,15 +17,18 @@ type Result = 'success' | 'error' | null;
  */
 const PaymentConfirmationPage = () => {
   const [searchParams] = useSearchParams();
-  const { clearCart, openModal, closeModal } = useCartStore();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const clearCart = useCartStore((s) => s.clearCart);
   const handled = useRef(false);
+
   const [result] = useState<Result>(() => {
     const payment = searchParams.get('payment');
     if (payment === 'success') return 'success';
     if (payment === 'error') return 'error';
     return null;
   });
+
+  // Conservar orderId aunque se limpie la query de la URL
+  const [orderId] = useState(() => searchParams.get('order')?.trim() || null);
   const [reviewOptIn, setReviewOptIn] = useState<GoogleCustomerReviewsPending | null>(null);
 
   useEffect(() => {
@@ -34,35 +36,13 @@ const PaymentConfirmationPage = () => {
     if (result !== 'success' && result !== 'error') return;
     handled.current = true;
 
-    const orderFromUrl = searchParams.get('order');
     if (result === 'success') {
-      setReviewOptIn(consumeGoogleCustomerReviewsPending(orderFromUrl));
+      setReviewOptIn(consumeGoogleCustomerReviewsPending(orderId));
+      clearCart();
     }
 
     window.history.replaceState({}, '', window.location.pathname);
-
-    if (result === 'success') {
-      clearCart();
-      openModal({
-        title: '¡Pago completado!',
-        message:
-          'Tu pedido está confirmado. Recibirás un email con los detalles en breve.',
-        type: 'success',
-        actionLabel: 'Entendido',
-        onAction: () => closeModal(),
-      });
-      return;
-    }
-
-    openModal({
-      title: 'Pago no completado',
-      message:
-        'El pago no se ha podido completar. Puedes intentarlo de nuevo desde el checkout o con el enlace que te enviemos.',
-      type: 'warning',
-      actionLabel: 'Entendido',
-      onAction: () => closeModal(),
-    });
-  }, [result, clearCart, openModal, closeModal, searchParams]);
+  }, [result, orderId, clearCart]);
 
   if (!result) {
     return (
@@ -81,6 +61,7 @@ const PaymentConfirmationPage = () => {
   }
 
   const isSuccess = result === 'success';
+  const resumePaymentPath = orderId ? `/pagar/${orderId}` : '/checkout';
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-6 py-20 bg-accent">
@@ -98,30 +79,18 @@ const PaymentConfirmationPage = () => {
             </div>
             <div className="space-y-2">
               <h1 className="text-3xl font-black uppercase italic tracking-tighter">
-                ¡Pago correcto!
+                Compra realizada con éxito
               </h1>
               <p className="text-gray-500 text-sm font-medium leading-relaxed">
                 Gracias por tu compra. Te hemos enviado (o te enviaremos en breve) la confirmación
                 por email.
               </p>
             </div>
-            <div className="flex flex-col gap-3">
-              {isAuthenticated ? (
-                <Link to="/cuenta/pedidos">
-                  <Button className="w-full py-5 font-black tracking-widest uppercase italic">
-                    Ver mis pedidos
-                  </Button>
-                </Link>
-              ) : null}
-              <Link to="/">
-                <Button
-                  variant={isAuthenticated ? 'outline' : 'primary'}
-                  className="w-full py-5 font-black tracking-widest uppercase italic"
-                >
-                  Seguir comprando
-                </Button>
-              </Link>
-            </div>
+            <Link to="/">
+              <Button className="w-full py-5 font-black tracking-widest uppercase italic">
+                Volver a la web
+              </Button>
+            </Link>
           </>
         ) : (
           <>
@@ -134,18 +103,19 @@ const PaymentConfirmationPage = () => {
               </h1>
               <p className="text-gray-500 text-sm font-medium leading-relaxed">
                 No se ha cargado ningún importe o el pago se ha cancelado. Puedes volver a
-                intentarlo cuando quieras.
+                intentarlo ahora mismo.
               </p>
             </div>
             <div className="flex flex-col gap-3">
-              <Link to="/checkout">
+              <Link to={resumePaymentPath}>
                 <Button className="w-full py-5 font-black tracking-widest uppercase italic">
-                  Volver al checkout
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Volver al pago
                 </Button>
               </Link>
               <Link to="/">
                 <Button variant="outline" className="w-full py-5 font-black tracking-widest uppercase italic">
-                  Ir a la tienda
+                  Volver a la web
                 </Button>
               </Link>
             </div>

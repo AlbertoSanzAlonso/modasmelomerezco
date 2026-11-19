@@ -4,6 +4,7 @@ import CryptoJS from 'crypto-js';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Add CORS headers
   const allowedOrigins = [
+    'https://www.modasmelomerezco.es',
     'https://modasmelomerezco.es',
     'https://modasmelomerezco.vercel.app',
     'http://localhost:5173',

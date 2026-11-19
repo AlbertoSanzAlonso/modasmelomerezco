@@ -104,3 +104,15 @@ export const fetchRedsysParameters = async (
 
 export const REDSYS_URL_TEST = 'https://sis-t.redsys.es:25443/sis/realizarPago';
 export const REDSYS_URL_PROD = 'https://sis.redsys.es/sis/realizarPago';
+
+/**
+ * En producción usa siempre el origen canónico con www para que el POST
+ * del webhook de Redsys nunca reciba un 308 Redirect desde el dominio raíz.
+ */
+export function getRedsysCallbackOrigin(): string {
+  const host = window.location.hostname.toLowerCase();
+  if (host === 'modasmelomerezco.es' || host === 'www.modasmelomerezco.es') {
+    return 'https://www.modasmelomerezco.es';
+  }
+  return window.location.origin;
+}

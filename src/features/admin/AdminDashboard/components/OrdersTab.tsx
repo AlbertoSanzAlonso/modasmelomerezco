@@ -28,6 +28,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   onGenerateLabel
 }) => {
   const isAwaiting = listFilter === 'awaiting_payment';
+  const isFulfilled = listFilter === 'fulfilled';
 
   return (
     <div className="space-y-10">
@@ -37,13 +38,23 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
           <p className="text-gray-500 text-sm">
             {isAwaiting
               ? 'Borradores de cobro: el cliente aún no ha pagado en Redsys.'
-              : 'Controla las ventas y genera etiquetas de envío.'}
+              : isFulfilled
+                ? 'Controla las ventas confirmadas y genera etiquetas de envío.'
+                : 'Controla todos los pedidos, pagos pendientes y genera etiquetas de envío.'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            variant={listFilter === 'fulfilled' ? 'default' : 'outline'}
+            variant={listFilter === 'all' ? 'default' : 'outline'}
+            className="text-[9px] font-black tracking-widest px-4 rounded-xl"
+            onClick={() => onListFilterChange('all')}
+          >
+            TODOS
+          </Button>
+          <Button
+            size="sm"
+            variant={isFulfilled ? 'default' : 'outline'}
             className="text-[9px] font-black tracking-widest px-4 rounded-xl"
             onClick={() => onListFilterChange('fulfilled')}
           >
@@ -75,6 +86,11 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
             <tbody className="divide-y divide-(--border-main)">
               {orders?.map((order) => {
                 const contact = getOrderContact(order);
+                const isPaidStatus =
+                  order.order_status === 'Paid' ||
+                  order.order_status === 'Shipped' ||
+                  order.order_status === 'Delivered';
+                const isCancelled = order.order_status === 'Cancelled';
                 return (
                 <tr key={order.order_id} 
                     onClick={() => onOrderClick(order)}
@@ -88,8 +104,14 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                   </td>
                   <td className="px-8 py-6 text-sm font-black italic text-(--text-main)">{order.total_amount.toFixed(2)}€</td>
                   <td className="px-8 py-6">
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${order.order_status === 'Paid' || order.order_status === 'Shipped' || order.order_status === 'Delivered' ? 'border-green-500/30 bg-green-500/5 text-green-500' : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'}`}>
-                      {isAwaiting ? 'ESPERANDO PAGO' : (order.order_status || '').toUpperCase()}
+                    <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${
+                      isPaidStatus
+                        ? 'border-green-500/30 bg-green-500/5 text-green-500'
+                        : isCancelled
+                          ? 'border-red-500/30 bg-red-500/5 text-red-500'
+                          : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'
+                    }`}>
+                      {order.order_status === 'Pending' ? 'ESPERANDO PAGO' : (order.order_status || '').toUpperCase()}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
@@ -117,6 +139,10 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                       >
                         GENERAR NACEX
                       </Button>
+                    ) : isCancelled ? (
+                      <span className="text-[9px] font-black uppercase tracking-widest text-red-500 px-2">
+                        Cancelado
+                      </span>
                     ) : (
                       <span className="text-[9px] font-black uppercase tracking-widest text-yellow-600 px-2">
                         Pago pendiente
@@ -129,7 +155,11 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
               {(!orders || orders.length === 0) && (
                 <tr>
                   <td colSpan={5} className="px-8 py-16 text-center text-gray-500 text-xs font-bold uppercase italic">
-                    {isAwaiting ? 'No hay pagos pendientes' : 'No hay ventas registradas'}
+                    {isAwaiting
+                      ? 'No hay pagos pendientes'
+                      : isFulfilled
+                        ? 'No hay ventas registradas'
+                        : 'No hay pedidos registrados'}
                   </td>
                 </tr>
               )}

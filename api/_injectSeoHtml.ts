@@ -69,5 +69,12 @@ export function injectSeoIntoHtml(html: string, meta: SeoPageMeta): string {
     result = result.replace('</head>', `    ${scriptTag}\n  </head>`);
   }
 
+  if (meta.bodyHtml) {
+    result = result.replace(
+      /<div\s+id="root"\s*>\s*<\/div>/i,
+      `<div id="root">${meta.bodyHtml}</div>`,
+    );
+  }
+
   return result;
 }

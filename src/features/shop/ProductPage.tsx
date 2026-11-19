@@ -329,7 +329,10 @@ const ProductPage = () => {
   const soldOut = isProductSoldOut(product);
   const onOffer = hasActiveOffer(product);
   const compareAt = onOffer ? getProductCompareAtPrice(product) : null;
-  const availabilitySchema = totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+  const availabilitySchema =
+    !soldOut && totalStock > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
 
   return (
     <div className="bg-accent min-h-screen pt-8 pb-32 text-secondary lg:pt-10 lg:pb-16">

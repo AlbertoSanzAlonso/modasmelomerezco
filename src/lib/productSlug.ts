@@ -2,10 +2,12 @@ import type { Product } from '../types/index.js';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const NUMERIC_ID_RE = /^\d+$/;
 
-/** Detecta si el segmento de URL es un UUID de producto (URL antigua). */
+/** Detecta si el segmento de URL es un ID de producto antiguo (UUID o numérico). */
 export function isProductUuid(value: string): boolean {
-  return UUID_RE.test(value.trim());
+  const trimmed = value.trim();
+  return UUID_RE.test(trimmed) || NUMERIC_ID_RE.test(trimmed);
 }
 
 /** Slug legible a partir del nombre (misma lógica que etiquetas / migración SQL). */

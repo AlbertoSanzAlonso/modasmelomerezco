@@ -19,8 +19,10 @@ export type SeoPageMeta = {
   noindex: boolean;
   type: 'website' | 'product';
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
-  /** Si está definido, el middleware debe responder 301 a esta path (p. ej. UUID → slug). */
+  /** Si está definido, el middleware debe responder 301 a esta path (p. ej. UUID/ID → slug). */
   redirectTo?: string;
+  /** HTML semántico pre-renderizado en servidor para crawlers dentro de <div id="root">. */
+  bodyHtml?: string;
 };
 
 const STATIC_PAGES: Record<string, { title?: string; description: string }> = {
@@ -127,21 +129,52 @@ function getDbClient() {
   return createClient(url, key);
 }
 
+function buildSiteNavHtml(): string {
+  return `<header><nav aria-label="Navegación principal"><a href="${SITE_URL}/">${SITE_NAME}</a> | <a href="${SITE_URL}/categoria/ropa">Ropa</a> | <a href="${SITE_URL}/categoria/oversize">Oversize</a> | <a href="${SITE_URL}/categoria/complementos">Complementos</a> | <a href="${SITE_URL}/categoria/bolsos">Bolsos</a> | <a href="${SITE_URL}/categoria/calzado">Calzado</a> | <a href="${SITE_URL}/conocenos">Conócenos</a> | <a href="${SITE_URL}/envios">Envíos</a> | <a href="${SITE_URL}/devoluciones">Devoluciones</a></nav></header>`;
+}
+
+function buildProductLinksHtml(
+  items: { slug?: string | null; product_id: string; name?: string | null; price?: number | null }[],
+): string {
+  if (items.length === 0) return '';
+  const lis = items
+    .filter((p) => {
+      const n = (p.name || '').toLowerCase();
+      return !n.includes('test') && !n.includes('prueba');
+    })
+    .map((p) => {
+      const slug = (p.slug || '').trim() || p.product_id;
+      const href = escapeAttr(absoluteUrl(`/producto/${slug}`));
+      const label = escapeHtml(p.name || 'Producto');
+      const priceText =
+        p.price != null && Number.isFinite(Number(p.price))
+          ? ` — ${Number(p.price).toFixed(2)} €`
+          : '';
+      return `<li><a href="${href}">${label}</a>${escapeHtml(priceText)}</li>`;
+    })
+    .join('');
+  return lis ? `<section><h2>Artículos</h2><ul>${lis}</ul></section>` : '';
+}
+
 async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
   const db = getDbClient();
   if (!db) return null;
 
   const select =
-    'product_id, slug, name, description, price, is_published, product_images(image_url)';
+    'product_id, slug, name, description, details, price, is_published, is_sold_out, categories(name), product_images(image_url), product_variants(stock)';
 
   let product: {
     product_id: string;
     slug?: string | null;
     name?: string | null;
     description?: string | null;
+    details?: string | null;
     price?: number | null;
     is_published?: boolean;
+    is_sold_out?: boolean | null;
+    categories?: { name?: string | null } | { name?: string | null }[] | null;
     product_images?: { image_url?: string }[] | null;
+    product_variants?: { stock?: number | null }[] | null;
   } | null = null;
 
   const bySlug = await db
@@ -183,64 +216,111 @@ async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
   const productName = product.name || 'Producto';
   const price = Number(product.price);
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: productName,
-    description: description || `${productName}. Compra online en ${SITE_NAME}.`,
-    image: firstImage ? toSeoImageUrl(firstImage) : undefined,
-    sku: product.product_id,
-    url: canonical,
-    offers: {
-      '@type': 'Offer',
-      price: price.toFixed(2),
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/InStock',
+  const variants = product.product_variants ?? [];
+  const totalStock = variants.reduce((acc, v) => acc + Number(v.stock ?? 0), 0);
+  const inStock =
+    product.is_sold_out !== true && (variants.length === 0 || totalStock > 0);
+  const availability = inStock
+    ? 'https://schema.org/InStock'
+    : 'https://schema.org/OutOfStock';
+
+  const catObj = Array.isArray(product.categories)
+    ? product.categories[0]
+    : product.categories;
+  const categoryName = (catObj?.name || 'Ropa').trim();
+  const categorySlug = categoryName.toLowerCase();
+  const categoryUrl = absoluteUrl(`/categoria/${categorySlug}`);
+
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Inicio',
+          item: SITE_URL,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: categoryName,
+          item: categoryUrl,
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: productName,
+          item: canonical,
+        },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: productName,
+      description: description || `${productName}. Compra online en ${SITE_NAME}.`,
+      image: firstImage ? toSeoImageUrl(firstImage) : undefined,
+      sku: product.product_id,
       url: canonical,
-      shippingDetails: {
-        '@type': 'OfferShippingDetails',
-        shippingRate: {
-          '@type': 'MonetaryAmount',
-          value: 5.5,
-          currency: 'EUR',
-        },
-        shippingDestination: {
-          '@type': 'DefinedRegion',
-          addressCountry: 'ES',
-        },
-        deliveryTime: {
-          '@type': 'ShippingDeliveryTime',
-          handlingTime: {
-            '@type': 'QuantitativeValue',
-            minValue: 0,
-            maxValue: 1,
-            unitCode: 'DAY',
+      offers: {
+        '@type': 'Offer',
+        price: price.toFixed(2),
+        priceCurrency: 'EUR',
+        availability,
+        url: canonical,
+        shippingDetails: {
+          '@type': 'OfferShippingDetails',
+          shippingRate: {
+            '@type': 'MonetaryAmount',
+            value: 5.5,
+            currency: 'EUR',
           },
-          transitTime: {
-            '@type': 'QuantitativeValue',
-            minValue: 1,
-            maxValue: 2,
-            unitCode: 'DAY',
+          shippingDestination: {
+            '@type': 'DefinedRegion',
+            addressCountry: 'ES',
           },
+          deliveryTime: {
+            '@type': 'ShippingDeliveryTime',
+            handlingTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 0,
+              maxValue: 1,
+              unitCode: 'DAY',
+            },
+            transitTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 1,
+              maxValue: 2,
+              unitCode: 'DAY',
+            },
+          },
+        },
+        hasMerchantReturnPolicy: {
+          '@type': 'MerchantReturnPolicy',
+          applicableCountry: 'ES',
+          returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+          merchantReturnDays: 14,
+          returnMethod: 'https://schema.org/ReturnByMail',
+          returnFees: 'https://schema.org/ReturnShippingFees',
         },
       },
-      hasMerchantReturnPolicy: {
-        '@type': 'MerchantReturnPolicy',
-        applicableCountry: 'ES',
-        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-        merchantReturnDays: 14,
-        returnMethod: 'https://schema.org/ReturnByMail',
-        returnFees: 'https://schema.org/ReturnShippingFees',
+      brand: {
+        '@type': 'Brand',
+        name: SITE_NAME,
       },
     },
-    brand: {
-      '@type': 'Brand',
-      name: SITE_NAME,
-    },
-  };
+  ];
 
   const redirectTo =
     isProductUuid(slugOrId) && slug !== slugOrId ? path : undefined;
+
+  const fullDesc = escapeHtml((product.description || description).trim());
+  const detailsBlock = product.details?.trim()
+    ? `<p>${escapeHtml(product.details.trim())}</p>`
+    : '';
+  const bodyHtml = `${buildSiteNavHtml()}<main><nav aria-label="Breadcrumb"><a href="${SITE_URL}/">Inicio</a> &gt; <a href="${escapeAttr(categoryUrl)}">${escapeHtml(categoryName)}</a> &gt; <span>${escapeHtml(productName)}</span></nav><article><h1>${escapeHtml(productName)}</h1><img src="${escapeAttr(ogImage)}" alt="${escapeAttr(productName)}" /><p>${fullDesc}</p>${detailsBlock}<p><strong>Precio:</strong> ${price.toFixed(2)} € (${inStock ? 'Disponible' : 'Agotado'})</p></article></main>`;
 
   return {
     title: buildTitle(product.name || undefined),
@@ -251,6 +331,7 @@ async function getProductMeta(slugOrId: string): Promise<SeoPageMeta | null> {
     type: 'product',
     jsonLd,
     redirectTo,
+    bodyHtml,
   };
 }
 
@@ -281,6 +362,33 @@ async function getCategoryMeta(slug: string): Promise<SeoPageMeta | null> {
     ],
   };
 
+  let productsHtml = '';
+  const db = getDbClient();
+  if (db) {
+    try {
+      const { data: cat } = await db
+        .from('categories')
+        .select('id')
+        .ilike('name', slug)
+        .maybeSingle();
+
+      if (cat?.id) {
+        const { data: items } = await db
+          .from('products')
+          .select('product_id, slug, name, price')
+          .eq('is_published', true)
+          .eq('category_id', cat.id)
+          .order('created_at', { ascending: false })
+          .limit(60);
+        productsHtml = buildProductLinksHtml(items ?? []);
+      }
+    } catch {
+      // Fallback sin listado si falla la consulta
+    }
+  }
+
+  const bodyHtml = `${buildSiteNavHtml()}<main><h1>${escapeHtml(categoryTitle)}</h1><p>${escapeHtml(page.description)}</p>${productsHtml}</main>`;
+
   return {
     title: buildTitle(page.title),
     description: page.description,
@@ -289,6 +397,7 @@ async function getCategoryMeta(slug: string): Promise<SeoPageMeta | null> {
     noindex: false,
     type: 'website',
     jsonLd,
+    bodyHtml,
   };
 }
 
@@ -321,6 +430,7 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
   if (staticPage) {
     const canonical = absoluteUrl(path);
     let jsonLd: SeoPageMeta['jsonLd'];
+    let productsHtml = '';
 
     if (path === '/') {
       jsonLd = [
@@ -342,6 +452,11 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
           priceRange: '€€',
           telephone: '+34 685 011 494',
           email: 'info@modasmelomerezco.es',
+          sameAs: [
+            'https://www.instagram.com/modasmelomerezco',
+            'https://www.tiktok.com/@modasmelomerezco',
+            'https://www.facebook.com/profile.php?id=61555721379464',
+          ],
           address: {
             '@type': 'PostalAddress',
             streetAddress: 'Calle Sol, 5',
@@ -350,9 +465,32 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
             postalCode: '29631',
             addressCountry: 'ES',
           },
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: 36.5961,
+            longitude: -4.5708,
+          },
         },
       ];
+
+      const db = getDbClient();
+      if (db) {
+        try {
+          const { data: items } = await db
+            .from('products')
+            .select('product_id, slug, name, price')
+            .eq('is_published', true)
+            .order('created_at', { ascending: false })
+            .limit(40);
+          productsHtml = buildProductLinksHtml(items ?? []);
+        } catch {
+          // Fallback sin listado
+        }
+      }
     }
+
+    const heading = staticPage.title || `${SITE_NAME} — Tienda online de moda para mujer`;
+    const bodyHtml = `${buildSiteNavHtml()}<main><h1>${escapeHtml(heading)}</h1><p>${escapeHtml(staticPage.description)}</p>${productsHtml}</main>`;
 
     return {
       title: buildTitle(staticPage.title),
@@ -362,6 +500,7 @@ export async function getSeoMetaForPath(pathname: string): Promise<SeoPageMeta |
       noindex: false,
       type: 'website',
       jsonLd,
+      bodyHtml,
     };
   }
 

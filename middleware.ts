@@ -42,7 +42,7 @@ export default async function middleware(request: Request) {
   const meta = await getSeoMetaForPath(pathname);
 
   if (meta?.redirectTo) {
-    const target = new URL(meta.redirectTo, request.url);
+    const target = new URL(meta.redirectTo, meta.canonical || request.url);
     target.search = url.search;
     return Response.redirect(target, 301);
   }

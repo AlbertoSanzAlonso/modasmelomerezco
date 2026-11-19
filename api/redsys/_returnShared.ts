@@ -73,7 +73,7 @@ export async function handleRedsysOk(req: VercelRequest, res: VercelResponse) {
     if ('orderUuid' in result && result.orderUuid) {
       confirmedOrderId = result.orderUuid;
     }
-    if (result.status === 'payment_failed') {
+    if (result.status === 'payment_failed' || result.status === 'invalid_signature') {
       return redirectToConfirmation(req, res, 'error', confirmedOrderId);
     }
   } catch (error) {

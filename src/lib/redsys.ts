@@ -37,6 +37,7 @@ export const generateRedsysParameters = (
     DS_MERCHANT_AMOUNT: amountCents,
     DS_MERCHANT_ORDER: formattedOrderId,
     DS_MERCHANT_MERCHANTCODE: merchantCode,
+    DS_MERCHANT_MERCHANTNAME: 'Modas Me lo Merezco',
     DS_MERCHANT_CURRENCY: '978', // Euro
     DS_MERCHANT_TERMINAL: terminal,
     DS_MERCHANT_TRANSACTIONTYPE: '0', // Authorization
@@ -46,7 +47,7 @@ export const generateRedsysParameters = (
     DS_MERCHANT_PRODUCTDESCRIPTION: options.productDescription || 'Compra en Modas Me lo Merezco',
     DS_MERCHANT_MERCHANTDATA: orderId,
     ...(options.paymentMethod === 'bizum' ? { DS_MERCHANT_PAYMETHODS: 'z' } : {}),
-    ...(options.paymentMethod === 'card' ? { DS_MERCHANT_PAYMETHODS: 'c' } : {})
+    ...(options.paymentMethod === 'card' ? { DS_MERCHANT_PAYMETHODS: 'C' } : {})
   };
 
   const merchantParamsString = JSON.stringify(merchantParams);

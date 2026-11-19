@@ -65,7 +65,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
       <div className="mt-8 pt-8 border-t border-secondary/5">
         <p className="text-[10px] text-secondary/40 font-medium italic leading-relaxed">
-          Al hacer clic en el botón de pago, serás redirigido a la pasarela segura de **Redsys** para completar la transacción mediante {selectedMethod === 'card' ? 'tarjeta' : 'Bizum'}.
+          Al hacer clic en el botón de pago, serás redirigido a la pasarela segura de{' '}
+          <strong className="font-bold not-italic text-secondary/70">Redsys</strong> para completar la transacción mediante {selectedMethod === 'card' ? 'tarjeta' : 'Bizum'}.
         </p>
       </div>
     </section>

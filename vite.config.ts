@@ -19,8 +19,15 @@ function vercelDevPlugin() {
           const apiPath = parsedUrl.pathname || ''
           // Mirror vercel.json rewrite: /api/admin-analytics → notify-admin-order
           let baseName = apiPath.substring(5) // Remove '/api/'
+          const dynamicQuery: Record<string, string> = {}
           if (baseName === 'admin-analytics') {
             baseName = 'notify-admin-order'
+          } else if (baseName.startsWith('redsys/')) {
+            const segment = baseName.slice('redsys/'.length)
+            if (segment && !segment.includes('/')) {
+              baseName = 'redsys/[result]'
+              dynamicQuery.result = segment
+            }
           }
 
           // Resolve backend API files (supporting .ts, .js, or index files)
@@ -89,7 +96,7 @@ function vercelDevPlugin() {
           // Build VercelRequest and VercelResponse mocks
           const originalEnd = res.end.bind(res)
           const vercelReq = Object.assign(req, {
-            query: parsedUrl.query || {},
+            query: { ...(parsedUrl.query || {}), ...dynamicQuery },
             body: body,
             cookies: {},
           })

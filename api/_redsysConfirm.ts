@@ -221,7 +221,7 @@ export async function processRedsysPayment(
     return { status: 'missing_params' };
   }
 
-  const secretKey = process.env.VITE_REDSYS_SECRET_KEY;
+  const secretKey = process.env.REDSYS_SECRET_KEY || process.env.VITE_REDSYS_SECRET_KEY;
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -230,7 +230,13 @@ export async function processRedsysPayment(
     return { status: 'config_error' };
   }
 
-  const merchantParams = decodeRedsysMerchantParameters(payload.merchantParameters);
+  let merchantParams: Record<string, unknown>;
+  try {
+    merchantParams = decodeRedsysMerchantParameters(payload.merchantParameters);
+  } catch (error) {
+    console.error(`[redsys-${source}] Ds_MerchantParameters malformado:`, error);
+    return { status: 'missing_params' };
+  }
   const orderIdNumeric =
     firstString(merchantParams.Ds_Order) ||
     firstString(merchantParams.DS_ORDER) ||

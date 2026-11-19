@@ -36,10 +36,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ message: 'Missing required fields: orderId, amount' });
   }
 
-  // Use environment variables (Securely stored on Insforge/Vercel)
-  const merchantCode = process.env.VITE_REDSYS_COMMERCE_NUMBER;
-  const terminal = process.env.VITE_REDSYS_TERMINAL_NUMBER || '001';
-  const secretKey = process.env.VITE_REDSYS_SECRET_KEY;
+  // Use environment variables (Securely stored on Vercel)
+  const merchantCode = process.env.REDSYS_COMMERCE_NUMBER || process.env.VITE_REDSYS_COMMERCE_NUMBER;
+  const terminal = process.env.REDSYS_TERMINAL_NUMBER || process.env.VITE_REDSYS_TERMINAL_NUMBER || '001';
+  const secretKey = process.env.REDSYS_SECRET_KEY || process.env.VITE_REDSYS_SECRET_KEY;
 
   if (!merchantCode || !secretKey) {
     return res.status(500).json({ message: 'Server configuration error: Redsys keys missing' });
@@ -61,6 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       DS_MERCHANT_AMOUNT: amountCents,
       DS_MERCHANT_ORDER: formattedOrderId,
       DS_MERCHANT_MERCHANTCODE: merchantCode,
+      DS_MERCHANT_MERCHANTNAME: 'Modas Me lo Merezco',
       DS_MERCHANT_CURRENCY: '978', // Euro
       DS_MERCHANT_TERMINAL: terminal,
       DS_MERCHANT_TRANSACTIONTYPE: '0', // Authorization
@@ -70,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       DS_MERCHANT_PRODUCTDESCRIPTION: options?.productDescription || 'Compra en Modas Me lo Merezco',
       DS_MERCHANT_MERCHANTDATA: orderId, // UUID real del pedido
       ...(options?.paymentMethod === 'bizum' ? { DS_MERCHANT_PAYMETHODS: 'z' } : {}),
-      ...(options?.paymentMethod === 'card' ? { DS_MERCHANT_PAYMETHODS: 'c' } : {})
+      ...(options?.paymentMethod === 'card' ? { DS_MERCHANT_PAYMETHODS: 'C' } : {})
     };
 
     const merchantParamsString = JSON.stringify(merchantParams);

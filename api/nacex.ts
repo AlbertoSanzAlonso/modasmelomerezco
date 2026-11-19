@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { canFulfillOrder } from '../src/lib/orderPayment.js';
 
 /** Versión del handler (comprobar en Network → respuesta JSON tras redeploy). */
-const NACEX_API_VERSION = '2026-09-latin1-v5';
+const NACEX_API_VERSION = '2026-11-nacexshop-v6';
 const NACEX_WS_URL = 'https://pda.nacex.com/nacex_ws/ws';
 
 /** Evita romper el formato pipe-separated de Nacex. */
@@ -119,7 +119,18 @@ function formatNacexError(raw: string): string {
   if (/del_cli/i.test(mainMessage)) {
     hints.push('Delegación: revisa NACEX_AGENCIA en la configuración.');
   }
-  if (/recogida|nom_rec|dir_rec|cp_rec|pob_rec|5610/i.test(mainMessage) || code === '5610') {
+  if (/punto de recogida|shop_codigo|5622/i.test(mainMessage)) {
+    hints.push(
+      'Punto Nacex.Shop: falta el código numérico del punto de recogida (shop_codigo) para el servicio E-NACEX.shop (31).',
+    );
+  }
+  if (/envase|documentado como BAG/i.test(mainMessage)) {
+    hints.push('Envase: el servicio 31 (E-NACEX.shop) requiere tip_env=2 (Paq) y no admite envase tipo BAG (1).');
+  }
+  if (
+    (/recogida|nom_rec|dir_rec|cp_rec|pob_rec/i.test(mainMessage) &&
+      !/punto de recogida/i.test(mainMessage))
+  ) {
     hints.push(
       'Dirección de recogida (tienda): añade en Vercel NACEX_NOMBRE_RECOGIDA, NACEX_DIR_RECOGIDA, NACEX_POBLACION_RECOGIDA, NACEX_CP_RECOGIDA y NACEX_TEL_RECOGIDA, y redeploy.',
     );
@@ -135,22 +146,138 @@ function formatNacexError(raw: string): string {
   return message;
 }
 
+export interface ParsedNacexPoint {
+  id: string;
+  alias?: string;
+  name: string;
+  address: string;
+  city: string;
+  zip: string;
+  phone?: string;
+  hours?: string;
+  lat?: string;
+  lng?: string;
+}
+
+/**
+ * Parsea la respuesta de getPuntoEntregaCP.
+ * Nacex separa registros con "|" (el primero suele ser el contador "10") y campos con "~":
+ * código~nombre/dirección~población~cp~teléfono~horarios(L-D)~shop_alias~lat~lng
+ */
+function parseNacexShopPoints(rawData: string): ParsedNacexPoint[] {
+  const entries = rawData
+    .split(/[|\r\n]+/)
+    .map((l) => l.trim())
+    .filter((l) => l && l.includes('~'));
+
+  return entries.map((entry) => {
+    const p = entry.split('~');
+    const rawId = (p[0] || '').trim();
+    const rawTitle = (p[1] || 'Punto Nacex').trim();
+
+    let cleanTitle = rawTitle.replace(/^[0-9\-]+\s+/, '').trim();
+    cleanTitle = cleanTitle.replace(/AGENCIA\s+[0-9]+\s*/gi, '').trim();
+
+    // En getPuntoEntregaCP p[1] suele venir como "NOMBRE COMERCIO, DIRECCIÓN"
+    const commaIdx = cleanTitle.indexOf(',');
+    const name = commaIdx > 0 ? cleanTitle.slice(0, commaIdx).trim() : cleanTitle;
+    const address = commaIdx > 0 ? cleanTitle.slice(commaIdx + 1).trim() : cleanTitle;
+
+    return {
+      id: rawId,
+      alias: p[12] && p[12] !== 'null' ? p[12].trim() : undefined,
+      name: name || cleanTitle || 'Punto Nacex',
+      address: address || p[2] || '',
+      city: (p[2] || '').trim(),
+      zip: (p[3] || '').trim(),
+      phone: (p[4] || '').trim(),
+      hours: p[5] && p[5] !== 'null' ? p[5].trim() : '',
+      lat: (p[p.length - 2] || '').trim(),
+      lng: (p[p.length - 1] || '').trim(),
+    };
+  });
+}
+
+/** Extrae el código numérico de punto de un string como "Nacex Point [365]: ..." o id directo. */
+function extractShopCode(shopCode?: unknown, carrier?: unknown): string {
+  const direct = String(shopCode ?? '').trim();
+  if (/^\d{1,6}$/.test(direct)) return direct;
+
+  const carrierStr = String(carrier ?? '').trim();
+  const bracketMatch = carrierStr.match(/\[(\d{1,6})\]/);
+  if (bracketMatch?.[1]) return bracketMatch[1];
+
+  const hashMatch = carrierStr.match(/#(\d{1,6})\b/);
+  if (hashMatch?.[1]) return hashMatch[1];
+
+  return '';
+}
+
+/** Si el pedido antiguo no guardó el ID numérico del punto en carrier, lo busca en getPuntoEntregaCP por CP. */
+async function resolveShopCodeFromCarrier(
+  user: string,
+  pass: string,
+  cp: string,
+  carrierStr: string,
+): Promise<string> {
+  try {
+    const response = await fetch(
+      `${NACEX_WS_URL}?method=getPuntoEntregaCP&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}&data=${encodeURIComponent(cp)}`,
+    );
+    const rawData = await decodeNacexResponse(response);
+    const points = parseNacexShopPoints(rawData);
+    if (!points.length) return '';
+
+    const normalizedCarrier = carrierStr.toUpperCase();
+    for (const pt of points) {
+      const addrNorm = pt.address.toUpperCase();
+      const nameNorm = pt.name.toUpperCase();
+      if (
+        (addrNorm && normalizedCarrier.includes(addrNorm)) ||
+        (nameNorm && addrNorm && normalizedCarrier.includes(`${nameNorm}, ${addrNorm}`))
+      ) {
+        return pt.id;
+      }
+    }
+
+    for (const pt of points) {
+      const nameNorm = pt.name.toUpperCase();
+      if (nameNorm && nameNorm.length > 3 && normalizedCarrier.includes(nameNorm)) {
+        return pt.id;
+      }
+    }
+
+    return points[0]?.id || '';
+  } catch {
+    return '';
+  }
+}
+
 function nacexLabelPath(codExp: string): string {
   return `/api/nacex?method=get_etiqueta&codExp=${encodeURIComponent(codExp)}`;
 }
 
 /** Guarda tracking con service role (el admin en cliente suele fallar por RLS). */
-async function saveOrderTracking(orderId: string, tracking: string): Promise<boolean> {
+async function saveOrderTracking(
+  orderId: string,
+  tracking: string,
+  existingCarrier?: string | null,
+): Promise<boolean> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey || !orderId) return false;
+
+  const preserveCarrier =
+    existingCarrier && existingCarrier.toLowerCase().includes('nacex point')
+      ? existingCarrier
+      : 'NACEX';
 
   const supabase = createClient(supabaseUrl, serviceKey);
   const { data, error } = await supabase
     .from('orders')
     .update({
       tracking_number: tracking,
-      carrier: 'NACEX',
+      carrier: preserveCarrier,
       order_status: 'Shipped',
       shipped_date: new Date().toISOString(),
     })
@@ -281,31 +408,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       // Método exacto encontrado en el WSDL para buscar puntos por CP
-      const response = await fetch(`${NACEX_WS_URL}?method=getPuntoEntregaCP&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${targetCP}`);
+      const response = await fetch(
+        `${NACEX_WS_URL}?method=getPuntoEntregaCP&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=${encodeURIComponent(String(targetCP))}`,
+      );
 
       const rawData = await decodeNacexResponse(response);
-
-      const lines = rawData.split('\n').filter(l => l.trim() && l.includes('~'));
-      const points = lines.map(line => {
-        const p = line.split('~');
-
-        // Limpiar el nombre: quitar códigos tipo "0800-00 " del principio
-        let cleanName = (p[1] || 'Punto Nacex').replace(/^[0-9\-]+\s+/, '').trim();
-        // Quitar también repeticiones tipo "AGENCIA 0800"
-        cleanName = cleanName.replace(/AGENCIA\s+[0-9]+/gi, '').trim();
-
-        return {
-          id: p[0],
-          name: cleanName,
-          address: p[2] || '',
-          city: p[3] || '',
-          zip: p[4] || '',
-          phone: p[5] || '',
-          hours: p[6] || '',
-          lat: p[p.length - 2] || '',
-          lng: p[p.length - 1] || ''
-        };
-      });
+      const points = parseNacexShopPoints(rawData);
 
       return res.status(200).json(points);
     } catch (err) {
@@ -316,7 +424,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // --- 3. CREAR ENVÍO ---
   if (method === 'create_expedition' || method === 'crear_envio') {
     const body = req.body || {};
-    const { orderId, province } = body;
+    const { orderId } = body;
 
     // Admin envía nombre/cp/...; aceptar también nombres en inglés
     const customerName = (body.customerName || body.nombre || 'Cliente').toString().trim();
@@ -324,6 +432,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const city = (body.city || body.poblacion || '').toString().trim();
     const zip = String(body.zip ?? body.cp ?? '').trim();
     const phone = String(body.phone || body.telefono || '000000000').trim();
+    const email = String(body.email || body.customer_email || '').trim();
 
     // Nacex: num_cli = máximo 5 dígitos (conservar ceros a la izquierda si caben)
     const cleanCliente = NACEX_CLIENT.trim().replace(/\D/g, '').slice(0, 5);
@@ -350,6 +459,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    let dbCarrier: string | null = null;
+    let dbEmail: string | null = null;
     const orderIdStr = String(orderId || '').trim();
     if (orderIdStr) {
       const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -358,7 +469,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const supabase = createClient(supabaseUrl, serviceKey);
         const { data: orderRow, error: orderLookupError } = await supabase
           .from('orders')
-          .select('order_status, payment_status')
+          .select('order_status, payment_status, carrier, customer_email')
           .eq('order_id', orderIdStr)
           .maybeSingle();
 
@@ -376,6 +487,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               'El pedido no está pagado. No se puede crear el envío hasta que Redsys confirme el pago.',
           });
         }
+
+        dbCarrier = orderRow.carrier ?? null;
+        dbEmail = orderRow.customer_email ?? null;
       }
     }
 
@@ -408,15 +522,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
+      const carrierStr = String(body.carrier || dbCarrier || '').trim();
+      const isNacexShop =
+        Boolean(body.isNacexShop) || carrierStr.toLowerCase().includes('nacex point');
+
+      let shopCode = extractShopCode(body.shop_codigo ?? body.shopCode, carrierStr);
+      if (isNacexShop && !shopCode) {
+        shopCode = await resolveShopCodeFromCarrier(NACEX_USER, NACEX_PASS, zip, carrierStr);
+      }
+
+      if (isNacexShop && !shopCode) {
+        return res.status(400).json({
+          success: false,
+          error:
+            'No se pudo determinar el código del punto Nacex.Shop (shop_codigo) para este código postal.',
+        });
+      }
+
+      const cleanPhone = phone.replace(/\D/g, '').slice(0, 15) || '600000000';
+      const targetEmail = (email || dbEmail || '').trim();
+
       // Solo construimos los datos reales si NO es modo test
-      const isNacexShop = Boolean(body.isNacexShop);
-      const nacexData = [
+      const nacexPairs = [
         `del_cli=${NACEX_AGENCY}`,
         `num_cli=${cleanCliente}`,
         `tip_ser=${isNacexShop ? '31' : '08'}`,
         `tip_cob=O`,
         `ref_cli=${(orderId || 'ORD').split('-')[0]}`,
-        `tip_env=${isNacexShop ? '1' : '2'}`,
+        // Tanto Nacex 19:00H (08) como E-NACEX.shop (31) requieren envase tipo 2 (PAQ), no 1 (BAG)
+        `tip_env=2`,
         `bul=001`,
         `kil=00001.000`,
         // Recogida (remitente / tienda) — obligatorio
@@ -428,14 +562,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `tel_rec=${NACEX_TEL_RECOGIDA}`,
         // Entrega (destinatario / cliente)
         `nom_ent=${nacexField(customerName)}`,
-        `dir_ent=${nacexField(address)}`,
+        `dir_ent=${nacexField(address || city)}`,
         `pais_ent=ES`,
         `cp_ent=${nacexField(zip)}`,
         `pob_ent=${nacexField(city)}`,
-        `tel_ent=${phone.replace(/\D/g, '').slice(0, 15) || '600000000'}`,
-      ].join('|');
+        `tel_ent=${cleanPhone}`,
+      ];
 
-      const nacexDataEncoded = encodeNacexData(nacexData.split('|'));
+      if (isNacexShop) {
+        nacexPairs.push(`shop_codigo=${shopCode}`);
+        // El servicio 31 (E-NACEX.shop) exige prealerta obligatoria para avisar al cliente de la llegada al punto
+        if (targetEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+          nacexPairs.push('tip_pre1=E', 'mod_pre1=S', `pre1=${nacexField(targetEmail)}`);
+        } else {
+          nacexPairs.push('tip_pre1=S', 'mod_pre1=S', `pre1=${cleanPhone}`);
+        }
+      }
+
+      const nacexData = nacexPairs.join('|');
+      const nacexDataEncoded = encodeNacexData(nacexPairs);
       console.log('Nacex Data Payload:', nacexData);
       console.log('Nacex API version:', NACEX_API_VERSION);
 
@@ -453,7 +598,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const orderIdToSave = String(body.orderId || orderId || '').trim();
         const orderSaved = orderIdToSave
-          ? await saveOrderTracking(orderIdToSave, created.tracking)
+          ? await saveOrderTracking(orderIdToSave, created.tracking, carrierStr || dbCarrier)
           : false;
 
         return res.status(200).json({

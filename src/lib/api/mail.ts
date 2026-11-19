@@ -199,7 +199,7 @@ export const mailApi = {
     // Tracking info
     const trackingNumber = order.tracking_number;
     const carrier = order.carrier || 'NACEX';
-    const trackingUrl = carrier === 'NACEX' 
+    const trackingUrl = carrier.toLowerCase().includes('nacex')
       ? `https://www.nacex.es/seguimientoPedido.do?numExp=${trackingNumber}`
       : '#';
 

@@ -285,7 +285,7 @@ export const useCheckoutForm = () => {
       order_status: 'Pending',
       payment_method: paymentMethod === 'card' ? 'Redsys (Tarjeta)' : 'Redsys (Bizum)',
       carrier: shippingOption === 'nacex_point' && selectedNacexPoint 
-        ? `Nacex Point: ${selectedNacexPoint.name} (${selectedNacexPoint.address})` 
+        ? `Nacex Point [${selectedNacexPoint.id}]: ${selectedNacexPoint.name} (${selectedNacexPoint.address})` 
         : shippingOption,
       shipping_address_id: shippingAddressId,
       shipping_city: formData.city,

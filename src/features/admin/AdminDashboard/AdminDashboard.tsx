@@ -540,15 +540,19 @@ export const AdminDashboard: React.FC = () => {
     try {
       // Buscamos los detalles del pedido para pasarlos a la API de Nacex
       const contact = order ? getOrderContact(order) : null;
+      const isNacexShopOrder = Boolean(order?.carrier?.toLowerCase().includes('nacex point'));
+      const preservedCarrier = isNacexShopOrder && order?.carrier ? order.carrier : 'NACEX';
       const orderDetails = order ? {
         nombre: contact?.name || 'Cliente',
         direccion: order.shipping_street,
         poblacion: order.shipping_city,
         cp: order.shipping_zip,
         telefono: contact?.phone,
+        email: contact?.email || order.customer_email,
+        carrier: order.carrier,
         orderId: order.order_id,
         isTest: order.payment_method === 'TEST_MODE',
-        isNacexShop: order.carrier?.includes('Nacex Point'), // Detectar si es envío a punto
+        isNacexShop: isNacexShopOrder, // Detectar si es envío a punto
         payment_method: order.payment_method
       } : {};
 
@@ -559,7 +563,7 @@ export const AdminDashboard: React.FC = () => {
       try {
         updatedOrder = await api.orders.update(orderId, {
           tracking_number: res.trackingNumber,
-          carrier: 'NACEX',
+          carrier: preservedCarrier,
           order_status: 'Shipped',
           shipped_date: new Date().toISOString(),
         });
@@ -570,20 +574,24 @@ export const AdminDashboard: React.FC = () => {
       const orderWithTracking = {
         ...(updatedOrder || order)!,
         tracking_number: res.trackingNumber,
-        carrier: 'NACEX',
+        carrier: preservedCarrier,
         order_status: 'Shipped' as const,
         shipped_date: new Date().toISOString(),
       };
 
       setSelectedOrder(orderWithTracking);
-      setTrackingInfo({ number: res.trackingNumber, carrier: 'NACEX' });
+      setTrackingInfo({ number: res.trackingNumber, carrier: preservedCarrier });
 
-      // Enviar notificación por email al cliente de forma automática
-      if (order?.customer?.email) {
+      // Enviar notificación por email al cliente de forma automática (registrado o invitado)
+      const recipientEmail = contact?.email || order?.customer_email || order?.customer?.email;
+      if (order && recipientEmail) {
         try {
           await api.mail.sendStatusUpdate(
-            { ...orderWithTracking, customer: order.customer },
-            order.customer.email,
+            {
+              ...orderWithTracking,
+              customer: order.customer || (contact?.name ? { name: contact.name, email: recipientEmail } as any : undefined),
+            },
+            recipientEmail,
             'Shipped'
           );
         } catch (emailErr) {

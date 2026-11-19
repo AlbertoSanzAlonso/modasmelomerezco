@@ -55,6 +55,7 @@ export const Footer: FC = () => {
               <h4 className="text-xs font-black uppercase tracking-[0.4em] mb-10 text-white">Navegación</h4>
               <ul className="text-white/70 text-[10px] font-bold tracking-[0.2em] space-y-6 uppercase">
                 <li><Link to="/categoria/ropa" className="hover:text-white transition-colors">Colección Ropa</Link></li>
+                <li><Link to="/categoria/oversize" className="hover:text-white transition-colors">Oversize</Link></li>
                 <li><Link to="/categoria/bolsos" className="hover:text-white transition-colors">Accesorios & Bolsos</Link></li>
                 <li><Link to="/categoria/calzado" className="hover:text-white transition-colors">Calzado</Link></li>
                 <li><Link to="/#novedades" className="hover:text-white transition-colors">Recién Llegados</Link></li>

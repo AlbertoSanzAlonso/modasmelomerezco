@@ -38,15 +38,16 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                 <Menu className="w-6 h-6" />
               </button>
             </div>
-            <div className="hidden lg:flex items-center gap-10 flex-1">
-              <Link to="/" onClick={handleInicioClick} className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Inicio</Link>
-              <Link to="/categoria/ropa" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Ropa</Link>
-              <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Complementos</Link>
-              <Link to="/categoria/calzado" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Calzado</Link>
-              <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors">Novedades</Link>
+            <div className="hidden lg:flex items-center gap-6 xl:gap-8 2xl:gap-10 flex-1">
+              <Link to="/" onClick={handleInicioClick} className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Inicio</Link>
+              <Link to="/categoria/ropa" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Ropa</Link>
+              <Link to="/categoria/oversize" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Oversize</Link>
+              <Link to="/categoria/complementos" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Complementos</Link>
+              <Link to="/categoria/calzado" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Calzado</Link>
+              <Link to="/#novedades" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Novedades</Link>
               <Link
                 to="/#rebajas"
-                className="text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80"
+                className="text-[10px] font-black tracking-[0.3em] uppercase text-primary transition-all duration-300 hover:tracking-[0.4em] hover:opacity-80 whitespace-nowrap"
               >
                 Rebajas
               </Link>
@@ -144,6 +145,7 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                   {[
                     { to: "/", label: "Inicio", onClick: (e: any) => handleInicioClick(e) },
                     { to: "/categoria/ropa", label: "Ropa" },
+                    { to: "/categoria/oversize", label: "Oversize" },
                     { to: "/categoria/complementos", label: "Complementos" },
                     { to: "/categoria/calzado", label: "Calzado" },
                     { to: "/#novedades", label: "Novedades" },

@@ -20,6 +20,11 @@ const STATIC_PAGES: Record<
     description:
       'Colección de ropa de mujer: vestidos, blusas, pantalones y más. Moda actual con envío gratuito desde 50 € en Modas Me lo Merezco.',
   },
+  '/categoria/oversize': {
+    title: 'Moda oversize de mujer',
+    description:
+      'Colección oversize para mujer: prendas cómodas y amplias con estilo actual. Envío gratuito desde 50 € en Modas Me lo Merezco.',
+  },
   '/categoria/complementos': {
     title: 'Complementos de moda',
     description:

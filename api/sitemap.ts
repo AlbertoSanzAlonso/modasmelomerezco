@@ -14,6 +14,7 @@ type SitemapEntry = {
 const STATIC_PAGES: SitemapEntry[] = [
   { loc: '/', changefreq: 'daily', priority: '1.0', lastmod: '2026-06-10' },
   { loc: '/categoria/ropa', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
+  { loc: '/categoria/oversize', changefreq: 'daily', priority: '0.9', lastmod: '2026-11-19' },
   { loc: '/categoria/complementos', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
   { loc: '/categoria/bolsos', changefreq: 'daily', priority: '0.9', lastmod: '2026-06-10' },
   { loc: '/categoria/calzado', changefreq: 'daily', priority: '0.9', lastmod: '2026-08-31' },

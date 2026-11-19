@@ -268,6 +268,9 @@ export const AIChatAgent = () => {
         if (/\b(complemento|complementos|accesorio|accesorios)\b/.test(scope)) {
           return { kind: 'category', name: 'Complementos' };
         }
+        if (/\b(oversize|over\s*size)\b/.test(scope)) {
+          return { kind: 'category', name: 'Oversize' };
+        }
         if (/\b(ropa|prendas?)\b/.test(scope)) {
           return { kind: 'category', name: 'Ropa' };
         }
@@ -479,6 +482,7 @@ Zapatillas estela — 10€
 NOTA: En este momento no tengo acceso al catálogo de productos en tiempo real. NO inventes productos ni generes URLs de producto bajo ninguna circunstancia. Ayuda a la clienta con información general de la tienda (envíos, devoluciones, tallas, horarios) y sugiérele estas secciones reales de la web usando enlaces relativos:
 
 - Ropa: /categoria/ropa
+- Oversize: /categoria/oversize
 - Complementos: /categoria/complementos
 - Bolsos: /categoria/bolsos
 - Calzado: /categoria/calzado

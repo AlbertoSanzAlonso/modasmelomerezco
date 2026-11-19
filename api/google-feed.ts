@@ -65,7 +65,7 @@ function resolveGoogleProductCategory(
   const cat = (category || '').toLowerCase();
   if (cat === 'calzado') return GPC.shoes;
   if (cat === 'complementos') return GPC.clothingAccessories;
-  if (cat === 'ropa') return GPC.clothing;
+  if (cat === 'ropa' || cat === 'oversize') return GPC.clothing;
 
   return GPC.clothing;
 }

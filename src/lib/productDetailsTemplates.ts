@@ -84,6 +84,14 @@ const getTemplatePool = (category?: string, subcategory?: string) => {
     return ACCESSORY_DETAILS;
   }
 
+  if (label.includes('oversize')) {
+    return [
+      'Prenda de corte oversize con caída fluida y tacto suave. Pensada para ofrecer amplitud y comodidad sin renunciar al estilo.',
+      'Diseño amplio y favorecedor que se adapta con facilidad a distintos looks. Una pieza versátil y actual para tu día a día.',
+      'Silueta relajada con acabados cuidados. Ideal para llevar con comodidad y un toque moderno en cualquier ocasión.',
+    ];
+  }
+
   if (
     label.includes('ropa') ||
     label.includes('vestido') ||

@@ -21,6 +21,7 @@ export const HeroSection: React.FC = () => {
           loop 
           playsInline
           preload="metadata"
+          poster="/assets/videos/hero-poster.webp"
           aria-hidden="true"
           tabIndex={-1}
           className="w-full h-full object-cover"

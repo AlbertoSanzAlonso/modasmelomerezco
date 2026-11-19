@@ -529,100 +529,100 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
         <MessageCircle className="w-7 h-7" />
       </button>
 
-      <div
-        aria-hidden={!isOpen}
-        inert={!isOpen ? true : undefined}
-        className={`fixed bg-white shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${
-          isOpen ? 'scale-100 opacity-100 visible' : 'scale-0 opacity-0 invisible pointer-events-none'
-        } ${
-          isExpanded
-            ? 'top-24 left-3 right-3 bottom-3 sm:left-4 sm:right-4 sm:bottom-4 z-[80] rounded-2xl w-auto h-auto max-h-none'
-            : 'bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] rounded-3xl'
-        }`}
-        style={
-          isExpanded
-            ? undefined
-            : { height: '550px', maxHeight: '85vh' }
-        }
-      >
-        <div className="bg-primary p-5 flex justify-between items-center text-white relative shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="bg-white/20 p-2 rounded-full shrink-0">
-              <Bot className="w-6 h-6" />
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-label="Asistente virtual MeloMe AI"
+          className={`fixed bg-white shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${
+            isExpanded
+              ? 'top-24 left-3 right-3 bottom-3 sm:left-4 sm:right-4 sm:bottom-4 z-[80] rounded-2xl w-auto h-auto max-h-none'
+              : 'bottom-6 right-6 z-50 w-[90vw] sm:w-[380px] rounded-3xl'
+          }`}
+          style={
+            isExpanded
+              ? undefined
+              : { height: '550px', maxHeight: '85vh' }
+          }
+        >
+          <div className="bg-primary p-5 flex justify-between items-center text-white relative shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="bg-white/20 p-2 rounded-full shrink-0">
+                <Bot className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-sm tracking-wide">MeloMe AI</h2>
+                <p className="text-[10px] opacity-90 uppercase tracking-widest">Asistente Virtual</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="font-bold text-sm tracking-wide">MeloMe AI</h2>
-              <p className="text-[10px] opacity-90 uppercase tracking-widest">Asistente Virtual</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsExpanded((v) => !v)}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              aria-label={isExpanded ? 'Reducir chat' : 'Ampliar chat'}
-              title={isExpanded ? 'Vista normal' : 'Pantalla completa'}
-            >
-              {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              aria-label="Cerrar chat"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50 min-h-0">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
-              <div
-                className={`p-3 text-sm rounded-2xl ${
-                  isExpanded ? 'max-w-[min(100%,42rem)]' : 'max-w-[85%]'
-                } ${msg.isBot ? 'bg-white border border-gray-100 shadow-sm' : 'bg-secondary text-white shadow-md'}`}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsExpanded((v) => !v)}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                aria-label={isExpanded ? 'Reducir chat' : 'Ampliar chat'}
+                title={isExpanded ? 'Vista normal' : 'Pantalla completa'}
               >
-                {msg.isBot ? formatMessage(msg.text) : msg.text}
-              </div>
+                {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                aria-label="Cerrar chat"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="p-3 bg-white border border-gray-100 rounded-2xl animate-pulse text-xs text-gray-500">
-                MeloMe está pensando...
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+          </div>
 
-        <div className="p-4 bg-white border-t border-gray-100 shrink-0">
-          <form onSubmit={handleSend} className="relative flex items-center">
-            <label htmlFor="ai-chat-input" className="sr-only">
-              Escribe tu mensaje para el asistente virtual
-            </label>
-            <input
-              id="ai-chat-input"
-              name="message"
-              type="text"
-              aria-label="Escribe tu mensaje para el asistente virtual"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="¿En qué puedo ayudarte?"
-              className="w-full bg-gray-50 border border-gray-200 rounded-full pl-5 pr-12 py-3 text-sm focus:outline-none focus:border-primary"
-            />
-            <button
-              type="submit"
-              aria-label="Enviar mensaje"
-              className="absolute right-1 p-2 bg-primary text-white rounded-full"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50 min-h-0">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
+                <div
+                  className={`p-3 text-sm rounded-2xl ${
+                    isExpanded ? 'max-w-[min(100%,42rem)]' : 'max-w-[85%]'
+                  } ${msg.isBot ? 'bg-white border border-gray-100 shadow-sm' : 'bg-secondary text-white shadow-md'}`}
+                >
+                  {msg.isBot ? formatMessage(msg.text) : msg.text}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="p-3 bg-white border border-gray-100 rounded-2xl animate-pulse text-xs text-gray-500">
+                  MeloMe está pensando...
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="p-4 bg-white border-t border-gray-100 shrink-0">
+            <form onSubmit={handleSend} className="relative flex items-center">
+              <label htmlFor="ai-chat-input" className="sr-only">
+                Escribe tu mensaje para el asistente virtual
+              </label>
+              <input
+                id="ai-chat-input"
+                name="message"
+                type="text"
+                aria-label="Escribe tu mensaje para el asistente virtual"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="¿En qué puedo ayudarte?"
+                className="w-full bg-gray-50 border border-gray-200 rounded-full pl-5 pr-12 py-3 text-sm focus:outline-none focus:border-primary"
+              />
+              <button
+                type="submit"
+                aria-label="Enviar mensaje"
+                className="absolute right-1 p-2 bg-primary text-white rounded-full"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 };

@@ -47,7 +47,7 @@ export const CookieConsent: FC = () => {
   return (
     <AnimatePresence>
       {visible && (
-        <motion.aside
+        <motion.div
           role="dialog"
           aria-label="Aviso de cookies"
           aria-live="polite"
@@ -114,7 +114,7 @@ export const CookieConsent: FC = () => {
               </div>
             </div>
           </div>
-        </motion.aside>
+        </motion.div>
       )}
     </AnimatePresence>
   );

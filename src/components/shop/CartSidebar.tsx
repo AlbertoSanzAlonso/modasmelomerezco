@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from "@/store/useCartStore";
@@ -25,27 +24,20 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
     appliedDiscount,
   } = useCartStore();
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100"
-          />
+  if (!isOpen) return null;
 
-          {/* Sidebar */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-accent z-101 shadow-2xl flex flex-col text-secondary"
-          >
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 animate-in fade-in duration-200"
+      />
+
+      {/* Sidebar */}
+      <div
+        className="fixed right-0 top-0 h-full w-full max-w-md bg-accent z-101 shadow-2xl flex flex-col text-secondary animate-in slide-in-from-right duration-300"
+      >
             <div className="p-8 border-b border-secondary/5 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <ShoppingBag className="w-5 h-5 text-primary" />
@@ -168,9 +160,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                 </p>
               </div>
             )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          </div>
+    </>
   );
 };

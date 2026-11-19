@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 import { toDisplayImageUrl } from '@/lib/mediaUrl';
 
@@ -26,8 +24,8 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   aspectRatio = "aspect-auto",
   onLoad,
   loading = 'lazy',
-  width = 600,
-  height = 800,
+  width = 360,
+  height = 480,
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -75,26 +73,17 @@ export const ProductImage: React.FC<ProductImageProps> = ({
       {/* Loading State: Centered pulsing logo */}
       {!loaded && !isPlaceholder && (
         <div className="absolute inset-0 flex items-center justify-center bg-secondary/5">
-          <motion.img 
-            src="/assets/logo/logo-corona.png" 
+          <img 
+            src="/assets/logo/logo-corona.webp" 
             alt="Cargando..." 
             width={48}
             height={48}
-            className="w-12 h-12 object-contain opacity-20"
-            animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.2, 0.5, 0.2]
-            }}
-            transition={{ 
-              duration: 1.5, 
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
+            className="w-12 h-12 object-contain opacity-30 animate-pulse"
           />
         </div>
       )}
       
-      <motion.img
+      <img
         ref={imgRef}
         key={imageSrc}
         src={imageSrc}
@@ -110,15 +99,6 @@ export const ProductImage: React.FC<ProductImageProps> = ({
           setLoaded(true);
           onLoad?.();
         }}
-        initial={{ opacity: 0, scale: 1 }}
-        animate={loaded || isPlaceholder ? { 
-          opacity: 1, 
-          scale: 1,
-        } : {}}
-        transition={{ 
-          duration: 0.6, 
-          ease: [0.21, 0, 0.07, 1] 
-        }}
         className={`w-full h-full transition-all duration-700 ${
           loaded || isPlaceholder ? 'opacity-100' : 'opacity-0'
         } ${
@@ -132,7 +112,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({
       {loaded && !isPlaceholder && (
         <div aria-hidden="true" className="absolute bottom-4 right-4 w-1/5 max-w-[100px] pointer-events-none opacity-60 select-none z-10">
           <img 
-            src="/assets/logo/LOGO MELOMEREZCO corona blanco.png" 
+            src="/assets/logo/logo-corona-blanco.webp" 
             alt="" 
             width={100}
             height={100}

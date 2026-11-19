@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion, type HTMLMotionProps } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -7,8 +6,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Use HTMLMotionProps to avoid type conflicts with framer-motion props like onDrag
-interface ButtonProps extends HTMLMotionProps<'button'> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
@@ -30,13 +28,11 @@ const sizes = {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, type = 'button', ...props }, ref) => {
     return (
-      <motion.button
+      <button
         ref={ref}
         type={type}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
         className={cn(
-          'inline-flex items-center justify-center font-black tracking-[0.2em] uppercase transition-all disabled:opacity-50 disabled:pointer-events-none italic',
+          'inline-flex items-center justify-center font-black tracking-[0.2em] uppercase transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none italic',
           variants[variant],
           sizes[size],
           className
@@ -48,7 +44,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           children
         )}
-      </motion.button>
+      </button>
     );
   }
 );

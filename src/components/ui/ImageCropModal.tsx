@@ -27,10 +27,10 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const isCircle = cropShape === 'circle';
   const [aspect, setAspect] = useState<'portrait' | 'landscape'>('portrait');
 
-  const CROP_W = isCircle ? 800 : aspect === 'portrait' ? 1200 : 1600;
-  const CROP_H = isCircle ? 800 : aspect === 'portrait' ? 1600 : 1200;
-  const displayW = CROP_W / 4;
-  const displayH = CROP_H / 4;
+  const CROP_W = isCircle ? 480 : aspect === 'portrait' ? 720 : 960;
+  const CROP_H = isCircle ? 480 : aspect === 'portrait' ? 960 : 720;
+  const displayW = isCircle ? 200 : aspect === 'portrait' ? 300 : 400;
+  const displayH = isCircle ? 200 : aspect === 'portrait' ? 400 : 300;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -127,7 +127,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       ctx.save();
     }
 
-    const displayToCanvasScale = 4;
+    const displayToCanvasScale = CROP_W / displayW;
     ctx.translate(
       CROP_W / 2 + offset.x * displayToCanvasScale,
       CROP_H / 2 + offset.y * displayToCanvasScale
@@ -136,7 +136,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     ctx.scale(zoom, zoom);
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     ctx.restore();
-  }, [offset, zoom, rotation, imgLoaded, CROP_W, CROP_H, isCircle]);
+  }, [offset, zoom, rotation, imgLoaded, CROP_W, CROP_H, displayW, isCircle]);
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(draw);
@@ -250,7 +250,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           );
         },
         'image/webp',
-        0.95
+        0.8
       );
     });
 

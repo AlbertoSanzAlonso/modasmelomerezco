@@ -77,6 +77,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <ProductImage 
             src={product.images?.[0]} 
             alt={product.name} 
+            width={360}
+            height={480}
             onLoad={() => setIsLoaded(true)}
             containerClassName={`rounded-xl shadow-lg transition-all duration-500 ${
               soldOut

@@ -60,7 +60,6 @@ export function GoogleCustomerReviewsBadge() {
     let cancelled = false;
     let observer: MutationObserver | null = null;
     let pollId = 0;
-    let loadTimer = 0;
     let injectedScript: HTMLScriptElement | null = null;
 
     const applyFix = () => {
@@ -114,7 +113,8 @@ export function GoogleCustomerReviewsBadge() {
       if (cancelled) return;
       window.removeEventListener('scroll', initScript);
       window.removeEventListener('pointerdown', initScript);
-      window.clearTimeout(loadTimer);
+      window.removeEventListener('touchstart', initScript);
+      window.removeEventListener('keydown', initScript);
 
       const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
       if (existing) {
@@ -137,13 +137,15 @@ export function GoogleCustomerReviewsBadge() {
 
     window.addEventListener('scroll', initScript, { once: true, passive: true });
     window.addEventListener('pointerdown', initScript, { once: true, passive: true });
-    loadTimer = window.setTimeout(initScript, 4500);
+    window.addEventListener('touchstart', initScript, { once: true, passive: true });
+    window.addEventListener('keydown', initScript, { once: true, passive: true });
 
     return () => {
       cancelled = true;
       window.removeEventListener('scroll', initScript);
       window.removeEventListener('pointerdown', initScript);
-      window.clearTimeout(loadTimer);
+      window.removeEventListener('touchstart', initScript);
+      window.removeEventListener('keydown', initScript);
       injectedScript?.removeEventListener('load', startWidget);
       window.removeEventListener('message', onMessage);
       window.clearInterval(pollId);

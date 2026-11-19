@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 export const FeaturedSection: React.FC = () => {
@@ -25,7 +24,7 @@ export const FeaturedSection: React.FC = () => {
             </div>
             <div className="lg:col-span-7 relative">
               <div className="aspect-4/5 overflow-hidden rounded-2xl shadow-2xl">
-                <motion.img
+                <img
                   src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=75&w=800&auto=format&fit=crop"
                   srcSet="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=70&w=480&auto=format&fit=crop 480w, https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=75&w=800&auto=format&fit=crop 800w, https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop 1200w"
                   sizes="(max-width: 768px) 92vw, 55vw"

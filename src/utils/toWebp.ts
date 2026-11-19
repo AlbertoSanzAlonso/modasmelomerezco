@@ -1,4 +1,4 @@
-const WEBP_QUALITY = 0.9;
+const WEBP_QUALITY = 0.8;
 
 function isWebpBytes(bytes: Uint8Array): boolean {
   return (
@@ -16,16 +16,26 @@ function isWebpBytes(bytes: Uint8Array): boolean {
 
 async function encodeWebpViaCanvas(
   source: Blob,
-  quality: number
+  quality: number,
+  maxWidth?: number,
+  maxHeight?: number
 ): Promise<Blob | null> {
   const bitmap = await createImageBitmap(source);
   try {
+    let targetW = bitmap.width;
+    let targetH = bitmap.height;
+    if (maxWidth && maxHeight && (targetW > maxWidth || targetH > maxHeight)) {
+      const ratio = Math.min(maxWidth / targetW, maxHeight / targetH);
+      targetW = Math.round(targetW * ratio);
+      targetH = Math.round(targetH * ratio);
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
+    canvas.width = targetW;
+    canvas.height = targetH;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    ctx.drawImage(bitmap, 0, 0);
+    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, 'image/webp', quality);
@@ -90,17 +100,28 @@ async function encodeWebpViaApi(source: Blob): Promise<Blob> {
  */
 export async function toWebpBlob(
   source: Blob,
-  quality = WEBP_QUALITY
+  quality = WEBP_QUALITY,
+  options?: { maxWidth?: number; maxHeight?: number; forceReencode?: boolean }
 ): Promise<Blob> {
   const inputBytes = new Uint8Array(await source.arrayBuffer());
-  if (isWebpBytes(inputBytes)) {
+  if (
+    !options?.forceReencode &&
+    !options?.maxWidth &&
+    !options?.maxHeight &&
+    isWebpBytes(inputBytes)
+  ) {
     return source.type === 'image/webp'
       ? source
       : new Blob([inputBytes], { type: 'image/webp' });
   }
 
   try {
-    const viaCanvas = await encodeWebpViaCanvas(source, quality);
+    const viaCanvas = await encodeWebpViaCanvas(
+      source,
+      quality,
+      options?.maxWidth,
+      options?.maxHeight
+    );
     if (viaCanvas) return viaCanvas;
   } catch (err) {
     console.warn('Conversión WebP en canvas falló, usando API:', err);

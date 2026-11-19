@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ArrowRight } from 'lucide-react';
 import { ProductCard } from '@/components/shop/ProductCard';
@@ -58,13 +57,9 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
               </button>
             </div>
 
-            <motion.div 
+            <div 
               ref={scrollContainerRef}
               className="flex gap-5 md:gap-10 overflow-x-auto pb-4 md:pb-6 no-scrollbar snap-x snap-mandatory"
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.1 }}
-              transition={{ duration: 0.8 }}
             >
               {products?.map((product: Product) => (
                 <div 
@@ -74,7 +69,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
                   <ProductCard product={product} />
                 </div>
               ))}
-            </motion.div>
+            </div>
           </>
         )}
       </div>

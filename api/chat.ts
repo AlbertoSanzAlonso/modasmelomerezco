@@ -120,15 +120,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ message: 'Missing path' });
       }
 
-      const body = Buffer.from(imageBase64, 'base64');
+      let body = Buffer.from(imageBase64, 'base64');
       if (body.length < 24) {
         return res.status(400).json({ message: 'Image too small' });
+      }
+
+      let finalContentType = guessContentType(path, contentType);
+      if (finalContentType === 'image/webp' || path.toLowerCase().endsWith('.webp')) {
+        try {
+          const isOriginal = path.includes('_original');
+          const maxDim = isOriginal ? 1600 : 960;
+          body = Buffer.from(
+            await sharp(body)
+              .rotate()
+              .resize(maxDim, maxDim, {
+                fit: 'inside',
+                withoutEnlargement: true,
+              })
+              .webp({ quality: isOriginal ? 82 : 76, effort: 5 })
+              .toBuffer()
+          );
+          finalContentType = 'image/webp';
+        } catch (sharpErr) {
+          console.warn('upload-image sharp optimization skipped:', sharpErr);
+        }
       }
 
       const url = await uploadObject({
         key: path,
         body,
-        contentType: guessContentType(path, contentType),
+        contentType: finalContentType,
       });
       return res.status(200).json({ url });
     } catch (error: unknown) {
@@ -267,7 +288,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ message: 'Image too small' });
       }
 
-      const webp = await sharp(input).webp({ quality: 90 }).toBuffer();
+      const webp = await sharp(input)
+        .rotate()
+        .resize(960, 960, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 78, effort: 5 })
+        .toBuffer();
       return res.status(200).json({
         webpBase64: webp.toString('base64'),
       });

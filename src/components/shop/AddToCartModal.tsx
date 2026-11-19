@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from "@/store/useCartStore";
@@ -8,26 +7,20 @@ export const AddToCartModal: React.FC = () => {
   const { modalConfig, closeModal } = useCartStore();
   const navigate = useNavigate();
 
-  return (
-    <AnimatePresence>
-      {modalConfig.isOpen && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
-          {/* Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeModal}
-            className="absolute inset-0 bg-secondary/40 backdrop-blur-sm"
-          />
+  if (!modalConfig.isOpen) return null;
 
-          {/* Modal Content */}
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative bg-white dark:bg-accent w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl border border-secondary/5"
-          >
+  return (
+    <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div
+        onClick={closeModal}
+        className="absolute inset-0 bg-secondary/40 backdrop-blur-sm animate-in fade-in duration-200"
+      />
+
+      {/* Modal Content */}
+      <div
+        className="relative bg-white dark:bg-accent w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl border border-secondary/5 animate-in zoom-in-95 fade-in duration-200"
+      >
             <div className="p-8 text-center">
               <div className="mb-8 flex justify-center">
                 <img 
@@ -229,9 +222,7 @@ export const AddToCartModal: React.FC = () => {
             >
               <X className="w-4 h-4" />
             </button>
-          </motion.div>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
   );
 };

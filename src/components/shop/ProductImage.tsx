@@ -31,8 +31,6 @@ export const ProductImage: React.FC<ProductImageProps> = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [inView, setInView] = useState(() => loading === 'eager');
-  const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const displaySrc = toDisplayImageUrl(src);
   const isPlaceholder = !displaySrc || displaySrc === PRODUCT_PLACEHOLDER || error;
@@ -43,51 +41,29 @@ export const ProductImage: React.FC<ProductImageProps> = ({
     setError(false);
   }, [src]);
 
-  useEffect(() => {
-    if (loading === 'eager' || inView) {
-      setInView(true);
-      return;
-    }
-    const el = containerRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') {
-      setInView(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '200px 100px' },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loading, inView]);
-
   // Handle cached images
   useEffect(() => {
     if (isPlaceholder) {
       setLoaded(true);
+      onLoad?.();
       return;
     }
-    if (inView && imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
       setLoaded(true);
       onLoad?.();
     }
-  }, [imageSrc, isPlaceholder, inView, onLoad]);
+  }, [imageSrc, isPlaceholder]);
 
   // Si la URL remota cuelga (p. ej. r2.dev caído), no dejar el loader infinito
   useEffect(() => {
-    if (!inView || isPlaceholder || loaded) return;
+    if (isPlaceholder || loaded) return;
     const timer = window.setTimeout(() => {
       setError(true);
       setLoaded(true);
       onLoad?.();
     }, LOAD_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
-  }, [imageSrc, isPlaceholder, loaded, inView, onLoad]);
+  }, [imageSrc, isPlaceholder, loaded]);
 
   const handleLoad = () => {
     setLoaded(true);
@@ -95,10 +71,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-white'} ${containerClassName}`}
-    >
+    <div className={`relative overflow-hidden ${aspectRatio} ${isPlaceholder ? 'bg-primary' : 'bg-white'} ${containerClassName}`}>
       {/* Loading State: Centered pulsing logo */}
       {!loaded && !isPlaceholder && (
         <div className="absolute inset-0 flex items-center justify-center bg-secondary/5">
@@ -121,41 +94,39 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         </div>
       )}
       
-      {inView && (
-        <motion.img
-          ref={imgRef}
-          key={imageSrc}
-          src={imageSrc}
-          alt={alt}
-          loading={loading}
-          decoding="async"
-          fetchPriority={loading === 'eager' ? 'high' : undefined}
-          width={width}
-          height={height}
-          onLoad={handleLoad}
-          onError={() => {
-            setError(true);
-            setLoaded(true);
-            onLoad?.();
-          }}
-          initial={{ opacity: 0, scale: 1 }}
-          animate={loaded || isPlaceholder ? { 
-            opacity: 1, 
-            scale: 1,
-          } : {}}
-          transition={{ 
-            duration: 0.6, 
-            ease: [0.21, 0, 0.07, 1] 
-          }}
-          className={`w-full h-full transition-all duration-700 ${
-            loaded || isPlaceholder ? 'opacity-100' : 'opacity-0'
-          } ${
-            isPlaceholder 
-              ? 'object-contain p-12 md:p-20 opacity-40' 
-              : 'object-cover group-hover:scale-105'
-          } ${className}`}
-        />
-      )}
+      <motion.img
+        ref={imgRef}
+        key={imageSrc}
+        src={imageSrc}
+        alt={alt}
+        loading={loading}
+        decoding="async"
+        fetchPriority={loading === 'eager' ? 'high' : undefined}
+        width={width}
+        height={height}
+        onLoad={handleLoad}
+        onError={() => {
+          setError(true);
+          setLoaded(true);
+          onLoad?.();
+        }}
+        initial={{ opacity: 0, scale: 1 }}
+        animate={loaded || isPlaceholder ? { 
+          opacity: 1, 
+          scale: 1,
+        } : {}}
+        transition={{ 
+          duration: 0.6, 
+          ease: [0.21, 0, 0.07, 1] 
+        }}
+        className={`w-full h-full transition-all duration-700 ${
+          loaded || isPlaceholder ? 'opacity-100' : 'opacity-0'
+        } ${
+          isPlaceholder 
+            ? 'object-contain p-12 md:p-20 opacity-40' 
+            : 'object-cover group-hover:scale-105'
+        } ${className}`}
+      />
 
       {/* Watermark: Only for real loaded images */}
       {loaded && !isPlaceholder && (

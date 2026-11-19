@@ -77,7 +77,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <ProductImage 
             src={product.images?.[0]} 
             alt={product.name} 
-            aspectRatio="aspect-3/4"
             onLoad={() => setIsLoaded(true)}
             containerClassName={`rounded-xl shadow-lg transition-all duration-500 ${
               soldOut

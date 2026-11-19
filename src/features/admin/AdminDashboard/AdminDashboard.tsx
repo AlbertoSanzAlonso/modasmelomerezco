@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { AdminLayout } from "@/features/admin/AdminLayout";
@@ -145,6 +145,49 @@ export const AdminDashboard: React.FC = () => {
   );
 
   const openModal = useCartStore((state) => state.openModal);
+  const deepLinkOrderId = searchParams.get('order')?.trim() || null;
+  const lastAutoOpenedOrderId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!deepLinkOrderId) {
+      lastAutoOpenedOrderId.current = null;
+      return;
+    }
+    if (lastAutoOpenedOrderId.current === deepLinkOrderId) return;
+
+    const fromLoaded = orders?.find((o) => o.order_id === deepLinkOrderId);
+    if (fromLoaded) {
+      lastAutoOpenedOrderId.current = deepLinkOrderId;
+      setSelectedOrder(fromLoaded);
+      setTrackingInfo({
+        number: fromLoaded.tracking_number || '',
+        carrier: fromLoaded.carrier || 'NACEX',
+      });
+      setShowOrderDetails(true);
+      return;
+    }
+
+    let cancelled = false;
+    api.orders
+      .getById(deepLinkOrderId)
+      .then((fetched) => {
+        if (cancelled || !fetched) return;
+        lastAutoOpenedOrderId.current = deepLinkOrderId;
+        setSelectedOrder(fetched);
+        setTrackingInfo({
+          number: fetched.tracking_number || '',
+          carrier: fetched.carrier || 'NACEX',
+        });
+        setShowOrderDetails(true);
+      })
+      .catch((err) => {
+        console.error('Error cargando pedido desde enlace directo:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deepLinkOrderId, orders]);
 
   const saveCustomerMutation = useMutation({
     mutationFn: (data: CustomerFormData) => {
@@ -818,6 +861,16 @@ export const AdminDashboard: React.FC = () => {
           onClose={() => {
             if (deleteOrdersMutation.isPending) return;
             setShowOrderDetails(false);
+            if (searchParams.has('order')) {
+              setSearchParams(
+                (prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete('order');
+                  return next;
+                },
+                { replace: true }
+              );
+            }
           }}
           onGenerateLabel={handleGenerateLabel}
           onDelete={confirmDeleteOrder}

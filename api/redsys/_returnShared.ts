@@ -3,7 +3,7 @@ import { getCanonicalSiteUrl } from '../_siteUrl.js';
 import {
   decodeRedsysMerchantParameters,
   extractOrderUuidFromParams,
-  extractRedsysPayload,
+  extractRedsysMerchantParameters,
   processRedsysPayment,
 } from '../_redsysConfirm.js';
 
@@ -23,7 +23,9 @@ function resolveOrigin(req: VercelRequest): string {
     (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto)?.split(',')[0]?.trim() ||
     'https';
 
-  if (!host) return getCanonicalSiteUrl();
+  if (!host || host.toLowerCase() === 'modasmelomerezco.es') {
+    return getCanonicalSiteUrl();
+  }
 
   if (host.includes('localhost') || host.includes('127.0.0.1')) {
     proto = 'http';
@@ -35,9 +37,9 @@ function resolveOrigin(req: VercelRequest): string {
 /** Extrae el UUID del pedido (Ds_MerchantData) del POST/GET de retorno de Redsys. */
 function extractOrderUuidFromRedsysRequest(req: VercelRequest): string | null {
   try {
-    const payload = extractRedsysPayload(req);
-    if (!payload) return null;
-    const params = decodeRedsysMerchantParameters(payload.merchantParameters);
+    const merchantParameters = extractRedsysMerchantParameters(req);
+    if (!merchantParameters) return null;
+    const params = decodeRedsysMerchantParameters(merchantParameters);
     return extractOrderUuidFromParams(params);
   } catch {
     return null;
@@ -47,7 +49,7 @@ function extractOrderUuidFromRedsysRequest(req: VercelRequest): string | null {
 function redirectToConfirmation(
   req: VercelRequest,
   res: VercelResponse,
-  payment: 'success' | 'error',
+  payment: 'success' | 'pending',
   orderIdOverride?: string | null
 ) {
   const origin = resolveOrigin(req);
@@ -74,7 +76,7 @@ export async function handleRedsysOk(req: VercelRequest, res: VercelResponse) {
       confirmedOrderId = result.orderUuid;
     }
     if (result.status === 'payment_failed' || result.status === 'invalid_signature') {
-      return redirectToConfirmation(req, res, 'error', confirmedOrderId);
+      return redirectToConfirmation(req, res, 'pending', confirmedOrderId);
     }
   } catch (error) {
     console.error('[redsys-return-ok] Error confirmando pedido en retorno:', error);
@@ -83,9 +85,20 @@ export async function handleRedsysOk(req: VercelRequest, res: VercelResponse) {
   return redirectToConfirmation(req, res, 'success', confirmedOrderId);
 }
 
-export function handleRedsysKo(req: VercelRequest, res: VercelResponse) {
+export async function handleRedsysKo(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
-  return redirectToConfirmation(req, res, 'error');
+
+  let failedOrderId: string | null = null;
+  try {
+    const result = await processRedsysPayment(req, 'return-ko');
+    if ('orderUuid' in result && result.orderUuid) {
+      failedOrderId = result.orderUuid;
+    }
+  } catch (error) {
+    console.error('[redsys-return-ko] Error procesando aviso de pago fallido:', error);
+  }
+
+  return redirectToConfirmation(req, res, 'pending', failedOrderId);
 }

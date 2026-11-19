@@ -10,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const result = Array.isArray(raw) ? raw[0] : raw;
 
   if (result === 'return-ok') return await handleRedsysOk(req, res);
-  if (result === 'return-ko') return handleRedsysKo(req, res);
+  if (result === 'return-ko') return await handleRedsysKo(req, res);
 
   return res.status(404).json({ message: 'Not found' });
 }

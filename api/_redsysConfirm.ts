@@ -3,7 +3,10 @@ import type { VercelRequest } from '@vercel/node';
 import CryptoJS from 'crypto-js';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Order, OrderItem } from '../src/types/index.js';
-import { sendOrderPaidEmails } from '../src/lib/emails/adminNewOrderNotification.js';
+import {
+  sendAdminPaymentFailedEmail,
+  sendOrderPaidEmails,
+} from '../src/lib/emails/adminNewOrderNotification.js';
 import { isOrderPaid } from '../src/lib/orderPayment.js';
 
 export interface RedsysRawPayload {
@@ -52,15 +55,23 @@ function parseBodyIfNeeded(body: unknown): Record<string, unknown> {
   return {};
 }
 
+export function extractRedsysMerchantParameters(req: VercelRequest): string | null {
+  const body = parseBodyIfNeeded(req.body);
+  const query = (req.query ?? {}) as Record<string, unknown>;
+
+  return (
+    firstString(body.Ds_MerchantParameters) ||
+    firstString(body.DS_MERCHANTPARAMETERS) ||
+    firstString(query.Ds_MerchantParameters) ||
+    firstString(query.DS_MERCHANTPARAMETERS)
+  );
+}
+
 export function extractRedsysPayload(req: VercelRequest): RedsysRawPayload | null {
   const body = parseBodyIfNeeded(req.body);
   const query = (req.query ?? {}) as Record<string, unknown>;
 
-  const merchantParameters =
-    firstString(body.Ds_MerchantParameters) ||
-    firstString(body.DS_MERCHANTPARAMETERS) ||
-    firstString(query.Ds_MerchantParameters) ||
-    firstString(query.DS_MERCHANTPARAMETERS);
+  const merchantParameters = extractRedsysMerchantParameters(req);
 
   const signature =
     firstString(body.Ds_Signature) ||
@@ -206,15 +217,69 @@ async function decrementVariantStock(
   }
 }
 
+async function resolveOrderItemsForEmail(
+  supabase: SupabaseClient,
+  orderUuid: string,
+  order: Order
+): Promise<OrderItem[]> {
+  const { data: tableItems, error: itemsError } = await supabase
+    .from('order_items')
+    .select('*')
+    .eq('order_id', orderUuid);
+
+  if (!itemsError && tableItems && tableItems.length > 0) {
+    return tableItems as OrderItem[];
+  }
+  return Array.isArray(order.items) ? order.items : [];
+}
+
+/**
+ * Envía el correo de "pago no completado" al admin una sola vez por pedido,
+ * usando una transición atómica `payment_status: 'pending' -> 'failed'`
+ * (dejando `order_status` en `'Pending'` para poder recuperar el pago luego).
+ */
+async function notifyAdminPaymentFailedIfFirst(
+  supabase: SupabaseClient,
+  orderUuid: string,
+  responseCode: number | undefined,
+  source: 'webhook' | 'return-ok' | 'return-ko'
+): Promise<void> {
+  const { data: order, error } = await supabase
+    .from('orders')
+    .update({ payment_status: 'failed' })
+    .eq('order_id', orderUuid)
+    .eq('order_status', 'Pending')
+    .eq('payment_status', 'pending')
+    .select('*, customer:customers(name, surname, email, phone)')
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[redsys-${source}] Error marcando intento fallido:`, error);
+    return;
+  }
+
+  if (!order) {
+    // Ya avisado previamente, ya pagado o no existe
+    return;
+  }
+
+  const orderItems = await resolveOrderItemsForEmail(supabase, orderUuid, order as Order);
+  const sent = await sendAdminPaymentFailedEmail(order as Order, orderItems, responseCode);
+  if (sent) {
+    console.log(`[redsys-${source}] Aviso de pago no completado enviado al admin:`, orderUuid);
+  }
+}
+
 /**
  * Verifica una notificación/retorno firmado de Redsys y confirma el pedido
  * de forma atómica e idempotente (Pending → Paid + stock + emails).
- * Usado tanto por /api/webhooks/redsys (POST servidor-a-servidor)
- * como por /api/redsys/return-ok (retorno firmado del navegador).
+ * Si el pago falla o se cancela (Ds_Response >= 100), envía un correo distinto
+ * al admin una sola vez para poder abrir el pedido y mandar el enlace de pago.
+ * Usado por /api/webhooks/redsys, /api/redsys/return-ok y /api/redsys/return-ko.
  */
 export async function processRedsysPayment(
   req: VercelRequest,
-  source: 'webhook' | 'return-ok'
+  source: 'webhook' | 'return-ok' | 'return-ko'
 ): Promise<RedsysConfirmResult> {
   const payload = extractRedsysPayload(req);
   if (!payload) {
@@ -257,8 +322,18 @@ export async function processRedsysPayment(
     '';
   const responseCode = Number.parseInt(responseRaw, 10);
 
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   if (!Number.isFinite(responseCode) || responseCode < 0 || responseCode > 99) {
     console.log(`[redsys-${source}] Pago no autorizado. Ds_Response:`, responseRaw, { orderUuid });
+    if (orderUuid) {
+      await notifyAdminPaymentFailedIfFirst(
+        supabase,
+        orderUuid,
+        Number.isFinite(responseCode) ? responseCode : undefined,
+        source
+      );
+    }
     return { status: 'payment_failed', responseCode, orderUuid };
   }
 
@@ -267,15 +342,13 @@ export async function processRedsysPayment(
     return { status: 'order_not_found', orderUuid: '' };
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   // Idempotencia atómica: solo transiciona Pending → Paid una vez.
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .update({ order_status: 'Paid', payment_status: 'Paid' })
     .eq('order_id', orderUuid)
     .eq('order_status', 'Pending')
-    .select()
+    .select('*, customer:customers(name, surname, email, phone)')
     .maybeSingle();
 
   if (orderError) throw orderError;

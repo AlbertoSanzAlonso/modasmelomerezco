@@ -155,8 +155,9 @@ export const useCheckoutForm = () => {
 
   const getShippingCost = () => {
     if (shippingOption === 'local') return 0;
+    // Domicilio y Punto Nacex comparten tarifa
     if (shippingOption === 'home') return 5.50;
-    if (shippingOption === 'nacex_point') return 0;
+    if (shippingOption === 'nacex_point') return 5.50;
     return 0;
   };
 

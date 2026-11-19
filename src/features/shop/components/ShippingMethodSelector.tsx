@@ -70,7 +70,7 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-secondary">Punto Nacex (48h)</p>
-            <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Entrega en punto de recogida (Gratis)</p>
+            <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Entrega en punto de recogida (5,50€)</p>
           </div>
         </div>
 

@@ -17,10 +17,13 @@ function vercelDevPlugin() {
         try {
           const parsedUrl = url.parse(req.url, true)
           const apiPath = parsedUrl.pathname || ''
-          // Mirror vercel.json rewrite: /api/admin-analytics → notify-admin-order
+          // Mirror vercel.json rewrites for combined Hobby endpoints
           let baseName = apiPath.substring(5) // Remove '/api/'
           if (baseName === 'admin-analytics') {
             baseName = 'notify-admin-order'
+          } else if (baseName === 'cron/expire-pending-orders') {
+            baseName = 'notify-admin-order'
+            req.url = '/api/notify-admin-order?expire_pending=1'
           }
 
           // Resolve backend API files (supporting .ts, .js, or index files)

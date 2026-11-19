@@ -1,14 +1,17 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { api } from '@/lib/api';
+import type { AdminOrderListFilter } from '@/lib/api/orders';
 import { canFulfillOrder } from '@/lib/orderPayment';
+import { getOrderContact } from '@/lib/orderContact';
 
 interface OrdersTabProps {
   orders?: Order[];
   orderPage: number;
   pageSize: number;
+  listFilter: AdminOrderListFilter;
+  onListFilterChange: (filter: AdminOrderListFilter) => void;
   onPageChange: (page: number) => void;
   onOrderClick: (order: Order) => void;
   onGenerateLabel: (orderId: string) => void;
@@ -18,16 +21,42 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   orders,
   orderPage,
   pageSize,
+  listFilter,
+  onListFilterChange,
   onPageChange,
   onOrderClick,
   onGenerateLabel
 }) => {
+  const isAwaiting = listFilter === 'awaiting_payment';
+
   return (
     <div className="space-y-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
         <div>
           <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Pedidos</h2>
-          <p className="text-gray-500 text-sm">Controla las ventas y genera etiquetas de envío.</p>
+          <p className="text-gray-500 text-sm">
+            {isAwaiting
+              ? 'Borradores de cobro: el cliente aún no ha pagado en Redsys.'
+              : 'Controla las ventas y genera etiquetas de envío.'}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant={listFilter === 'fulfilled' ? 'default' : 'outline'}
+            className="text-[9px] font-black tracking-widest px-4 rounded-xl"
+            onClick={() => onListFilterChange('fulfilled')}
+          >
+            VENTAS
+          </Button>
+          <Button
+            size="sm"
+            variant={isAwaiting ? 'default' : 'outline'}
+            className="text-[9px] font-black tracking-widest px-4 rounded-xl"
+            onClick={() => onListFilterChange('awaiting_payment')}
+          >
+            PAGO PENDIENTE
+          </Button>
         </div>
       </div>
 
@@ -44,19 +73,23 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-(--border-main)">
-              {orders?.map((order) => (
+              {orders?.map((order) => {
+                const contact = getOrderContact(order);
+                return (
                 <tr key={order.order_id} 
                     onClick={() => onOrderClick(order)}
                     className="hover:bg-primary/5 transition-colors group cursor-pointer">
                   <td className="px-8 py-6 text-sm font-black italic text-(--text-main)">#{order.order_id.split('-')[0].toUpperCase()}</td>
                   <td className="px-8 py-6">
-                    <p className="text-sm font-bold uppercase italic text-(--text-main)">{order.customer?.name} {order.customer?.surname}</p>
+                    <p className="text-sm font-bold uppercase italic text-(--text-main)">
+                      {contact.name || 'Sin nombre'}
+                    </p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">{new Date(order.order_date).toLocaleDateString()}</p>
                   </td>
                   <td className="px-8 py-6 text-sm font-black italic text-(--text-main)">{order.total_amount.toFixed(2)}€</td>
                   <td className="px-8 py-6">
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${order.order_status === 'Paid' ? 'border-green-500/30 bg-green-500/5 text-green-500' : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'}`}>
-                      {(order.order_status || '').toUpperCase()}
+                    <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${order.order_status === 'Paid' || order.order_status === 'Shipped' || order.order_status === 'Delivered' ? 'border-green-500/30 bg-green-500/5 text-green-500' : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'}`}>
+                      {isAwaiting ? 'ESPERANDO PAGO' : (order.order_status || '').toUpperCase()}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
@@ -91,7 +124,15 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                     )}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
+              {(!orders || orders.length === 0) && (
+                <tr>
+                  <td colSpan={5} className="px-8 py-16 text-center text-gray-500 text-xs font-bold uppercase italic">
+                    {isAwaiting ? 'No hay pagos pendientes' : 'No hay ventas registradas'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from "@/lib/api";
+import type { AdminOrderListFilter } from "@/lib/api/orders";
 import type { Product, Order, Customer } from "@/types";
 
 export const useAdminData = (
@@ -15,7 +16,8 @@ export const useAdminData = (
   soldOutFilter?: boolean,
   categoryFilter?: number,
   onOfferFilter?: boolean,
-  labelFilter?: number[]
+  labelFilter?: number[],
+  orderListFilter: AdminOrderListFilter = 'fulfilled'
 ) => {
   const queryClient = useQueryClient();
 
@@ -61,8 +63,8 @@ export const useAdminData = (
   const totalCustomers = customersData?.total || 0;
 
   const { data: ordersData, isLoading: loadingOrders } = useQuery<{ orders: Order[], total: number }>({
-    queryKey: ['admin-orders', orderPage],
-    queryFn: () => api.orders.getAll(orderPage, pageSize)
+    queryKey: ['admin-orders', orderPage, orderListFilter],
+    queryFn: () => api.orders.getAll(orderPage, pageSize, orderListFilter)
   });
 
   const orders = ordersData?.orders;

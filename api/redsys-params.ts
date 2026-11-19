@@ -47,9 +47,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // 1. Prepare Merchant Parameters
     const amountCents = Math.round(amount * 100).toString();
-    // Redsys requires the first 4 positions to be numeric.
-    // We'll take only digits from the UUID and pad to 12 chars.
-    const formattedOrderId = orderId.replace(/[^0-9]/g, '').slice(0, 12).padStart(12, '0');
+    // Redsys: DS_MERCHANT_ORDER 4–12 chars, first 4 numeric, UNIQUE per attempt.
+    // Do NOT derive it from the UUID — retries of /pagar/:id would get "Número de pedido repetido".
+    // Real order UUID goes in DS_MERCHANT_MERCHANTDATA (webhook/return use that).
+    const timePart = Date.now().toString().slice(-8);
+    const randPart = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, '0');
+    const formattedOrderId = `${timePart}${randPart}`;
 
     const merchantParams = {
       DS_MERCHANT_AMOUNT: amountCents,
@@ -62,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       DS_MERCHANT_URLOK: options?.urlOk || '',
       DS_MERCHANT_URLKO: options?.urlKo || '',
       DS_MERCHANT_PRODUCTDESCRIPTION: options?.productDescription || 'Compra en Modas Me lo Merezco',
-      DS_MERCHANT_MERCHANTDATA: orderId, // MANDAMOS EL UUID REAL AQUÍ
+      DS_MERCHANT_MERCHANTDATA: orderId, // UUID real del pedido
       ...(options?.paymentMethod === 'bizum' ? { DS_MERCHANT_PAYMETHODS: 'z' } : {}),
       ...(options?.paymentMethod === 'card' ? { DS_MERCHANT_PAYMETHODS: 'c' } : {})
     };

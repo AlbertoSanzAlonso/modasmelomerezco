@@ -2,6 +2,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/cron/expire-pending-orders",
+      "schedule": "15 * * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/wp-includes/:path*",
@@ -18,6 +24,10 @@
     {
       "source": "/api/admin-analytics",
       "destination": "/api/notify-admin-order"
+    },
+    {
+      "source": "/api/cron/expire-pending-orders",
+      "destination": "/api/notify-admin-order?expire_pending=1"
     },
     {
       "source": "/api/:path*",

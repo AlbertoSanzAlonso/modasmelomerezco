@@ -2,6 +2,7 @@
 import React from 'react';
 import type { Order, Product } from "@/types";
 import { Button } from "@/components/ui/Button";
+import { getOrderContact } from '@/lib/orderContact';
 
 interface OverviewTabProps {
   orders?: Order[];
@@ -43,7 +44,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     #{order.order_id.split('-')[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-bold uppercase italic text-(--text-main)">{order.customer?.name} {order.customer?.surname}</p>
+                    <p className="text-sm font-bold uppercase italic text-(--text-main)">
+                      {getOrderContact(order).name || 'Sin nombre'}
+                    </p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">
                       {new Date(order.order_date).toLocaleDateString()} • {order.items?.length || 0} artículos
                     </p>

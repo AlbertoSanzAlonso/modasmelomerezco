@@ -3,10 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import type { Order, OrderItem } from '../src/types/index.js';
 import { sendAdminNewOrderEmail } from '../src/lib/emails/adminNewOrderNotification.js';
 import { handleAdminAnalytics } from './_adminAnalytics.js';
+import { handleExpirePendingOrders } from './_expirePendingOrders.js';
+
+function wantsExpirePending(req: VercelRequest): boolean {
+  const q = req.query?.expire_pending;
+  const flag = Array.isArray(q) ? q[0] : q;
+  if (flag === '1' || flag === 'true') return true;
+  const url = typeof req.url === 'string' ? req.url : '';
+  return url.includes('expire-pending-orders') || url.includes('expire_pending=1');
+}
 
 /**
  * POST: aviso de nuevo pedido al admin.
- * GET: analíticas Vercel (vía rewrite /api/admin-analytics).
+ * GET: analíticas Vercel (vía rewrite /api/admin-analytics)
+ *      o caducidad de Pending (cron /api/cron/expire-pending-orders).
  * Un solo endpoint para no superar el límite Hobby (máx. 12 functions).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,8 +31,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  if (req.method === 'GET') {
-    return handleAdminAnalytics(req, res);
+  if (req.method === 'GET' || (req.method === 'POST' && wantsExpirePending(req))) {
+    if (wantsExpirePending(req)) {
+      return handleExpirePendingOrders(req, res);
+    }
+    if (req.method === 'GET') {
+      return handleAdminAnalytics(req, res);
+    }
   }
 
   if (req.method !== 'POST') {

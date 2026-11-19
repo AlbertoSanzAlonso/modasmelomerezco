@@ -156,11 +156,17 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       <div className="grid grid-cols-[80px_1fr] gap-2 items-center">
                         <span className="text-[9px] text-gray-400 font-bold uppercase">Estado:</span>
                         <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase w-fit ${
-                          order.tracking_number 
-                            ? 'bg-green-500/20 text-green-600' 
-                            : 'bg-yellow-500/20 text-yellow-600'
+                          order.tracking_number
+                            ? 'bg-green-500/20 text-green-600'
+                            : paymentPending
+                              ? 'bg-orange-500/20 text-orange-600'
+                              : 'bg-yellow-500/20 text-yellow-600'
                         }`}>
-                          {order.tracking_number ? 'Etiqueta Generada' : 'Pendiente de Etiqueta'}
+                          {order.tracking_number
+                            ? 'Etiqueta Generada'
+                            : paymentPending
+                              ? 'Esperando pago'
+                              : 'Pendiente de Etiqueta'}
                         </span>
                       </div>
                     </div>

@@ -18,6 +18,7 @@ import { RestockSizesModal } from "@/features/admin/AdminDashboard/components/Re
 import { useAdminData } from './useAdminData';
 import type { AdminTab } from "@/features/admin/AdminLayout";
 import { api } from "@/lib/api";
+import type { AdminOrderListFilter } from "@/lib/api/orders";
 import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
 import { useCartStore } from "@/store/useCartStore";
@@ -80,6 +81,7 @@ export const AdminDashboard: React.FC = () => {
   // Pagination and Selection
   const [productPage, setProductPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
+  const [orderListFilter, setOrderListFilter] = useState<AdminOrderListFilter>('fulfilled');
   const [customerPage, setCustomerPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState('');
@@ -99,6 +101,17 @@ export const AdminDashboard: React.FC = () => {
     setProductPage(1);
   }, [productSearch, statusFilter, isNewFilter, soldOutFilter, categoryFilter, onOfferFilter, labelFilter]);
 
+  useEffect(() => {
+    setOrderPage(1);
+  }, [orderListFilter]);
+
+  // Vista general siempre sobre ventas reales (no borradores de cobro)
+  useEffect(() => {
+    if (activeTab !== 'orders' && orderListFilter !== 'fulfilled') {
+      setOrderListFilter('fulfilled');
+    }
+  }, [activeTab, orderListFilter]);
+
   // Newsletter state
   const [newsletterSubject, setNewsletterSubject] = useState('');
   const [newsletterContent, setNewsletterContent] = useState('');
@@ -112,7 +125,6 @@ export const AdminDashboard: React.FC = () => {
     customers,
     totalCustomers,
     orders,
-    totalOrders,
     subscriptions,
     queryClient
   } = useAdminData(
@@ -127,7 +139,8 @@ export const AdminDashboard: React.FC = () => {
     soldOutFilter,
     categoryFilter,
     onOfferFilter,
-    labelFilter
+    labelFilter,
+    orderListFilter
   );
 
   const openModal = useCartStore((state) => state.openModal);
@@ -611,9 +624,10 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'orders' && (
           <OrdersTab 
             orders={orders}
-            totalOrders={totalOrders}
             orderPage={orderPage}
             pageSize={pageSize}
+            listFilter={orderListFilter}
+            onListFilterChange={setOrderListFilter}
             onPageChange={setOrderPage}
             onOrderClick={(order) => { 
               setSelectedOrder(order); 

@@ -11,6 +11,7 @@ interface ShippingMethodSelectorProps {
   selectedPoint?: string;
   onPointSelect?: (point: any) => void;
   zipCode?: string;
+  freeShipping?: boolean;
 }
 
 export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
@@ -18,8 +19,10 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
   onSelect,
   selectedPoint,
   onPointSelect,
-  zipCode
+  zipCode,
+  freeShipping = false,
 }) => {
+  const paidShippingLabel = freeShipping ? 'Gratis' : '5,50€';
   return (
     <section className="bg-secondary/5 p-8 border border-secondary/10 rounded-2xl mb-12">
       <div className="flex items-center gap-4 mb-8">
@@ -70,7 +73,7 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-secondary">Punto Nacex (48h)</p>
-            <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Entrega en punto de recogida (5,50€)</p>
+            <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Entrega en punto de recogida ({paidShippingLabel})</p>
           </div>
         </div>
 
@@ -89,7 +92,7 @@ export const ShippingMethodSelector: React.FC<ShippingMethodSelectorProps> = ({
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-secondary">Envío a domicilio (48h)</p>
-            <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Entrega en tu dirección (5,50€)</p>
+            <p className="text-[9px] text-secondary/40 uppercase tracking-tighter mt-1">Entrega en tu dirección ({paidShippingLabel})</p>
           </div>
         </div>
       </div>

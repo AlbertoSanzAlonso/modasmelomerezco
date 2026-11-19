@@ -450,7 +450,7 @@ IMPORTANTE: Los nombres de productos y categorías están en español y NO deben
 INFORMACIÓN DE LA TIENDA:
 - Ubicación: Calle Sol, 5, Benalmádena (Málaga).
 - Teléfono/WhatsApp: 685 011 494.
-- Envíos: 5,50€ tarifa plana a Península (Nacex/Correos). Gratis en compras > 50€. Entrega en 24-48h laborables. No enviamos fuera de la Península.
+- Envíos: 5,50€ tarifa plana a Península, a domicilio o a Punto Nacex. Gratis en compras a partir de 50€. Entrega en 24-48h laborables. No enviamos fuera de la Península.
 - Recogida: Gratis en tienda física.
 - Devoluciones: 14 días naturales desde la recepción. El producto debe estar impecable y con etiquetas. Los gastos de envío de devolución corren a cargo de la clienta.
 - Pagos: Aceptamos Tarjeta y Bizum (pasarela segura Redsys).

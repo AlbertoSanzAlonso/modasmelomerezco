@@ -43,6 +43,7 @@ const CheckoutPage = () => {
     setSaveToAccount,
     showSuccessModal,
     shippingCost,
+    freeShipping,
     finalTotal,
     handleProvinceChange,
     handleCityChange,
@@ -91,6 +92,7 @@ const CheckoutPage = () => {
                 selectedPoint={selectedPoint}
                 onPointSelect={setSelectedNacexPoint}
                 zipCode={formData.zip}
+                freeShipping={freeShipping}
               />
 
               {(selectedAddressId === 'new' || !user?.addresses?.length) && (

@@ -15,6 +15,9 @@ import {
 import { saveGoogleCustomerReviewsPending } from '@/lib/googleCustomerReviews';
 import type { Address } from '@/types';
 
+export const SHIPPING_FLAT_RATE = 5.5;
+export const FREE_SHIPPING_THRESHOLD = 50;
+
 export const useCheckoutForm = () => {
   const {
     items,
@@ -155,9 +158,11 @@ export const useCheckoutForm = () => {
 
   const getShippingCost = () => {
     if (shippingOption === 'local') return 0;
+    // Envío gratis a partir de FREE_SHIPPING_THRESHOLD (total con descuentos aplicados)
+    if (cartTotal >= FREE_SHIPPING_THRESHOLD) return 0;
     // Domicilio y Punto Nacex comparten tarifa
-    if (shippingOption === 'home') return 5.50;
-    if (shippingOption === 'nacex_point') return 5.50;
+    if (shippingOption === 'home') return SHIPPING_FLAT_RATE;
+    if (shippingOption === 'nacex_point') return SHIPPING_FLAT_RATE;
     return 0;
   };
 
@@ -389,6 +394,7 @@ export const useCheckoutForm = () => {
     showSuccessModal,
     setShowSuccessModal,
     shippingCost: getShippingCost(),
+    freeShipping: cartTotal >= FREE_SHIPPING_THRESHOLD,
     finalTotal: cartTotal + getShippingCost(),
     handleProvinceChange,
     handleCityChange,

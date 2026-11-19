@@ -1,0 +1,83 @@
+{
+  "entries": [
+    {
+      "identifier": "urn:air:modasmelomerezco.es:shop:melome-assistant",
+      "displayName": "MeloMe AI — Asistente Virtual de Modas Me lo Merezco",
+      "description": "Asistente virtual de compras y catálogo de Modas Me lo Merezco. Consulta stock por talla y color, precios, novedades, rebajas, envíos y devoluciones.",
+      "type": "application/agent-card+json",
+      "url": "https://www.modasmelomerezco.es/.well-known/agent.json",
+      "representativeQueries": [
+        "¿Qué vestidos o novedades de mujer tenéis disponibles en Modas Me lo Merezco?",
+        "¿Cuánto cuesta el envío a domicilio y a partir de qué importe es gratuito?",
+        "Recomiéndame bolsos, calzado o ropa oversize por menos de 30 euros"
+      ],
+      "capabilities": [
+        "CatalogSearch",
+        "ProductRecommendation",
+        "StockLookup",
+        "CustomerSupport"
+      ],
+      "tags": [
+        "moda",
+        "mujer",
+        "ropa",
+        "complementos",
+        "calzado",
+        "ecommerce",
+        "espana"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-11-19T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:modasmelomerezco.es:shop:mcp-server",
+      "displayName": "Modas Me lo Merezco — MCP Server Card",
+      "description": "Descriptor MCP con herramientas de consulta semántica del catálogo de productos, categorías y atención al cliente de Modas Me lo Merezco.",
+      "type": "application/mcp-server-card+json",
+      "url": "https://www.modasmelomerezco.es/.well-known/mcp/server-card.json",
+      "representativeQueries": [
+        "Buscar productos publicados en el catálogo de Modas Me lo Merezco",
+        "Consultar disponibilidad de tallas y colores de una prenda",
+        "Obtener información de envíos, pagos y devoluciones de la tienda"
+      ],
+      "capabilities": [
+        "CatalogSearch",
+        "SemanticEmbeddingSearch",
+        "StorePolicies"
+      ],
+      "tags": [
+        "mcp",
+        "ecommerce",
+        "catalogo",
+        "moda-mujer"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-11-19T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:modasmelomerezco.es:shop:llms-guide",
+      "displayName": "Modas Me lo Merezco — Guía para Modelos de Lenguaje (llms.txt)",
+      "description": "Guía estructurada en Markdown con las categorías principales, políticas de envío y devolución y mapa del sitio de Modas Me lo Merezco.",
+      "type": "text/markdown; profile=\"urn:air:agent-skills\"",
+      "url": "https://www.modasmelomerezco.es/llms.txt",
+      "representativeQueries": [
+        "¿Cuáles son las categorías principales de la tienda Modas Me lo Merezco?",
+        "¿Dónde está ubicada la tienda física de Modas Me lo Merezco en Benalmádena?",
+        "¿Cuál es la política de cambios y devoluciones de Modas Me lo Merezco?"
+      ],
+      "capabilities": [
+        "StoreDirectory",
+        "PolicyReference",
+        "CategoryNavigation"
+      ],
+      "tags": [
+        "llms-txt",
+        "documentacion",
+        "moda",
+        "benalmadena"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-11-19T12:00:00Z"
+    }
+  ]
+}

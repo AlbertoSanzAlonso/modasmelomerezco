@@ -17,3 +17,4 @@ Disallow: /wp-admin/
 Disallow: /ropa-2/
 
 Sitemap: https://www.modasmelomerezco.es/sitemap.xml
+Agentmap: https://www.modasmelomerezco.es/.well-known/ai-catalog.json

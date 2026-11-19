@@ -52,8 +52,64 @@
       ]
     },
     {
+      "source": "/.well-known/(ai-catalog|ard).json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/ai-catalog+json; charset=utf-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/api-catalog",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/linkset+json; charset=utf-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/agent.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/agent-card+json; charset=utf-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/(mcp.json|mcp/server-card.json)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/mcp-server-card+json; charset=utf-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
+        {
+          "key": "Link",
+          "value": "</.well-known/ai-catalog.json>; rel=\"ai-catalog\"; type=\"application/ai-catalog+json\", </.well-known/ard.json>; rel=\"ard\"; type=\"application/ai-catalog+json\", </.well-known/api-catalog>; rel=\"api-catalog\"; type=\"application/linkset+json\", </llms.txt>; rel=\"llms-txt\"; type=\"text/markdown\""
+        },
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"

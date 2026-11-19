@@ -2,7 +2,10 @@ import { getSeoMetaForPath } from './api/_seoMeta.js';
 import { injectSeoIntoHtml } from './api/_injectSeoHtml.js';
 
 const CRAWLER_UA =
-  /googlebot|google-inspectiontool|bingbot|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|pinterest|yandex|baiduspider|ahrefsbot|semrushbot|mj12bot|dotbot|rogerbot|screaming\s*frog|sitebulb/i;
+  /googlebot|google-inspectiontool|google-extended|bingbot|applebot|gptbot|chatgpt-user|oai-searchbot|claudebot|anthropic-ai|perplexitybot|ccbot|amazonbot|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|pinterest|yandex|baiduspider|ahrefsbot|semrushbot|mj12bot|dotbot|rogerbot|screaming\s*frog|sitebulb/i;
+
+const ARD_LINK_HEADER =
+  '</.well-known/ai-catalog.json>; rel="ai-catalog"; type="application/ai-catalog+json", </.well-known/ard.json>; rel="ard"; type="application/ai-catalog+json", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </llms.txt>; rel="llms-txt"; type="text/markdown"';
 
 const INDEXABLE_PREFIXES = [
   '/producto/',
@@ -69,6 +72,7 @@ export default async function middleware(request: Request) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      Link: ARD_LINK_HEADER,
     },
   });
 }

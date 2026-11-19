@@ -1,0 +1,32 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://www.modasmelomerezco.es/api/chat",
+      "service-desc": [
+        {
+          "href": "https://www.modasmelomerezco.es/.well-known/mcp/server-card.json",
+          "type": "application/mcp-server-card+json"
+        },
+        {
+          "href": "https://www.modasmelomerezco.es/.well-known/agent.json",
+          "type": "application/agent-card+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://www.modasmelomerezco.es/llms.txt",
+          "type": "text/markdown"
+        }
+      ]
+    },
+    {
+      "anchor": "https://www.modasmelomerezco.es/sitemap.xml",
+      "service-doc": [
+        {
+          "href": "https://www.modasmelomerezco.es/llms.txt",
+          "type": "text/markdown"
+        }
+      ]
+    }
+  ]
+}

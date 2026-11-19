@@ -1,0 +1,42 @@
+{
+  "name": "MeloMe AI — Modas Me lo Merezco",
+  "description": "Asistente virtual de compras y atención al cliente de la boutique Modas Me lo Merezco (Benalmádena, Málaga). Ayuda a descubrir prendas de mujer, tallas, colores, precios, novedades, rebajas y condiciones de envío y devolución.",
+  "url": "https://www.modasmelomerezco.es/api/chat",
+  "documentationUrl": "https://www.modasmelomerezco.es/llms.txt",
+  "version": "1.0.0",
+  "provider": {
+    "organization": "Modas Me lo Merezco",
+    "url": "https://www.modasmelomerezco.es/"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/plain", "application/json"],
+  "skills": [
+    {
+      "id": "catalog-search",
+      "name": "Búsqueda de catálogo y stock",
+      "description": "Busca ropa de mujer, moda oversize, bolsos, calzado y complementos con disponibilidad por talla y color.",
+      "tags": ["moda", "catalogo", "ropa", "stock"],
+      "examples": [
+        "¿Qué novedades tenéis esta semana?",
+        "Busco un bolso por menos de 25 €",
+        "¿Qué modelos de calzado tenéis disponibles?"
+      ]
+    },
+    {
+      "id": "store-info",
+      "name": "Información de tienda, envíos y devoluciones",
+      "description": "Responde dudas sobre envíos a España peninsular (gratis > 50 €), recogida en tienda en Benalmádena y devoluciones en 14 días.",
+      "tags": ["envios", "devoluciones", "tienda", "atencion-cliente"],
+      "examples": [
+        "¿Cuánto tarda el envío a domicilio?",
+        "¿Dónde está vuestra tienda física?",
+        "¿Cómo puedo hacer una devolución?"
+      ]
+    }
+  ]
+}

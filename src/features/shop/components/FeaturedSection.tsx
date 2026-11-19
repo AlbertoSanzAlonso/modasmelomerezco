@@ -13,7 +13,7 @@ export const FeaturedSection: React.FC = () => {
                 Vístete <br />
                 <span className="brush-underline">para ti.</span>
               </h2>
-              <p className="text-secondary/60 text-lg leading-relaxed mx-auto lg:mx-0 max-w-md font-light">
+              <p className="text-secondary/75 text-lg leading-relaxed mx-auto lg:mx-0 max-w-md font-light">
                 Porque cada día es una oportunidad para gustarte más. Moda de calidad pensada para la mujer real, para que te sientas tan especial como eres. Date el capricho.
               </p>
               <Link 
@@ -26,7 +26,13 @@ export const FeaturedSection: React.FC = () => {
             <div className="lg:col-span-7 relative">
               <div className="aspect-4/5 overflow-hidden rounded-2xl shadow-2xl">
                 <motion.img
-                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"
+                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=75&w=800&auto=format&fit=crop"
+                  srcSet="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=70&w=480&auto=format&fit=crop 480w, https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=75&w=800&auto=format&fit=crop 800w, https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop 1200w"
+                  sizes="(max-width: 768px) 92vw, 55vw"
+                  width={800}
+                  height={1000}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover scale-105"
                   alt="Mujer con estilo en tienda de moda Modas Me lo Merezco"
                 />
@@ -41,14 +47,24 @@ export const FeaturedSection: React.FC = () => {
 
       <section className="py-32 md:py-60 relative overflow-hidden flex items-center justify-center bg-primary">
         <div className="absolute inset-0 opacity-20 mix-blend-overlay">
-          <img src="https://images.unsplash.com/photo-1539109132382-381bb3f1c2b3?q=80&w=1000&auto=format&fit=crop" className="w-full h-full object-cover" alt="Fondo de moda femenina elegante" />
+          <img
+            src="https://images.unsplash.com/photo-1539109132382-381bb3f1c2b3?q=70&w=800&auto=format&fit=crop"
+            srcSet="https://images.unsplash.com/photo-1539109132382-381bb3f1c2b3?q=65&w=480&auto=format&fit=crop 480w, https://images.unsplash.com/photo-1539109132382-381bb3f1c2b3?q=70&w=960&auto=format&fit=crop 960w"
+            sizes="100vw"
+            width={960}
+            height={640}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+            alt="Fondo de moda femenina elegante"
+          />
         </div>
         <div className="relative z-10 text-center max-w-5xl px-6">
           <h2 className="text-3xl md:text-4xl lg:text-6xl font-serif italic mb-12 leading-tight text-white max-w-4xl mx-auto">
             "Vestir bien es recordarte quién eres. Es darte ese capricho porque, simplemente, te lo mereces."
           </h2>
           <div className="w-20 h-px bg-white mx-auto mb-12" />
-          <p className="text-[10px] font-black tracking-[0.6em] uppercase text-white/80">Modas Me lo Merezco</p>
+          <p className="text-[10px] font-black tracking-[0.6em] uppercase text-white">Modas Me lo Merezco</p>
         </div>
       </section>
     </>

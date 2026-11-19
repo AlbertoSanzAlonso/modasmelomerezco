@@ -27,7 +27,7 @@ function writeConsent(value: ConsentValue) {
 
 export const CookieConsent: FC = () => {
   const { pathname } = useLocation();
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() => !pathname.startsWith('/admin') && readConsent() === null);
 
   useEffect(() => {
     if (pathname.startsWith('/admin')) {
@@ -51,10 +51,10 @@ export const CookieConsent: FC = () => {
           role="dialog"
           aria-label="Aviso de cookies"
           aria-live="polite"
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 28 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="fixed inset-x-0 bottom-0 z-60 flex justify-center px-4 pb-4 sm:px-6 sm:pb-6 pointer-events-none"
         >
           <div className="pointer-events-auto relative w-full max-w-4xl overflow-hidden rounded-2xl border border-black/5 bg-[#faf9f6] shadow-[0_20px_50px_-16px_rgba(5,5,5,0.28)]">
@@ -62,6 +62,10 @@ export const CookieConsent: FC = () => {
             <img
               src="/assets/logo/LOGO MELOMEREZCO corona.svg"
               alt=""
+              width={288}
+              height={288}
+              loading="lazy"
+              decoding="async"
               aria-hidden="true"
               className="pointer-events-none absolute -right-16 top-1/2 h-72 w-72 -translate-y-1/2 -rotate-12 select-none object-contain opacity-[0.07] sm:-right-20 sm:h-96 sm:w-96 sm:-rotate-[14deg] md:-right-24 md:h-[28rem] md:w-[28rem]"
             />
@@ -79,7 +83,7 @@ export const CookieConsent: FC = () => {
                   Tu privacidad{' '}
                   <span className="font-serif lowercase not-italic text-[#ff4f70]">importa</span>
                 </h2>
-                <p className="max-w-xl text-sm font-light leading-relaxed text-[#050505]/65">
+                <p className="max-w-xl text-sm font-light leading-relaxed text-[#050505]/80">
                   Usamos cookies técnicas para que la tienda funcione y, si lo aceptas, otras
                   que nos ayudan a mejorar tu experiencia.{' '}
                   <Link
@@ -102,7 +106,7 @@ export const CookieConsent: FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full rounded-xl border-black/10 bg-white py-3.5 text-[10px] text-[#050505] hover:bg-black/5 sm:min-w-40"
+                  className="w-full rounded-xl border-black/15 bg-white py-3.5 text-[10px] text-[#050505] hover:bg-black/5 sm:min-w-40"
                   onClick={() => dismiss('necessary')}
                 >
                   Solo necesarias

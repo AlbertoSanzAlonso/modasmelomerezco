@@ -54,7 +54,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   {items.length} artículos
                 </span>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-secondary/5 rounded-full transition-colors">
+              <button type="button" aria-label="Cerrar carrito" onClick={onClose} className="p-2 hover:bg-secondary/5 rounded-full transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -80,13 +80,15 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                         className="w-24 aspect-3/4 bg-secondary/5 overflow-hidden rounded-lg shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
                         aria-label={`Ver detalle de ${item.name}`}
                       >
-                        <img src={toDisplayImageUrl(item.images[0]) || item.images[0]} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
+                        <img src={toDisplayImageUrl(item.images[0]) || item.images[0]} alt={item.name} width={96} height={128} className="w-full h-full object-cover pointer-events-none" />
                       </Link>
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start mb-1">
                             <h3 className="text-sm font-bold leading-tight">{item.name}</h3>
                             <button 
+                              type="button"
+                              aria-label={`Eliminar ${item.name} del carrito`}
                               onClick={() => removeItem(cartItemId)}
                               className="text-gray-600 hover:text-red-500 transition-colors"
                             >
@@ -100,15 +102,19 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                         <div className="flex justify-between items-end">
                           <div className="flex items-center border border-secondary/10 rounded-md overflow-hidden">
                             <button 
+                              type="button"
+                              aria-label="Reducir cantidad"
                               onClick={() => updateQuantity(cartItemId, Math.max(1, item.quantity - 1))}
-                              className="p-1 hover:bg-secondary/5 text-secondary/40"
+                              className="p-1 hover:bg-secondary/5 text-secondary/60"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
                             <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
                             <button 
+                              type="button"
+                              aria-label="Aumentar cantidad"
                               onClick={() => updateQuantity(cartItemId, item.quantity + 1)}
-                              className="p-1 hover:bg-secondary/5 text-secondary/40"
+                              className="p-1 hover:bg-secondary/5 text-secondary/60"
                             >
                               <Plus className="w-3 h-3" />
                             </button>

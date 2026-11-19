@@ -77,6 +77,8 @@ export const ProductImage: React.FC<ProductImageProps> = ({
           <motion.img 
             src="/assets/logo/logo-corona.png" 
             alt="Cargando..." 
+            width={48}
+            height={48}
             className="w-12 h-12 object-contain opacity-20"
             animate={{ 
               scale: [1, 1.2, 1],
@@ -128,10 +130,14 @@ export const ProductImage: React.FC<ProductImageProps> = ({
 
       {/* Watermark: Only for real loaded images */}
       {loaded && !isPlaceholder && (
-        <div className="absolute bottom-4 right-4 w-1/5 max-w-[100px] pointer-events-none opacity-60 select-none z-10">
+        <div aria-hidden="true" className="absolute bottom-4 right-4 w-1/5 max-w-[100px] pointer-events-none opacity-60 select-none z-10">
           <img 
             src="/assets/logo/LOGO MELOMEREZCO corona blanco.png" 
             alt="" 
+            width={100}
+            height={100}
+            loading="lazy"
+            decoding="async"
             className="w-full h-auto drop-shadow-lg" 
           />
         </div>

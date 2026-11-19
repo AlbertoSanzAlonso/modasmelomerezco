@@ -8,8 +8,8 @@ import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStore } from "@/store/useAdminStore";
 import { ShopLayout } from "@/components/layout/ShopLayout";
-import { AIChatAgent } from "@/components/ui/AIChatAgent";
 import { CookieConsent } from "@/components/CookieConsent";
+import HomePage from "@/features/shop/HomePage";
 
 // Helper to handle chunk load errors by forcing a reload
 const safeLazy = (importFn: () => Promise<any>) => {
@@ -25,8 +25,8 @@ const safeLazy = (importFn: () => Promise<any>) => {
   });
 };
 
-// Lazy loading for high optimization
-const HomePage = safeLazy(() => import("@/features/shop/HomePage"));
+// Lazy loading for non-entry routes and floating assistant
+const AIChatAgent = safeLazy(() => import("@/components/ui/AIChatAgent").then(m => ({ default: m.AIChatAgent })));
 const ProductPage = safeLazy(() => import("@/features/shop/ProductPage"));
 const CategoryPage = safeLazy(() => import("@/features/shop/CategoryPage"));
 const CheckoutPage = safeLazy(() => import("@/features/shop/CheckoutPage"));
@@ -83,7 +83,7 @@ const Skeleton: FC = () => (
       }}
       className="relative"
     >
-      <img src="/assets/logo/logo-corona.png" alt="Cargando..." className="w-16 h-16 object-contain" />
+      <img src="/assets/logo/logo-corona.png" alt="Cargando..." width={64} height={64} className="w-16 h-16 object-contain" />
       <motion.div 
         animate={{ scale: [1, 2, 1], opacity: [0, 0.3, 0] }}
         transition={{ duration: 1.5, repeat: Infinity, times: [0, 0.5, 1] }}
@@ -140,9 +140,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <ScrollToTop />
-        <AddToCartModal />
-        <AIChatAgent />
-        <CookieConsent />
         <Suspense fallback={<Skeleton />}>
           <Routes>
             <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -200,6 +197,11 @@ function App() {
             } />
           </Routes>
         </Suspense>
+        <AddToCartModal />
+        <Suspense fallback={null}>
+          <AIChatAgent />
+        </Suspense>
+        <CookieConsent />
       </Router>
     </QueryClientProvider>
   );

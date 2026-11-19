@@ -1,4 +1,3 @@
-import { generateInvoicePDF } from "@/utils/pdfGenerator";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
   buildOrderItemsEmailRows,
@@ -50,7 +49,8 @@ export const mailApi = {
     const logoUrl = SITE_LOGO;
     const { user } = useAuthStore.getState();
     
-    // Generate PDF Invoice
+    // Generate PDF Invoice (loaded on demand to avoid bundling jspdf on initial load)
+    const { generateInvoicePDF } = await import("@/utils/pdfGenerator");
     const doc = await generateInvoicePDF(order, user);
     const pdfBase64 = doc.output('datauristring').split(',')[1];
     console.log(`Factura generada. Tamaño Base64: ${(pdfBase64.length / 1024).toFixed(2)} KB`);

@@ -1,0 +1,24 @@
+# Modas Me lo Merezco
+
+> Tienda online y boutique física de moda para mujer en Benalmádena (Málaga, España). Ropa, vestidos, moda oversize, bolsos, calzado y complementos de tendencia.
+
+Modas Me lo Merezco ofrece colecciones seleccionadas de moda femenina con envíos a toda España peninsular en 24-48h laborables (envío gratuito en pedidos superiores a 50 €) y recogida gratuita en nuestra tienda de Calle Sol, 5, Benalmádena.
+
+## Categorías principales
+
+- [Inicio](https://www.modasmelomerezco.es/): Página principal con novedades y rebajas destacadas.
+- [Ropa de mujer](https://www.modasmelomerezco.es/categoria/ropa): Vestidos, tops, conjuntos, pantalones, chaquetas y prendas de temporada.
+- [Moda Oversize](https://www.modasmelomerezco.es/categoria/oversize): Prendas de corte amplio y tallas cómodas con estilo.
+- [Complementos](https://www.modasmelomerezco.es/categoria/complementos): Accesorios, bisutería, collares y detalles para completar tu look.
+- [Bolsos](https://www.modasmelomerezco.es/categoria/bolsos): Bolsos, bandoleras y carteras para diario y ocasiones especiales.
+- [Calzado](https://www.modasmelomerezco.es/categoria/calzado): Zapatos, zapatillas, sandalias y calzado de mujer.
+
+## Información y atención al cliente
+
+- [Conócenos](https://www.modasmelomerezco.es/conocenos): Historia y filosofía de nuestra boutique en Benalmádena.
+- [Envíos](https://www.modasmelomerezco.es/envios): Condiciones, plazos y tarifas de envío a España peninsular.
+- [Devoluciones](https://www.modasmelomerezco.es/devoluciones): Política y proceso de cambios y devoluciones (14 días naturales).
+- [Condiciones de venta](https://www.modasmelomerezco.es/condiciones-venta): Términos generales de compra y métodos de pago seguros (Tarjeta y Bizum vía Redsys).
+- [Política de privacidad](https://www.modasmelomerezco.es/politica-de-privacidad): Tratamiento y protección de datos personales.
+- [Política de cookies](https://www.modasmelomerezco.es/cookies): Información sobre el uso de cookies en la tienda.
+- [Mapa del sitio XML](https://www.modasmelomerezco.es/sitemap.xml): Listado actualizado de páginas y productos publicados.

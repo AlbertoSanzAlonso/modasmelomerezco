@@ -24,8 +24,13 @@ const MIN_EXPANDED_TOAST_HEIGHT_PX = 120;
 
 function preventMerchantToastClipping(wrapper: HTMLElement) {
   const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | null;
-  iframe?.style.setProperty('max-width', 'none', 'important');
-  iframe?.style.setProperty('max-height', 'none', 'important');
+  if (iframe) {
+    iframe.style.setProperty('max-width', 'none', 'important');
+    iframe.style.setProperty('max-height', 'none', 'important');
+    if (!iframe.getAttribute('title')) {
+      iframe.setAttribute('title', 'Reseñas de clientes de Google');
+    }
+  }
 
   if (wrapper.hidden) return;
 
@@ -47,12 +52,16 @@ function preventMerchantToastClipping(wrapper: HTMLElement) {
 /**
  * Widget / insignia de Reseñas de Clientes en Google (Merchant Center).
  * LEFT_BOTTOM para no solaparse con el chat flotante (bottom-right).
+ * Se carga de forma diferida tras interacción o tiempo de inactividad para no
+ * penalizar LCP/TBT ni disparar problemas de cookies de terceros en la carga inicial.
  */
 export function GoogleCustomerReviewsBadge() {
   useEffect(() => {
     let cancelled = false;
     let observer: MutationObserver | null = null;
     let pollId = 0;
+    let loadTimer = 0;
+    let injectedScript: HTMLScriptElement | null = null;
 
     const applyFix = () => {
       const wrapper = document.getElementById(WRAPPER_ID);
@@ -101,32 +110,41 @@ export function GoogleCustomerReviewsBadge() {
       }, 100);
     };
 
-    const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
-    if (existing) {
-      if (window.merchantwidget) {
-        startWidget();
-      } else {
-        existing.addEventListener('load', startWidget);
-      }
-      return () => {
-        cancelled = true;
-        existing.removeEventListener('load', startWidget);
-        window.removeEventListener('message', onMessage);
-        window.clearInterval(pollId);
-        observer?.disconnect();
-      };
-    }
+    const initScript = () => {
+      if (cancelled) return;
+      window.removeEventListener('scroll', initScript);
+      window.removeEventListener('pointerdown', initScript);
+      window.clearTimeout(loadTimer);
 
-    const script = document.createElement('script');
-    script.id = SCRIPT_ID;
-    script.src = SCRIPT_SRC;
-    script.defer = true;
-    script.addEventListener('load', startWidget);
-    document.head.appendChild(script);
+      const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+      if (existing) {
+        if (window.merchantwidget) {
+          startWidget();
+        } else {
+          existing.addEventListener('load', startWidget);
+        }
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = SCRIPT_ID;
+      script.src = SCRIPT_SRC;
+      script.defer = true;
+      script.addEventListener('load', startWidget);
+      document.head.appendChild(script);
+      injectedScript = script;
+    };
+
+    window.addEventListener('scroll', initScript, { once: true, passive: true });
+    window.addEventListener('pointerdown', initScript, { once: true, passive: true });
+    loadTimer = window.setTimeout(initScript, 4500);
 
     return () => {
       cancelled = true;
-      script.removeEventListener('load', startWidget);
+      window.removeEventListener('scroll', initScript);
+      window.removeEventListener('pointerdown', initScript);
+      window.clearTimeout(loadTimer);
+      injectedScript?.removeEventListener('load', startWidget);
       window.removeEventListener('message', onMessage);
       window.clearInterval(pollId);
       observer?.disconnect();

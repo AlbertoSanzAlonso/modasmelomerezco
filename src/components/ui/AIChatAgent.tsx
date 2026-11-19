@@ -530,8 +530,10 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
       </button>
 
       <div
+        aria-hidden={!isOpen}
+        inert={!isOpen ? true : undefined}
         className={`fixed bg-white shadow-2xl overflow-hidden transition-all duration-300 transform origin-bottom-right flex flex-col border border-primary/10 ${
-          isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
+          isOpen ? 'scale-100 opacity-100 visible' : 'scale-0 opacity-0 invisible pointer-events-none'
         } ${
           isExpanded
             ? 'top-24 left-3 right-3 bottom-3 sm:left-4 sm:right-4 sm:bottom-4 z-[80] rounded-2xl w-auto h-auto max-h-none'
@@ -549,8 +551,8 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
               <Bot className="w-6 h-6" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-sm tracking-wide">MeloMe AI</h3>
-              <p className="text-[10px] opacity-80 uppercase tracking-widest">Asistente Virtual</p>
+              <h2 className="font-bold text-sm tracking-wide">MeloMe AI</h2>
+              <p className="text-[10px] opacity-90 uppercase tracking-widest">Asistente Virtual</p>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -588,7 +590,7 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="p-3 bg-white border border-gray-100 rounded-2xl animate-pulse text-xs text-gray-400">
+              <div className="p-3 bg-white border border-gray-100 rounded-2xl animate-pulse text-xs text-gray-500">
                 MeloMe está pensando...
               </div>
             </div>
@@ -598,14 +600,24 @@ Para dudas de stock, que contacte por WhatsApp (685 011 494). NUNCA escribas enl
 
         <div className="p-4 bg-white border-t border-gray-100 shrink-0">
           <form onSubmit={handleSend} className="relative flex items-center">
+            <label htmlFor="ai-chat-input" className="sr-only">
+              Escribe tu mensaje para el asistente virtual
+            </label>
             <input
+              id="ai-chat-input"
+              name="message"
               type="text"
+              aria-label="Escribe tu mensaje para el asistente virtual"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="¿En qué puedo ayudarte?"
               className="w-full bg-gray-50 border border-gray-200 rounded-full pl-5 pr-12 py-3 text-sm focus:outline-none focus:border-primary"
             />
-            <button type="submit" className="absolute right-1 p-2 bg-primary text-white rounded-full">
+            <button
+              type="submit"
+              aria-label="Enviar mensaje"
+              className="absolute right-1 p-2 bg-primary text-white rounded-full"
+            >
               <Send className="w-4 h-4" />
             </button>
           </form>

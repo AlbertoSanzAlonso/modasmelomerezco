@@ -28,7 +28,7 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/((?!assets/|favicon|apple-touch-icon|icons.svg|logo.png|og-image.png|robots.txt|sitemap.xml|_next/).*)",
+      "source": "/((?!assets/|favicon|apple-touch-icon|icons.svg|logo.png|og-image.png|robots.txt|llms.txt|\\.well-known/|sitemap.xml|_next/).*)",
       "destination": "/index.html"
     }
   ],
@@ -65,6 +65,18 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }

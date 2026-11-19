@@ -179,9 +179,24 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return 'vendor';
+            if (!id.includes('node_modules')) return undefined;
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-router') ||
+              id.includes('/scheduler/') ||
+              id.includes('/zustand/') ||
+              id.includes('/react-helmet-async/')
+            ) {
+              return 'vendor-react';
             }
+            if (id.includes('/@supabase/') || id.includes('/@tanstack/')) {
+              return 'vendor-data';
+            }
+            if (id.includes('/framer-motion/') || id.includes('/motion-')) {
+              return 'vendor-motion';
+            }
+            return undefined;
           },
         },
       },

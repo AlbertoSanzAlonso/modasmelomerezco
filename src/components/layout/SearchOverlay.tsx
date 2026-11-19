@@ -66,11 +66,13 @@ export const SearchOverlay: FC<SearchOverlayProps> = ({ isOpen, onClose }) => {
                 <input
                   ref={inputRef}
                   type="search"
+                  name="q"
+                  aria-label="Buscar piezas"
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
                   placeholder="Buscar piezas…"
                   autoComplete="off"
-                  className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold uppercase tracking-wider text-secondary placeholder:text-secondary/30 outline-none"
+                  className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold uppercase tracking-wider text-secondary placeholder:text-secondary/50 outline-none"
                 />
                 <button
                   type="button"

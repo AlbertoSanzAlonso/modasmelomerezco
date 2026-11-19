@@ -97,6 +97,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         
       {/* Absolute Overlays (Heart and Badge) */}
       <button
+        type="button"
+        aria-label={isFavorite ? `Quitar ${product.name} de favoritos` : `Añadir ${product.name} a favoritos`}
         onClick={handleFavoriteClick}
         className={`absolute top-2 right-2 md:top-4 md:right-4 p-2 md:p-3 rounded-full transition-all duration-500 z-10 ${
           isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
@@ -135,13 +137,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <h3 className="text-xs md:text-sm font-bold tracking-tight text-secondary uppercase italic">
               {product.name}
             </h3>
-            <p className="text-[10px] text-secondary/40 mt-1 uppercase tracking-widest">
+            <p className="text-[10px] text-secondary/70 mt-1 uppercase tracking-widest">
               {soldOut ? 'Agotado' : product.category}
             </p>
           </div>
           <div className="text-right">
             {compareAt != null && (
-              <p className="text-[10px] md:text-xs text-secondary/40 line-through italic">
+              <p className="text-[10px] md:text-xs text-secondary/65 line-through italic">
                 {formatEur(compareAt)}
               </p>
             )}

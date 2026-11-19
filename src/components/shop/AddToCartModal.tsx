@@ -222,8 +222,10 @@ export const AddToCartModal: React.FC = () => {
 
             {/* Close button top right */}
             <button 
+              type="button"
+              aria-label="Cerrar"
               onClick={closeModal}
-              className="absolute top-4 right-4 p-2 text-secondary/20 hover:text-secondary transition-colors"
+              className="absolute top-4 right-4 p-2 text-secondary/40 hover:text-secondary transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

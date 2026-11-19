@@ -5,13 +5,18 @@ import { createClient } from '@supabase/supabase-js';
 export const PENDING_ORDER_TTL_MS = 2 * 60 * 60 * 1000;
 
 function isAuthorizedCron(req: VercelRequest): boolean {
+  // Vercel Cron envía este header en invocaciones programadas.
+  const vercelCron = req.headers['x-vercel-cron'];
+  if (vercelCron === '1' || vercelCron === 'true') return true;
+
   const cronSecret = process.env.CRON_SECRET?.trim();
-  if (!cronSecret) {
-    // Sin secret en local/dev: permitir solo fuera de producción.
-    return process.env.VERCEL_ENV !== 'production';
+  if (cronSecret) {
+    const auth = req.headers.authorization || '';
+    if (auth === `Bearer ${cronSecret}`) return true;
   }
-  const auth = req.headers.authorization || '';
-  return auth === `Bearer ${cronSecret}`;
+
+  // Local / preview sin secret: permitir fuera de production.
+  return process.env.VERCEL_ENV !== 'production';
 }
 
 /**

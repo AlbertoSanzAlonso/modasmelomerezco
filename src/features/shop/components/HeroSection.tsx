@@ -1,19 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 export const HeroSection: React.FC = () => {
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 500], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 500], [1, 1.1]);
-  const [loadVideo, setLoadVideo] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoadVideo(true), 150);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden bg-secondary">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden">
       {/* Video Background */}
       <motion.div 
         style={{ opacity: heroOpacity, scale: heroScale }}
@@ -26,12 +20,12 @@ export const HeroSection: React.FC = () => {
           muted 
           loop 
           playsInline
-          preload="none"
+          preload="metadata"
           aria-hidden="true"
           tabIndex={-1}
           className="w-full h-full object-cover"
         >
-          {loadVideo && <source src="/assets/videos/hero.mp4" type="video/mp4" />}
+          <source src="/assets/videos/hero.mp4" type="video/mp4" />
           <track
             kind="captions"
             src="data:text/vtt;charset=utf-8,WEBVTT"

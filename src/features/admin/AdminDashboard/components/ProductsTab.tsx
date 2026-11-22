@@ -182,7 +182,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   return (
     <div className="space-y-10">
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-end gap-4">
           <div>
             <h2 className="text-3xl font-black tracking-tighter uppercase italic">
               {activeCategory ? activeCategory.name : 'Gestión de Productos'}
@@ -193,33 +193,34 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 : `Añade, edita o elimina artículos de la tienda. (${totalProducts} productos)`}
             </p>
           </div>
-          <Button
-            size="sm"
-            className="w-full sm:w-auto shrink-0 font-black tracking-widest text-[10px] px-8 py-3 h-auto self-end sm:self-auto"
-            onClick={onCreate}
-          >
-            <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
-          </Button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <select
+              value={categoryFilter ?? ''}
+              onChange={(e) =>
+                onCategoryFilterChange(
+                  e.target.value === '' ? undefined : parseInt(e.target.value, 10)
+                )
+              }
+              aria-label="Categoría"
+              className="w-full sm:min-w-[260px] sm:flex-1 lg:flex-none px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
+            >
+              <option value="">Todas las categorías</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              className="w-full sm:w-auto shrink-0 font-black tracking-widest text-[10px] px-8 py-4 h-auto self-stretch sm:self-auto"
+              onClick={onCreate}
+            >
+              <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
+            </Button>
+          </div>
         </div>
         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 w-full">
-          {/* Filters */}
-          <select
-            value={categoryFilter ?? ''}
-            onChange={(e) =>
-              onCategoryFilterChange(
-                e.target.value === '' ? undefined : parseInt(e.target.value, 10)
-              )
-            }
-            className={filterControlClass}
-          >
-            <option value="">Todas las categorías</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-
           <select 
             value={statusFilter === undefined ? '' : statusFilter.toString()}
             onChange={(e) => onStatusFilterChange(e.target.value === '' ? undefined : e.target.value === 'true')}

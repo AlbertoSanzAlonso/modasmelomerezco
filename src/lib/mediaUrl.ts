@@ -1,10 +1,13 @@
 /**
- * CDN de imágenes: dominio custom de R2 (Cloudflare).
- * Evita `*.r2.dev` (rate-limited) y el proxy lento `/api/chat?k=`.
+ * Imágenes de producto: R2 detrás de `media.modasmelomerezco.es`.
+ * Si ese host no responde (ahora mismo timeout), servir vía proxy same-origin.
  */
 
 const CANONICAL_ORIGIN = 'https://www.modasmelomerezco.es';
 const IMAGE_CDN_ORIGIN = 'https://media.modasmelomerezco.es';
+
+/** Temporal: `media.` está caído/timeout; la tienda usa el proxy hasta arreglar R2/CDN. */
+const PREFER_SITE_PROXY = true;
 
 function extractR2Key(url: string): string | null {
   const trimmed = url.trim();
@@ -48,21 +51,8 @@ function cdnUrlForKey(key: string): string {
   return `${IMAGE_CDN_ORIGIN}/${key.replace(/^\/+/, '')}`;
 }
 
-/** Convierte una URL de producto a la CDN rápida de R2. */
-export function toDisplayImageUrl(url?: string | null): string {
-  if (!url?.trim()) return '';
-  const trimmed = url.trim();
-  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return trimmed;
-
-  const key = extractR2Key(trimmed);
-  if (key) return cdnUrlForKey(key);
-
-  return trimmed;
-}
-
 /**
  * Proxy same-origin vía `/api/chat?k=` (lee R2 sin pasar por el dominio `media`).
- * Útil si Cloudflare Bot Fight / WAF bloquea la CDN en algunos navegadores.
  */
 export function toProxyImageUrl(url?: string | null): string {
   if (!url?.trim()) return '';
@@ -71,6 +61,21 @@ export function toProxyImageUrl(url?: string | null): string {
   const key = extractR2Key(trimmed);
   if (!key) return '';
   return `/api/chat?k=${encodeURIComponent(key)}`;
+}
+
+/** URL para mostrar en <img>. Con CDN caída, usa el proxy del sitio. */
+export function toDisplayImageUrl(url?: string | null): string {
+  if (!url?.trim()) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return trimmed;
+
+  const key = extractR2Key(trimmed);
+  if (!key) return trimmed;
+
+  if (PREFER_SITE_PROXY) {
+    return `/api/chat?k=${encodeURIComponent(key)}`;
+  }
+  return cdnUrlForKey(key);
 }
 
 export function mapDisplayImageUrls(urls: (string | null | undefined)[]): string[] {

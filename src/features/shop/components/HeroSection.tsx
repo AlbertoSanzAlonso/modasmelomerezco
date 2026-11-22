@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export const HeroSection: React.FC = () => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +32,16 @@ export const HeroSection: React.FC = () => {
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      {/* Solo en home: evita warnings de preload en /admin y resto de rutas */}
+      <Helmet>
+        <link rel="preload" href="/assets/videos/hero-poster.webp" as="image" type="image/webp" />
+        <link
+          rel="preload"
+          href="/assets/logo/logo-completo-blanco.svg"
+          as="image"
+          type="image/svg+xml"
+        />
+      </Helmet>
       {/* Video Background */}
       <div 
         ref={videoContainerRef}

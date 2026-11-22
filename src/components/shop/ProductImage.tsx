@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
-import { toDisplayImageUrl } from '@/lib/mediaUrl';
+import { toDisplayImageUrl, toProxyImageUrl } from '@/lib/mediaUrl';
 
 interface ProductImageProps {
   src?: string;
@@ -29,14 +29,21 @@ export const ProductImage: React.FC<ProductImageProps> = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [usedProxy, setUsedProxy] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const displaySrc = toDisplayImageUrl(src);
+  const proxySrc = toProxyImageUrl(src);
   const isPlaceholder = !displaySrc || displaySrc === PRODUCT_PLACEHOLDER || error;
-  const imageSrc = isPlaceholder ? PRODUCT_PLACEHOLDER : displaySrc;
+  const imageSrc = isPlaceholder
+    ? PRODUCT_PLACEHOLDER
+    : usedProxy && proxySrc
+      ? proxySrc
+      : displaySrc;
 
   useEffect(() => {
     setLoaded(false);
     setError(false);
+    setUsedProxy(false);
   }, [src]);
 
   // Handle cached images
@@ -95,6 +102,11 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         height={height}
         onLoad={handleLoad}
         onError={() => {
+          if (!usedProxy && proxySrc && proxySrc !== displaySrc) {
+            setUsedProxy(true);
+            setLoaded(false);
+            return;
+          }
           setError(true);
           setLoaded(true);
           onLoad?.();

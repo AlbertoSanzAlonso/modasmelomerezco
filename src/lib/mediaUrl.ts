@@ -60,6 +60,19 @@ export function toDisplayImageUrl(url?: string | null): string {
   return trimmed;
 }
 
+/**
+ * Proxy same-origin vía `/api/chat?k=` (lee R2 sin pasar por el dominio `media`).
+ * Útil si Cloudflare Bot Fight / WAF bloquea la CDN en algunos navegadores.
+ */
+export function toProxyImageUrl(url?: string | null): string {
+  if (!url?.trim()) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return trimmed;
+  const key = extractR2Key(trimmed);
+  if (!key) return '';
+  return `/api/chat?k=${encodeURIComponent(key)}`;
+}
+
 export function mapDisplayImageUrls(urls: (string | null | undefined)[]): string[] {
   return urls
     .map((u) => toDisplayImageUrl(u))

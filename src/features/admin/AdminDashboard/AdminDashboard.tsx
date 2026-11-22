@@ -322,14 +322,16 @@ export const AdminDashboard: React.FC = () => {
   // Mutations
   const saveMutation = useMutation({
     mutationFn: (data: Partial<Product>) => {
-      if (editingProduct) return api.products.update(editingProduct.product_id, data);
+      if (editingProduct?.product_id) {
+        return api.products.update(editingProduct.product_id, data);
+      }
       return api.products.create(data as Omit<Product, 'product_id' | 'slug'>);
     },
     onSuccess: (product: Product, variables: Partial<Product>) => {
       refreshProductCaches(queryClient, product);
       setIsModalOpen(false);
       
-      const isNew = !editingProduct;
+      const isNew = !editingProduct?.product_id;
       const isPublishedInForm = variables.is_published === true;
       setEditingProduct(null);
 
@@ -827,7 +829,8 @@ export const AdminDashboard: React.FC = () => {
 
       {isModalOpen && (
         <ProductModal 
-          product={editingProduct} 
+          product={editingProduct}
+          initialCategoryId={editingProduct?.product_id ? undefined : categoryFilter}
           onClose={() => {
             if (saveMutation.isPending) return;
             setIsModalOpen(false);

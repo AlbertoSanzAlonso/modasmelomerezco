@@ -100,6 +100,8 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     queryFn: () => api.labels.getAll(),
   });
 
+  const activeCategory = categories.find((cat) => cat.id === categoryFilter);
+
   const toggleLabelFilter = (labelId: number) => {
     const current = labelFilter ?? [];
     if (current.includes(labelId)) {
@@ -182,8 +184,14 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
           <div>
-            <h2 className="text-3xl font-black tracking-tighter uppercase italic">Gestión de Productos</h2>
-            <p className="text-gray-500 text-sm">Añade, edita o elimina artículos de la tienda. ({totalProducts} productos)</p>
+            <h2 className="text-3xl font-black tracking-tighter uppercase italic">
+              {activeCategory ? activeCategory.name : 'Gestión de Productos'}
+            </h2>
+            <p className="text-gray-500 text-sm">
+              {activeCategory
+                ? `${totalProducts} productos en esta categoría`
+                : `Añade, edita o elimina artículos de la tienda. (${totalProducts} productos)`}
+            </p>
           </div>
           <Button
             size="sm"

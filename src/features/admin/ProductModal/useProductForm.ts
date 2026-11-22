@@ -10,6 +10,7 @@ import {
   variantHasColor,
   alignImageColorIds,
   alignImageOriginals,
+  UNIQUE_SIZE_LABEL,
 } from '@/lib/productVariants';
 import { toWebpBlob } from '@/utils/toWebp';
 import { resolveImageForCrop } from '@/utils/resolveImageForCrop';
@@ -61,7 +62,8 @@ function mergeColorCatalog(owned: Color[], extra: Color[]): Color[] {
 export const useProductForm = (
   product: Product | null | undefined,
   onSave: (product: Partial<Product>) => void,
-  isSaving = false
+  isSaving = false,
+  initialCategoryId?: number
 ) => {
   const draftProductIdRef = useRef(product?.product_id ?? newDraftProductId());
 
@@ -71,7 +73,7 @@ export const useProductForm = (
     description: '',
     details: '',
     price: 0,
-    category_id: undefined,
+    category_id: product?.product_id ? undefined : initialCategoryId,
     subcategory_id: undefined,
     images: [],
     image_originals: [],
@@ -82,7 +84,7 @@ export const useProductForm = (
     is_on_offer: false,
     offer_type: 'percent',
     offer_value: 0,
-    variants: [{ id: 'v1', size: '', color_id: null, stock: 0 }],
+    variants: [{ id: 'v1', size: UNIQUE_SIZE_LABEL, color_id: null, stock: 0 }],
     colors: [],
     labels: [],
     discountCodes: [],

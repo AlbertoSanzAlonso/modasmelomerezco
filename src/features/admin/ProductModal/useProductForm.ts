@@ -63,9 +63,11 @@ export const useProductForm = (
   product: Product | null | undefined,
   onSave: (product: Partial<Product>) => void,
   isSaving = false,
-  initialCategoryId?: number
+  initialCategoryId?: number,
+  initialSubcategoryId?: number
 ) => {
   const draftProductIdRef = useRef(product?.product_id ?? newDraftProductId());
+  const isNewProduct = !product?.product_id;
 
   const [formData, setFormData] = useState<Partial<Product>>({
     product_id: draftProductIdRef.current,
@@ -73,8 +75,8 @@ export const useProductForm = (
     description: '',
     details: '',
     price: 0,
-    category_id: product?.product_id ? undefined : initialCategoryId,
-    subcategory_id: undefined,
+    category_id: isNewProduct ? initialCategoryId : undefined,
+    subcategory_id: isNewProduct ? initialSubcategoryId : undefined,
     images: [],
     image_originals: [],
     image_color_ids: [],

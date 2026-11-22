@@ -5,6 +5,8 @@ export interface ProductModalProps {
   product?: Product | null;
   /** Categoría preseleccionada al crear un producto nuevo (p. ej. filtro activo). */
   initialCategoryId?: number;
+  /** Subcategoría preseleccionada al crear un producto nuevo. */
+  initialSubcategoryId?: number;
   onClose: () => void;
   onSave: (product: Partial<Product>) => void | Promise<unknown>;
   isSaving?: boolean;

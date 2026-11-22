@@ -27,6 +27,7 @@ interface ProductsTabProps {
   isNewFilter?: boolean;
   soldOutFilter?: boolean;
   categoryFilter?: number;
+  subcategoryFilter?: number;
   onOfferFilter?: boolean;
   labelFilter?: number[];
   onSearchChange: (term: string) => void;
@@ -35,6 +36,10 @@ interface ProductsTabProps {
   onIsNewFilterChange: (isNew: boolean | undefined) => void;
   onSoldOutFilterChange: (soldOut: boolean | undefined) => void;
   onCategoryFilterChange: (categoryId: number | undefined) => void;
+  onSubcategoryFilterChange: (
+    subcategoryId: number | undefined,
+    categoryId: number | undefined
+  ) => void;
   onOnOfferFilterChange: (onOffer: boolean | undefined) => void;
   onLabelFilterChange: (labelIds: number[]) => void;
   onToggleSelectAll: () => void;
@@ -66,6 +71,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   isNewFilter,
   soldOutFilter,
   categoryFilter,
+  subcategoryFilter,
   onOfferFilter,
   labelFilter,
   onSearchChange,
@@ -74,6 +80,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   onIsNewFilterChange,
   onSoldOutFilterChange,
   onCategoryFilterChange,
+  onSubcategoryFilterChange,
   onOnOfferFilterChange,
   onLabelFilterChange,
   onToggleSelectAll,
@@ -95,12 +102,45 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     queryFn: () => api.categories.getAll(),
   });
 
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ['admin-subcategories'],
+    queryFn: () => api.categories.getSubcategories(),
+  });
+
   const { data: labels = [] } = useQuery({
     queryKey: ['admin-labels'],
     queryFn: () => api.labels.getAll(),
   });
 
   const activeCategory = categories.find((cat) => cat.id === categoryFilter);
+  const activeSubcategory = subcategories.find(
+    (sub) => sub.id === subcategoryFilter
+  );
+  const catalogSelectValue = subcategoryFilter
+    ? `s-${subcategoryFilter}`
+    : categoryFilter
+      ? `c-${categoryFilter}`
+      : '';
+
+  const handleCatalogSelectChange = (value: string) => {
+    if (!value) {
+      onCategoryFilterChange(undefined);
+      return;
+    }
+    if (value.startsWith('s-')) {
+      const subcategoryId = parseInt(value.slice(2), 10);
+      const sub = subcategories.find((item) => item.id === subcategoryId);
+      onSubcategoryFilterChange(
+        Number.isFinite(subcategoryId) ? subcategoryId : undefined,
+        sub?.category_id
+      );
+      return;
+    }
+    if (value.startsWith('c-')) {
+      const categoryId = parseInt(value.slice(2), 10);
+      onCategoryFilterChange(Number.isFinite(categoryId) ? categoryId : undefined);
+    }
+  };
 
   const toggleLabelFilter = (labelId: number) => {
     const current = labelFilter ?? [];
@@ -182,38 +222,55 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   return (
     <div className="space-y-10">
       <div className="space-y-6">
-        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-end gap-4">
+        <div className="space-y-4">
           <div>
             <h2 className="text-3xl font-black tracking-tighter uppercase italic">
-              {activeCategory ? activeCategory.name : 'Gestión de Productos'}
+              {activeSubcategory
+                ? activeSubcategory.name
+                : activeCategory
+                  ? activeCategory.name
+                  : 'Gestión de Productos'}
             </h2>
             <p className="text-gray-500 text-sm">
-              {activeCategory
-                ? `${totalProducts} productos en esta categoría`
-                : `Añade, edita o elimina artículos de la tienda. (${totalProducts} productos)`}
+              {activeSubcategory
+                ? `${totalProducts} productos en ${activeCategory?.name ?? 'esta categoría'} · ${activeSubcategory.name}`
+                : activeCategory
+                  ? `${totalProducts} productos en esta categoría`
+                  : `Añade, edita o elimina artículos de la tienda. (${totalProducts} productos)`}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
             <select
-              value={categoryFilter ?? ''}
-              onChange={(e) =>
-                onCategoryFilterChange(
-                  e.target.value === '' ? undefined : parseInt(e.target.value, 10)
-                )
-              }
-              aria-label="Categoría"
-              className="w-full sm:min-w-[260px] sm:flex-1 lg:flex-none px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
+              value={catalogSelectValue}
+              onChange={(e) => handleCatalogSelectChange(e.target.value)}
+              aria-label="Categoría o subcategoría"
+              className="w-full sm:flex-1 min-w-0 max-w-full sm:max-w-md px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
             >
               <option value="">Todas las categorías</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {categories.map((cat) => {
+                const subs = subcategories.filter((sub) => sub.category_id === cat.id);
+                if (subs.length === 0) {
+                  return (
+                    <option key={cat.id} value={`c-${cat.id}`}>
+                      {cat.name}
+                    </option>
+                  );
+                }
+                return (
+                  <optgroup key={cat.id} label={cat.name}>
+                    <option value={`c-${cat.id}`}>Toda {cat.name}</option>
+                    {subs.map((sub) => (
+                      <option key={sub.id} value={`s-${sub.id}`}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
             <Button
               size="sm"
-              className="w-full sm:w-auto shrink-0 font-black tracking-widest text-[10px] px-8 py-4 h-auto self-stretch sm:self-auto"
+              className="w-full sm:w-auto shrink-0 font-black tracking-widest text-[10px] px-8 py-4 h-auto"
               onClick={onCreate}
             >
               <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO

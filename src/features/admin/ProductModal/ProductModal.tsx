@@ -10,6 +10,7 @@ import type { ProductModalProps } from './types';
 export const ProductModal: React.FC<ProductModalProps> = ({
   product,
   initialCategoryId,
+  initialSubcategoryId,
   onClose,
   onSave,
   isSaving = false,
@@ -38,7 +39,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     handleRestoreOriginal,
     removeImage,
     handleSubmit
-  } = useProductForm(product, onSave, isSaving, initialCategoryId);
+  } = useProductForm(
+    product,
+    onSave,
+    isSaving,
+    initialCategoryId,
+    initialSubcategoryId
+  );
 
   return (
     <>

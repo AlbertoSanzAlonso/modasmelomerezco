@@ -90,6 +90,7 @@ export const AdminDashboard: React.FC = () => {
   const [isNewFilter, setIsNewFilter] = useState<boolean | undefined>(undefined);
   const [soldOutFilter, setSoldOutFilter] = useState<boolean | undefined>(undefined);
   const [categoryFilter, setCategoryFilter] = useState<number | undefined>(undefined);
+  const [subcategoryFilter, setSubcategoryFilter] = useState<number | undefined>(undefined);
   const [onOfferFilter, setOnOfferFilter] = useState<boolean | undefined>(undefined);
   const [labelFilter, setLabelFilter] = useState<number[]>([]);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -100,7 +101,16 @@ export const AdminDashboard: React.FC = () => {
   // Reset page when filters or search change
   useEffect(() => {
     setProductPage(1);
-  }, [productSearch, statusFilter, isNewFilter, soldOutFilter, categoryFilter, onOfferFilter, labelFilter]);
+  }, [
+    productSearch,
+    statusFilter,
+    isNewFilter,
+    soldOutFilter,
+    categoryFilter,
+    subcategoryFilter,
+    onOfferFilter,
+    labelFilter,
+  ]);
 
   useEffect(() => {
     setOrderPage(1);
@@ -139,6 +149,7 @@ export const AdminDashboard: React.FC = () => {
     customerSearch,
     soldOutFilter,
     categoryFilter,
+    subcategoryFilter,
     onOfferFilter,
     labelFilter,
     orderListFilter
@@ -719,12 +730,20 @@ export const AdminDashboard: React.FC = () => {
             isNewFilter={isNewFilter}
             soldOutFilter={soldOutFilter}
             categoryFilter={categoryFilter}
+            subcategoryFilter={subcategoryFilter}
             onOfferFilter={onOfferFilter}
             labelFilter={labelFilter}
             onStatusFilterChange={setStatusFilter}
             onIsNewFilterChange={setIsNewFilter}
             onSoldOutFilterChange={setSoldOutFilter}
-            onCategoryFilterChange={setCategoryFilter}
+            onCategoryFilterChange={(categoryId) => {
+              setCategoryFilter(categoryId);
+              setSubcategoryFilter(undefined);
+            }}
+            onSubcategoryFilterChange={(subcategoryId, categoryId) => {
+              setSubcategoryFilter(subcategoryId);
+              setCategoryFilter(categoryId);
+            }}
             onOnOfferFilterChange={setOnOfferFilter}
             onLabelFilterChange={setLabelFilter}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === products?.length ? [] : products?.map(p => p.product_id) || [])}
@@ -831,6 +850,9 @@ export const AdminDashboard: React.FC = () => {
         <ProductModal 
           product={editingProduct}
           initialCategoryId={editingProduct?.product_id ? undefined : categoryFilter}
+          initialSubcategoryId={
+            editingProduct?.product_id ? undefined : subcategoryFilter
+          }
           onClose={() => {
             if (saveMutation.isPending) return;
             setIsModalOpen(false);

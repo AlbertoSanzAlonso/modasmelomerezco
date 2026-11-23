@@ -8,7 +8,7 @@ import {
   sendOrderPaidEmails,
 } from '../src/lib/emails/adminNewOrderNotification.js';
 import { isOrderPaid } from '../src/lib/orderPayment.js';
-import { insertStockMovements } from '../src/lib/stockMovementLog.js';
+import { insertStockMovements, webSaleNote } from '../src/lib/stockMovementLog.js';
 
 export interface RedsysRawPayload {
   merchantParameters: string;
@@ -258,7 +258,6 @@ async function decrementVariantStock(
   const appliedDelta = resultingStock - previousStock;
 
   if (appliedDelta !== 0) {
-    const shortId = orderUuid?.split('-')[0]?.toUpperCase();
     await insertStockMovements(supabase, [
       {
         variant_id: variantId,
@@ -270,7 +269,7 @@ async function decrementVariantStock(
         delta: appliedDelta,
         resulting_stock: resultingStock,
         kind: 'web_sale',
-        note: shortId ? `Pedido #${shortId}` : 'Venta web',
+        note: orderUuid ? webSaleNote(orderUuid) : 'Venta web',
       },
     ]);
   }

@@ -343,7 +343,7 @@ export const DailySalesTab: React.FC = () => {
             Tienda
           </h2>
           <p className="text-gray-500 text-sm">
-            Registra ventas o entradas de stock. El historial se guarda.
+            Registra ventas o entradas de stock. El historial incluye las ventas online.
           </p>
         </div>
       </div>
@@ -784,9 +784,11 @@ export const DailySalesTab: React.FC = () => {
                       >
                         {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
                       </p>
-                      <p className="text-[10px] text-gray-400 font-bold tabular-nums">
-                        → {entry.resulting_stock}
-                      </p>
+                      {entry.resulting_stock != null && (
+                        <p className="text-[10px] text-gray-400 font-bold tabular-nums">
+                          → {entry.resulting_stock}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

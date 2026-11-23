@@ -47,7 +47,7 @@ description: >-
 - Pestaña admin **Tienda** (`DailySalesTab.tsx`, tab id `daily-sales`): buscar producto → talla/color → cantidad → **Venta** (−) o **Reposición** (+).
 - Usa `api.products.adjustStock(variant_id, delta, meta)` (delta ±; no crea pedidos). `decrementStock` es wrapper de `adjustStock` negativo.
 - Cada cambio queda en `stock_movements` (migración `stock_movements.sql`): venta tienda (`sale`), entrada (`entry`), venta web al cobrar (`web_sale`), ajuste de ficha (`adjustment`) y deshacer (`undo`).
-- El panel **Historial** lista todos los movimientos, con filtros Ventas / Entradas. **Deshacer último** solo si el movimiento más reciente es una venta o entrada de tienda.
+- El panel **Historial** lista todos los movimientos, con filtros Ventas / Entradas. Incluye las ventas online cobradas (también las anteriores al historial), con la etiqueta **Venta web** y el número de pedido. **Deshacer último** solo si el movimiento más reciente es una venta o entrada de tienda.
 - Si tras restar el producto queda a 0 uds en todas las variantes, marca `is_sold_out` automáticamente.
 
 ## Tienda y carrito

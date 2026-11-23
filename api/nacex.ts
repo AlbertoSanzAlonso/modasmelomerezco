@@ -257,6 +257,183 @@ function nacexLabelPath(codExp: string): string {
   return `/api/nacex?method=get_etiqueta&codExp=${encodeURIComponent(codExp)}`;
 }
 
+export interface NacexTrackingEvent {
+  date: string;
+  time: string;
+  status: string;
+  place: string;
+}
+
+export interface NacexShipmentStatus {
+  status: string;
+  detail: string;
+  date: string;
+  time: string;
+  code: string;
+  events: NacexTrackingEvent[];
+}
+
+function compactTrackingEvents(events: NacexTrackingEvent[]): NacexTrackingEvent[] {
+  const compact: NacexTrackingEvent[] = [];
+  for (const event of events) {
+    if (!event.date || !event.status) continue;
+    const previous = compact[compact.length - 1];
+    if (previous && previous.status === event.status && previous.place === event.place) {
+      previous.date = event.date;
+      previous.time = event.time;
+      continue;
+    }
+    compact.push({ ...event });
+  }
+  return compact;
+}
+
+export function shipmentStatusFromEvents(events: NacexTrackingEvent[], code = ''): NacexShipmentStatus | null {
+  const compact = compactTrackingEvents(events);
+  const latest = compact[compact.length - 1];
+  if (!latest) return null;
+  return {
+    status: latest.status,
+    detail: latest.place,
+    date: latest.date,
+    time: latest.time,
+    code,
+    events: compact,
+  };
+}
+
+/** getHistoricoExpedicion: fecha~hora~estado~agencia - lugar */
+export function parseNacexHistorico(raw: string): NacexTrackingEvent[] {
+  const text = raw.trim();
+  if (!text || /^ERROR\b/i.test(text)) return [];
+
+  return text.split('|').flatMap((chunk) => {
+    const [date, time, status, rest] = chunk.split('~').map((part) => part.trim());
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date || '') || !status) return [];
+    const dash = rest ? rest.indexOf(' - ') : -1;
+    const place = dash >= 0 ? rest.slice(dash + 3).trim() : (rest || '');
+    return [{ date, time: time || '', status, place }];
+  });
+}
+
+/** getEstadoExpedicion: codExp|fecha|hora|observación|estado|código|agencia|albarán */
+export function parseNacexEstadoExpedicion(raw: string): NacexShipmentStatus | null {
+  const text = raw.trim();
+  if (!text || /^ERROR\b/i.test(text)) return null;
+  const parts = text.split('|').map((part) => part.trim());
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(parts[1] || '')) return null;
+
+  const date = parts[1] || '';
+  const time = parts[2] || '';
+  const detail = parts[3] || '';
+  const status = parts[4] || 'Sin estado';
+  return {
+    status,
+    detail,
+    date,
+    time,
+    code: parts[5] || '',
+    events: [{ date, time, status, place: detail }],
+  };
+}
+
+/** Trozo historico_estados de getInfoEnvio (albarán agencia/número). */
+export function parseNacexInfoEnvioHistory(raw: string): NacexTrackingEvent[] {
+  const text = raw.trim();
+  if (!text || /^ERROR\b/i.test(text)) return [];
+  const marker = 'historico_estados|';
+  const index = text.toLowerCase().indexOf(marker);
+  if (index < 0) return [];
+
+  return text.slice(index + marker.length).split('|').flatMap((chunk) => {
+    const fields = chunk.split('~').map((part) => part.trim());
+    const stamp = fields[0] || '';
+    const match = stamp.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})/);
+    const status = fields[2] || '';
+    if (!match || !status) return [];
+    return [{
+      date: match[1],
+      time: match[2],
+      status,
+      place: fields[3] || '',
+    }];
+  });
+}
+
+async function nacexCall(user: string, pass: string, method: string, data: string): Promise<string> {
+  const response = await fetch(
+    `${NACEX_WS_URL}?method=${encodeURIComponent(method)}&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}&data=${encodeURIComponent(data)}`,
+  );
+  return (await decodeNacexResponse(response)).trim();
+}
+
+export async function fetchNacexShipmentStatus(
+  user: string,
+  pass: string,
+  tracking: string,
+): Promise<NacexShipmentStatus | { error: string }> {
+  const code = tracking.trim();
+  if (!code) return { error: 'Falta el código de expedición.' };
+
+  const albaran = code.match(/^(\d{1,5})\/(\d{1,12})$/);
+  if (albaran) {
+    const info = await nacexCall(user, pass, 'getInfoEnvio', `del=${albaran[1]}|num=${albaran[2]}|tipo=E`);
+    const fromAlbaran = shipmentStatusFromEvents(parseNacexInfoEnvioHistory(info));
+    if (fromAlbaran) return fromAlbaran;
+    if (/^ERROR\b/i.test(info)) return { error: formatNacexError(info) };
+  }
+
+  const historyRaw = await nacexCall(user, pass, 'getHistoricoExpedicion', `codExp=${code}`);
+  const fromHistory = shipmentStatusFromEvents(parseNacexHistorico(historyRaw));
+  if (fromHistory) return fromHistory;
+
+  const estadoRaw = await nacexCall(user, pass, 'getEstadoExpedicion', `expe_codigo=${code}`);
+  const fromEstado = parseNacexEstadoExpedicion(estadoRaw);
+  if (fromEstado) return fromEstado;
+
+  if (/^ERROR\b/i.test(historyRaw)) return { error: formatNacexError(historyRaw) };
+  if (/^ERROR\b/i.test(estadoRaw)) return { error: formatNacexError(estadoRaw) };
+  return { error: 'No se pudo consultar el estado del envío en Nacex.' };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderShipmentStatusHtml(status: NacexShipmentStatus): string {
+  const events = [...status.events].reverse().map((event) => {
+    const when = escapeHtml([event.date, event.time].filter(Boolean).join(' '));
+    const place = event.place ? ` · ${escapeHtml(event.place)}` : '';
+    return `<li><strong>${escapeHtml(event.status)}</strong>${place}<br><span>${when}</span></li>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Estado del envío Nacex</title>
+  <style>
+    body { font-family: Georgia, serif; margin: 2rem auto; max-width: 36rem; color: #1c1917; }
+    h1 { font-size: 1.4rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    p { color: #57534e; }
+    ol { padding-left: 1.2rem; }
+    li { margin: 0.8rem 0; }
+    span { color: #78716c; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(status.status)}</h1>
+  <p>${escapeHtml([status.detail, status.date, status.time].filter(Boolean).join(' · '))}</p>
+  <p>La etiqueta ya no está disponible. Este es el estado que devuelve Nacex.</p>
+  <ol>${events}</ol>
+</body>
+</html>`;
+}
+
 /** Guarda tracking con service role (el admin en cliente suele fallar por RLS). */
 async function saveOrderTracking(
   orderId: string,
@@ -349,6 +526,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const png = await fetchNacexLabelPng(NACEX_USER, NACEX_PASS, expeditionCode);
       if (!png?.length) {
+        const shipment = await fetchNacexShipmentStatus(NACEX_USER, NACEX_PASS, expeditionCode);
+        if (!('error' in shipment)) {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'private, no-store');
+          return res.status(200).send(renderShipmentStatusHtml(shipment));
+        }
         return res.status(404).json({ error: 'No se pudo obtener la etiqueta de Nacex.' });
       }
       res.setHeader('Content-Type', 'image/png');
@@ -362,17 +545,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // --- 4. SEGUIMIENTO ---
   if (method === 'get_tracking' || method === 'estado_envio') {
-    if (!canUseRealAPI) return res.status(200).json({ success: true, mode: 'mock' });
+    const expeditionCode = String(tracking || codExp || '').trim();
+    if (!expeditionCode) {
+      return res.status(400).json({ success: false, error: 'Falta el código de expedición Nacex.' });
+    }
+
+    if (!canUseRealAPI) {
+      return res.status(200).json({
+        success: true,
+        mode: 'mock',
+        status: 'Solicitada',
+        detail: '',
+        date: '',
+        time: '',
+        code: '',
+        events: [],
+      });
+    }
 
     try {
-      const response = await fetch(`${NACEX_WS_URL}?method=getAgencia&user=${encodeURIComponent(NACEX_USER)}&pass=${encodeURIComponent(NACEX_PASS)}&data=28001`);
-      const data = await decodeNacexResponse(response);
-      if (response.ok && !data.includes('ERROR')) {
-        return res.status(200).json({ success: true, mode: 'real' });
+      const shipment = await fetchNacexShipmentStatus(NACEX_USER, NACEX_PASS, expeditionCode);
+      if ('error' in shipment) {
+        return res.status(404).json({ success: false, error: shipment.error });
       }
-      return res.status(401).json({ success: false, error: 'Credenciales inválidas', detail: formatNacexError(data) });
-    } catch (err) {
-      return res.status(500).json({ success: false, error: 'Error de red' });
+      return res.status(200).json({ success: true, mode: 'real', ...shipment });
+    } catch {
+      return res.status(500).json({ success: false, error: 'Error al consultar el estado en Nacex.' });
     }
   }
 

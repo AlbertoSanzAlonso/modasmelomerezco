@@ -96,17 +96,10 @@ export const NacexLabelPreview: React.FC<{
   trackingNumber: string;
   autoload?: boolean;
 }> = ({ trackingNumber, autoload = false }) => {
-  const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'missing'>(autoload ? 'loading' : 'idle');
+  const [phase, setPhase] = useState<'checking' | 'available' | 'unavailable' | 'ready'>('checking');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
-    };
-  }, [imageUrl]);
-
-  useEffect(() => {
-    if (!autoload) return;
     let cancelled = false;
 
     api.shipping.fetchNacexLabel(undefined, trackingNumber).then((url) => {
@@ -114,12 +107,12 @@ export const NacexLabelPreview: React.FC<{
         if (url) URL.revokeObjectURL(url);
         return;
       }
-      if (url) {
-        setImageUrl(url);
-        setPhase('ready');
-      } else {
-        setPhase('missing');
+      if (!url) {
+        setPhase('unavailable');
+        return;
       }
+      setImageUrl(url);
+      setPhase(autoload ? 'ready' : 'available');
     });
 
     return () => {
@@ -127,36 +120,30 @@ export const NacexLabelPreview: React.FC<{
     };
   }, [autoload, trackingNumber]);
 
-  const consultLabel = async () => {
-    setPhase('loading');
-    const url = await api.shipping.fetchNacexLabel(undefined, trackingNumber);
-    if (url) {
-      setImageUrl((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return url;
-      });
-      setPhase('ready');
-      return;
-    }
-    setPhase('missing');
-  };
+  useEffect(() => {
+    return () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
+  }, [imageUrl]);
+
+  const label =
+    phase === 'checking'
+      ? 'CONSULTANDO ETIQUETA…'
+      : phase === 'unavailable'
+        ? 'ETIQUETA NO DISPONIBLE'
+        : 'VER ETIQUETA NACEX';
 
   return (
     <div className="w-full space-y-4">
       <Button
         className="w-full py-4 text-[10px] font-black tracking-widest italic"
-        onClick={consultLabel}
-        disabled={phase === 'loading'}
+        onClick={() => setPhase('ready')}
+        disabled={phase === 'checking' || phase === 'unavailable'}
       >
         <FileImage className="w-4 h-4 mr-2" />
-        {phase === 'loading' ? 'CONSULTANDO ETIQUETA…' : 'VER ETIQUETA NACEX'}
+        {label}
       </Button>
-      {phase === 'missing' && (
-        <p className="text-[10px] font-bold leading-relaxed text-gray-500">
-          Nacex ya no tiene la etiqueta de este envío. El estado queda en este pedido, sin salir del admin.
-        </p>
-      )}
-      {imageUrl && (
+      {phase === 'ready' && imageUrl && (
         <img
           src={imageUrl}
           alt="Etiqueta Nacex"

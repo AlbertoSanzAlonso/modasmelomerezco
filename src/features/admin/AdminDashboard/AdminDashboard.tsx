@@ -51,6 +51,9 @@ function refreshProductCaches(queryClient: QueryClient, product: Product) {
   queryClient.invalidateQueries({ queryKey: ['products-all-chat'] });
   queryClient.invalidateQueries({ queryKey: ['product', product.product_id] });
   queryClient.invalidateQueries({ queryKey: ['product-siblings'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-store-stock-search'] });
+  queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+  queryClient.invalidateQueries({ queryKey: ['stock-movements-latest'] });
 }
 
 export const AdminDashboard: React.FC = () => {
@@ -781,7 +784,14 @@ export const AdminDashboard: React.FC = () => {
           />
         )}
 
-        {activeTab === 'daily-sales' && <DailySalesTab />}
+        {activeTab === 'daily-sales' && (
+          <DailySalesTab
+            onEditProduct={(product) => {
+              setEditingProduct(product);
+              setIsModalOpen(true);
+            }}
+          />
+        )}
 
         {activeTab === 'orders' && (
           <OrdersTab 

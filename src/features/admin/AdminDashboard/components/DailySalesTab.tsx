@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Minus, Plus, Search, Undo2 } from 'lucide-react';
+import { Edit, Loader2, Minus, Plus, Search, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
+import { ResilientImage } from '@/components/ui/ResilientImage';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
-import { toDisplayImageUrl } from '@/lib/mediaUrl';
 import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import type { StockMovement, StockMovementFilter } from '@/lib/api/stockMovements';
 import {
   findVariant,
@@ -69,6 +70,27 @@ function formatMovementWhen(iso: string): string {
   return `${day} · ${time}`;
 }
 
+function StockThumb({
+  src,
+  className,
+}: {
+  src?: string | null;
+  className: string;
+}) {
+  const hasPhoto = Boolean(src?.trim());
+  return (
+    <div className={`${className} shrink-0 overflow-hidden border border-(--border-main) bg-black`}>
+      <ResilientImage
+        src={hasPhoto ? src : PRODUCT_PLACEHOLDER}
+        preferProxy={hasPhoto}
+        enableFallback={hasPhoto}
+        alt=""
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
+}
+
 function canUndoMovement(entry: StockMovement | null | undefined): entry is StockMovement {
   return Boolean(
     entry &&
@@ -77,7 +99,11 @@ function canUndoMovement(entry: StockMovement | null | undefined): entry is Stoc
   );
 }
 
-export const DailySalesTab: React.FC = () => {
+interface DailySalesTabProps {
+  onEditProduct?: (product: Product) => void;
+}
+
+export const DailySalesTab: React.FC<DailySalesTabProps> = ({ onEditProduct }) => {
   const queryClient = useQueryClient();
   const openModal = useCartStore((s) => s.openModal);
 
@@ -91,6 +117,7 @@ export const DailySalesTab: React.FC = () => {
   const [historyFilter, setHistoryFilter] = useState<StockMovementFilter>('all');
   const [historySearch, setHistorySearch] = useState('');
   const [debouncedHistorySearch, setDebouncedHistorySearch] = useState('');
+  const [openingEntryId, setOpeningEntryId] = useState<string | number | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
@@ -210,6 +237,75 @@ export const DailySalesTab: React.FC = () => {
         ),
       };
     });
+  };
+
+  const handleOpenProduct = async (entry: StockMovement) => {
+    if (!onEditProduct || openingEntryId) return;
+
+    setOpeningEntryId(entry.id);
+    try {
+      let productId = entry.product_id;
+
+      if (!productId && entry.variant_id != null) {
+        const { data: variantRow } = await supabase
+          .from('product_variants')
+          .select('product_id')
+          .eq('variant_id', entry.variant_id)
+          .maybeSingle();
+
+        if (variantRow?.product_id) {
+          productId = variantRow.product_id;
+        }
+      }
+
+      if (!productId && entry.product_name) {
+        const res = await api.products.getAll(
+          undefined,
+          undefined,
+          1,
+          5,
+          undefined,
+          entry.product_name
+        );
+        const match =
+          res.products.find(
+            (p) => p.name.trim().toLowerCase() === entry.product_name.trim().toLowerCase()
+          ) || res.products[0];
+        if (match?.product_id) {
+          productId = match.product_id;
+        }
+      }
+
+      if (!productId) {
+        openModal({
+          title: 'Producto no disponible',
+          message: `No se pudo encontrar la referencia del producto "${entry.product_name || ''}".`,
+          type: 'warning',
+        });
+        return;
+      }
+
+      const product = await api.products.getById(productId);
+      if (!product) {
+        openModal({
+          title: 'Producto no encontrado',
+          message: `El producto "${entry.product_name || ''}" no se encuentra o ha sido eliminado.`,
+          type: 'warning',
+        });
+        return;
+      }
+
+      onEditProduct(product);
+    } catch (err) {
+      console.error('Error al abrir producto desde historial:', err);
+      openModal({
+        title: 'Error al abrir producto',
+        message: `No se pudo cargar la información de "${entry.product_name || 'el producto'}". Puede haber sido eliminado.`,
+        type: 'error',
+      });
+    } finally {
+      setOpeningEntryId(null);
+    }
   };
 
   const adjustMutation = useMutation({
@@ -382,10 +478,9 @@ export const DailySalesTab: React.FC = () => {
                       onClick={() => selectProduct(p)}
                       className="w-full flex items-center gap-3 p-3 text-left hover:bg-primary/5 transition-colors"
                     >
-                      <img
-                        src={toDisplayImageUrl(p.images?.[0]) || PRODUCT_PLACEHOLDER}
-                        alt=""
-                        className="w-12 h-12 object-cover rounded-xl bg-(--bg-main)"
+                      <StockThumb
+                        src={p.images?.[0]}
+                        className="w-12 h-12 rounded-xl"
                       />
                       <div className="min-w-0">
                         <p className="text-sm font-bold uppercase italic truncate">
@@ -405,26 +500,41 @@ export const DailySalesTab: React.FC = () => {
           {selectedProduct ? (
             <div className="p-6 sm:p-8 space-y-6">
               <div className="flex items-center gap-4">
-                <img
-                  src={toDisplayImageUrl(selectedProduct.images?.[0]) || PRODUCT_PLACEHOLDER}
-                  alt=""
-                  className="w-16 h-16 object-cover rounded-2xl bg-(--bg-main)"
+                <StockThumb
+                  src={selectedProduct.images?.[0]}
+                  className="w-16 h-16 rounded-2xl"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-black uppercase italic text-sm truncate">
                     {selectedProduct.name}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedProduct(null);
-                      setSelectedSize('');
-                      setSelectedColorId(null);
-                    }}
-                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline mt-1"
-                  >
-                    Cambiar producto
-                  </button>
+                  <div className="flex items-center gap-3 mt-1">
+                    {onEditProduct && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onEditProduct(selectedProduct)}
+                          className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
+                          title="Editar producto en la modal de productos"
+                        >
+                          <Edit className="w-3 h-3" />
+                          Editar pieza
+                        </button>
+                        <span className="text-gray-300">·</span>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedProduct(null);
+                        setSelectedSize('');
+                        setSelectedColorId(null);
+                      }}
+                      className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                    >
+                      Cambiar producto
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -743,20 +853,40 @@ export const DailySalesTab: React.FC = () => {
                 const colorName = entry.color_name
                   ? getColorDisplayName(entry.color_name, entry.product_name)
                   : null;
+                const isOpening = openingEntryId === entry.id;
                 return (
                   <div
                     key={entry.id}
-                    className="p-4 sm:p-5 flex items-center gap-3"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenProduct(entry)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenProduct(entry);
+                      }
+                    }}
+                    className="p-4 sm:p-5 flex items-center gap-3 hover:bg-primary/5 transition-colors cursor-pointer group select-none"
+                    title={`Abrir "${entry.product_name || 'producto'}" en la modal de productos`}
                   >
-                    <img
-                      src={toDisplayImageUrl(entry.image_url) || PRODUCT_PLACEHOLDER}
-                      alt=""
-                      className="w-12 h-12 object-cover rounded-xl bg-(--bg-main) shrink-0"
-                    />
+                    <div className="relative shrink-0">
+                      <StockThumb
+                        src={entry.image_url}
+                        className="w-12 h-12 rounded-xl group-hover:ring-2 group-hover:ring-primary/40 transition-all"
+                      />
+                      {isOpening && (
+                        <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center z-10">
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold uppercase italic truncate">
-                        {entry.product_name || 'Producto'}
-                      </p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-sm font-bold uppercase italic truncate text-(--text-main) group-hover:text-primary transition-colors">
+                          {entry.product_name || 'Producto'}
+                        </p>
+                        <Edit className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary shrink-0 transition-colors" />
+                      </div>
                       <p className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
                         {formatVariantLabel(entry.size, colorName)}
                       </p>

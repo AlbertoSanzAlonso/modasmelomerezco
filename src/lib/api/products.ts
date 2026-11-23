@@ -1014,15 +1014,7 @@ export const products = {
 
     if (error) throw error;
 
-    // 2. Create variants if any
-    if (variants && variants.length > 0) {
-      await syncProductVariants(product.product_id, variants, {
-        movementNote: 'Alta de producto',
-      });
-      await syncSoldOutFromStock(product.product_id);
-    }
-
-    // 3. Create images if any
+    // Imágenes antes que las variantes: el historial de stock guarda la miniatura.
     if (images && images.length > 0) {
       const imageRecords = toProductImageRecords(
         product.product_id,
@@ -1034,6 +1026,13 @@ export const products = {
         .from('product_images')
         .insert(imageRecords);
       assertDbError(imagesError, 'product_images insert');
+    }
+
+    if (variants && variants.length > 0) {
+      await syncProductVariants(product.product_id, variants, {
+        movementNote: 'Alta de producto',
+      });
+      await syncSoldOutFromStock(product.product_id);
     }
 
     // 4. Create color associations if any
@@ -1087,17 +1086,7 @@ export const products = {
 
     if (error) throw error;
 
-    // 2. Update variants if provided
-    if (variants) {
-      await syncProductVariants(product_id, variants, {
-        ..._syncOptions,
-        movementNote: _syncOptions?.movementNote || 'Edición de inventario',
-      });
-      // Al reponer stock editando el producto, quitar cartel Agotado (y viceversa)
-      await syncSoldOutFromStock(product_id);
-    }
-
-    // 3. Update images only when explicitly provided (never from restock/agotado)
+    // Fotos antes que el historial de variantes, para que la miniatura sea la nueva.
     if (Object.prototype.hasOwnProperty.call(updates, 'images') && images) {
       const { error: deleteImagesError } = await supabase
         .from('product_images')
@@ -1116,6 +1105,15 @@ export const products = {
           .insert(imageRecords);
         assertDbError(insertImagesError, 'product_images insert');
       }
+    }
+
+    if (variants) {
+      await syncProductVariants(product_id, variants, {
+        ..._syncOptions,
+        movementNote: _syncOptions?.movementNote || 'Edición de inventario',
+      });
+      // Al reponer stock editando el producto, quitar cartel Agotado (y viceversa)
+      await syncSoldOutFromStock(product_id);
     }
 
     // 4. Update colors if provided

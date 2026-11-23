@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { getColorDisplayName } from '../productVariants';
 import {
   isMissingStockMovementsTable,
   mergeStockHistory,
@@ -89,6 +90,81 @@ async function loadPaidOrders(): Promise<OnlineSaleOrder[]> {
   return [...rows.values()];
 }
 
+interface ProductImageRow {
+  product_id: string;
+  image_url: string | null;
+  orden: number | null;
+  colors?: { name?: string | null } | { name?: string | null }[] | null;
+}
+
+function joinedColorName(row: ProductImageRow): string {
+  const color = Array.isArray(row.colors) ? row.colors[0] : row.colors;
+  return color?.name?.trim() || '';
+}
+
+function pickProductImage(
+  images: ProductImageRow[],
+  colorName: string | null,
+  productName: string
+): string | null {
+  const usable = images
+    .filter((image) => image.image_url?.trim())
+    .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  if (usable.length === 0) return null;
+
+  const wanted = colorName?.trim().toLowerCase();
+  if (wanted) {
+    const wantedDisplay = getColorDisplayName(colorName || '', productName).trim().toLowerCase();
+    const match = usable.find((image) => {
+      const stored = joinedColorName(image);
+      if (!stored) return false;
+      const storedDisplay = getColorDisplayName(stored, productName).trim().toLowerCase();
+      return stored.toLowerCase() === wanted || storedDisplay === wantedDisplay;
+    });
+    if (match?.image_url) return match.image_url.trim();
+  }
+
+  return usable[0].image_url?.trim() || null;
+}
+
+/** Rellena miniaturas que se guardaron antes de tener foto (altas antiguas). */
+async function fillMissingMovementImages(
+  movements: StockMovement[]
+): Promise<StockMovement[]> {
+  const productIds = [
+    ...new Set(
+      movements
+        .filter((movement) => !movement.image_url?.trim() && movement.product_id)
+        .map((movement) => movement.product_id as string)
+    ),
+  ];
+  if (productIds.length === 0) return movements;
+
+  const { data, error } = await supabase
+    .from('product_images')
+    .select('product_id, image_url, orden, colors(name)')
+    .in('product_id', productIds);
+
+  if (error || !data?.length) return movements;
+
+  const byProduct = new Map<string, ProductImageRow[]>();
+  for (const row of data as ProductImageRow[]) {
+    const list = byProduct.get(row.product_id) ?? [];
+    list.push(row);
+    byProduct.set(row.product_id, list);
+  }
+
+  return movements.map((movement) => {
+    if (movement.image_url?.trim() || !movement.product_id) return movement;
+    const imageUrl = pickProductImage(
+      byProduct.get(movement.product_id) ?? [],
+      movement.color_name,
+      movement.product_name
+    );
+    return imageUrl ? { ...movement, image_url: imageUrl } : movement;
+  });
+}
+
 export const stockMovements = {
   list: async (params?: {
     filter?: StockMovementFilter;
@@ -111,9 +187,10 @@ export const stockMovements = {
       ? onlineSalesMissingFromHistory(movements, orders, search)
       : [];
     const merged = mergeStockHistory(movements, online);
+    const page = await fillMissingMovementImages(merged.slice(offset, offset + limit));
 
     return {
-      movements: merged.slice(offset, offset + limit),
+      movements: page,
       total: merged.length,
       unavailable: unavailable && merged.length === 0,
     };

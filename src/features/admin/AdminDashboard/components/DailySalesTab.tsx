@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Minus, Plus, Search, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ColorSwatch } from '@/components/ui/ColorSwatch';
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 import { toDisplayImageUrl } from '@/lib/mediaUrl';
 import { api } from '@/lib/api';
+import type { StockMovement, StockMovementFilter } from '@/lib/api/stockMovements';
 import {
   findVariant,
   formatVariantLabel,
@@ -19,18 +20,15 @@ import {
 import { useCartStore } from '@/store/useCartStore';
 import type { Product, ProductVariant } from '@/types';
 
-interface StockHistoryEntry {
-  id: string;
-  productId: string;
-  productName: string;
-  imageUrl?: string;
-  variantId: string;
-  size: string;
-  colorName: string | null;
-  delta: number;
-  resultingStock: number;
-  at: number;
-}
+const HISTORY_PAGE = 30;
+
+const KIND_LABEL: Record<StockMovement['kind'], string> = {
+  sale: 'Venta',
+  web_sale: 'Venta web',
+  entry: 'Entrada',
+  adjustment: 'Ajuste',
+  undo: 'Deshacer',
+};
 
 function variantDbId(v: ProductVariant): string | null {
   if (v.variant_id != null) return String(v.variant_id);
@@ -43,6 +41,40 @@ function invalidateStockQueries(queryClient: ReturnType<typeof useQueryClient>) 
   queryClient.invalidateQueries({ queryKey: ['products'] });
   queryClient.invalidateQueries({ queryKey: ['product'] });
   queryClient.invalidateQueries({ queryKey: ['admin-store-stock-search'] });
+  queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+  queryClient.invalidateQueries({ queryKey: ['stock-movements-latest'] });
+}
+
+function kindBadgeClass(kind: StockMovement['kind']): string {
+  if (kind === 'entry') return 'text-emerald-700 bg-emerald-500/10';
+  if (kind === 'undo') return 'text-amber-700 bg-amber-500/10';
+  if (kind === 'adjustment') return 'text-gray-600 bg-gray-500/10';
+  return 'text-red-600 bg-red-500/10';
+}
+
+function formatMovementWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return `Hoy · ${time}`;
+  if (date.toDateString() === yesterday.toDateString()) return `Ayer · ${time}`;
+  const day = date.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  return `${day} · ${time}`;
+}
+
+function canUndoMovement(entry: StockMovement | null | undefined): entry is StockMovement {
+  return Boolean(
+    entry &&
+      entry.variant_id != null &&
+      (entry.kind === 'sale' || entry.kind === 'entry')
+  );
 }
 
 export const DailySalesTab: React.FC = () => {
@@ -55,13 +87,20 @@ export const DailySalesTab: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [history, setHistory] = useState<StockHistoryEntry[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<StockMovementFilter>('all');
+  const [historySearch, setHistorySearch] = useState('');
+  const [debouncedHistorySearch, setDebouncedHistorySearch] = useState('');
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
     return () => window.clearTimeout(t);
   }, [searchTerm]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedHistorySearch(historySearch.trim()), 300);
+    return () => window.clearTimeout(t);
+  }, [historySearch]);
 
   useEffect(() => {
     if (!statusMessage) return;
@@ -77,6 +116,33 @@ export const DailySalesTab: React.FC = () => {
   });
 
   const searchResults = searchData?.products ?? [];
+
+  const historyQuery = useInfiniteQuery({
+    queryKey: ['stock-movements', historyFilter, debouncedHistorySearch],
+    queryFn: ({ pageParam }) =>
+      api.stockMovements.list({
+        filter: historyFilter,
+        search: debouncedHistorySearch,
+        limit: HISTORY_PAGE,
+        offset: pageParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _pages, lastOffset) => {
+      const loaded = lastOffset + lastPage.movements.length;
+      if (lastPage.movements.length < HISTORY_PAGE || loaded >= lastPage.total) return undefined;
+      return loaded;
+    },
+  });
+
+  const latestQuery = useQuery({
+    queryKey: ['stock-movements-latest'],
+    queryFn: () => api.stockMovements.latest(),
+  });
+
+  const history = historyQuery.data?.pages.flatMap((page) => page.movements) ?? [];
+  const historyUnavailable = historyQuery.data?.pages.some((page) => page.unavailable) ?? false;
+  const historyTotal = historyQuery.data?.pages[0]?.total ?? 0;
+  const latestEntry = latestQuery.data ?? null;
 
   const variants = selectedProduct?.variants ?? [];
   const oneSizeOnly = isOneSizeOnlyProduct(variants);
@@ -154,24 +220,27 @@ export const DailySalesTab: React.FC = () => {
     }: {
       variantId: string;
       delta: number;
-      meta: Omit<StockHistoryEntry, 'id' | 'delta' | 'resultingStock' | 'at'>;
+      meta: {
+        productName: string;
+        imageUrl?: string;
+        size: string;
+        colorName: string | null;
+        kind: 'sale' | 'entry';
+        note: string;
+      };
     }) => {
-      const resultingStock = await api.products.adjustStock(variantId, delta);
-      return { resultingStock, delta, variantId, meta };
+      const resultingStock = await api.products.adjustStock(variantId, delta, {
+        kind: meta.kind,
+        note: meta.note,
+        productName: meta.productName,
+        imageUrl: meta.imageUrl,
+        size: meta.size,
+        colorName: meta.colorName,
+      });
+      return { resultingStock, delta, variantId };
     },
-    onSuccess: ({ resultingStock, delta, variantId, meta }) => {
+    onSuccess: ({ resultingStock, delta, variantId }) => {
       patchLocalStock(variantId, resultingStock);
-      setHistory((prev) => [
-        {
-          id: `${Date.now()}-${variantId}-${delta}`,
-          ...meta,
-          variantId,
-          delta,
-          resultingStock,
-          at: Date.now(),
-        },
-        ...prev,
-      ].slice(0, 30));
       setStatusMessage(
         delta > 0
           ? `+${delta} → ${resultingStock} uds`
@@ -189,19 +258,29 @@ export const DailySalesTab: React.FC = () => {
   });
 
   const undoMutation = useMutation({
-    mutationFn: async (entry: StockHistoryEntry) => {
+    mutationFn: async (entry: StockMovement) => {
+      if (entry.variant_id == null) {
+        throw new Error('Ese movimiento ya no tiene variante asociada.');
+      }
       const reverseDelta = -entry.delta;
       const resultingStock = await api.products.adjustStock(
-        entry.variantId,
-        reverseDelta
+        String(entry.variant_id),
+        reverseDelta,
+        {
+          kind: 'undo',
+          note: 'Deshacer',
+          productName: entry.product_name,
+          imageUrl: entry.image_url,
+          size: entry.size,
+          colorName: entry.color_name,
+        }
       );
-      return { entry, resultingStock, reverseDelta };
+      return { entry, resultingStock };
     },
     onSuccess: ({ entry, resultingStock }) => {
-      if (selectedProduct?.product_id === entry.productId) {
-        patchLocalStock(entry.variantId, resultingStock);
+      if (selectedProduct?.product_id === entry.product_id) {
+        patchLocalStock(String(entry.variant_id), resultingStock);
       }
-      setHistory((prev) => prev.filter((h) => h.id !== entry.id));
       setStatusMessage(`Deshecho → ${resultingStock} uds`);
       invalidateStockQueries(queryClient);
     },
@@ -242,18 +321,19 @@ export const DailySalesTab: React.FC = () => {
       variantId: activeVariantId,
       delta,
       meta: {
-        productId: selectedProduct.product_id,
         productName: selectedProduct.name,
         imageUrl: selectedProduct.images?.[0],
         size: normalizeSize(activeVariant.size),
         colorName: requiresColor ? colorLabel(activeVariant) : null,
+        kind: delta < 0 ? 'sale' : 'entry',
+        note: delta < 0 ? 'Venta en tienda' : 'Entrada en tienda',
       },
     });
   };
 
   const busy = adjustMutation.isPending || undoMutation.isPending;
   const canAdjust = Boolean(activeVariant && activeVariantId) && !busy;
-  const latestEntry = history[0] ?? null;
+  const undoTarget = canUndoMovement(latestEntry) ? latestEntry : null;
 
   return (
     <>
@@ -263,7 +343,7 @@ export const DailySalesTab: React.FC = () => {
             Tienda
           </h2>
           <p className="text-gray-500 text-sm">
-            Registra ventas o reposición de stock al momento.
+            Registra ventas o entradas de stock. El historial se guarda.
           </p>
         </div>
       </div>
@@ -570,78 +650,163 @@ export const DailySalesTab: React.FC = () => {
           )}
         </div>
 
-        <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 sm:p-8 border-b border-(--border-main) flex justify-between items-center gap-3">
-            <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
-              Últimos cambios
-            </h3>
-            {latestEntry && (
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2 text-[10px] h-9 px-3"
-                disabled={busy}
-                isLoading={undoMutation.isPending}
-                onClick={() => undoMutation.mutate(latestEntry)}
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-                Deshacer último
-              </Button>
+        <div className="bg-(--bg-card) border border-(--border-main) rounded-3xl shadow-sm overflow-hidden flex flex-col min-h-[420px]">
+          <div className="p-6 sm:p-8 border-b border-(--border-main) space-y-4">
+            <div className="flex justify-between items-center gap-3">
+              <div>
+                <h3 className="font-black uppercase tracking-widest text-xs text-(--text-main)">
+                  Historial
+                </h3>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                  {historyQuery.isLoading
+                    ? 'Cargando…'
+                    : historyUnavailable
+                      ? 'Pendiente de activar'
+                      : `${historyTotal} movimiento${historyTotal === 1 ? '' : 's'}`}
+                </p>
+              </div>
+              {undoTarget && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2 text-[10px] h-9 px-3"
+                  disabled={busy}
+                  isLoading={undoMutation.isPending}
+                  onClick={() => undoMutation.mutate(undoTarget)}
+                  title={`Deshacer ${undoTarget.product_name}`}
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  Deshacer último
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['all', 'Todos'],
+                  ['sales', 'Ventas'],
+                  ['entries', 'Entradas'],
+                ] as const
+              ).map(([id, label]) => {
+                const active = historyFilter === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setHistoryFilter(id)}
+                    className={`px-3 py-2 text-[10px] font-black uppercase tracking-widest border rounded-xl transition-all ${
+                      active
+                        ? 'bg-secondary text-white border-secondary'
+                        : 'border-(--border-main) text-(--text-main) hover:border-secondary/40'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="search"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Buscar en el historial…"
+                className="w-full pl-11 pr-4 py-3 bg-(--bg-main) border border-(--border-main) rounded-2xl text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 divide-y divide-(--border-main) max-h-[640px] overflow-y-auto">
+            {historyQuery.isLoading ? (
+              <div className="p-12 flex justify-center text-primary">
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </div>
+            ) : historyQuery.isError ? (
+              <div className="p-12 text-center text-red-500 text-xs font-bold uppercase italic">
+                No se pudo cargar el historial
+              </div>
+            ) : historyUnavailable ? (
+              <div className="p-12 text-center text-gray-500 text-xs font-bold uppercase italic leading-relaxed">
+                Falta activar el historial en la base de datos
+              </div>
+            ) : history.length === 0 ? (
+              <div className="p-12 text-center text-gray-500 text-xs font-bold uppercase italic leading-relaxed">
+                {debouncedHistorySearch
+                  ? 'Sin movimientos con ese nombre'
+                  : 'Las ventas y las entradas aparecerán aquí'}
+              </div>
+            ) : (
+              history.map((entry) => {
+                const colorName = entry.color_name
+                  ? getColorDisplayName(entry.color_name, entry.product_name)
+                  : null;
+                return (
+                  <div
+                    key={entry.id}
+                    className="p-4 sm:p-5 flex items-center gap-3"
+                  >
+                    <img
+                      src={toDisplayImageUrl(entry.image_url) || PRODUCT_PLACEHOLDER}
+                      alt=""
+                      className="w-12 h-12 object-cover rounded-xl bg-(--bg-main) shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold uppercase italic truncate">
+                        {entry.product_name || 'Producto'}
+                      </p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
+                        {formatVariantLabel(entry.size, colorName)}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${kindBadgeClass(entry.kind)}`}
+                        >
+                          {KIND_LABEL[entry.kind] ?? entry.kind}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-bold">
+                          {formatMovementWhen(entry.created_at)}
+                        </span>
+                      </div>
+                      {entry.note && (
+                        <p className="text-[10px] text-gray-400 mt-1 truncate">
+                          {entry.note}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p
+                        className={`text-sm font-black tabular-nums ${
+                          entry.delta > 0 ? 'text-emerald-600' : 'text-red-500'
+                        }`}
+                      >
+                        {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-bold tabular-nums">
+                        → {entry.resulting_stock}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
 
-          <div className="flex-1 divide-y divide-(--border-main) min-h-[200px]">
-            {history.length === 0 ? (
-              <div className="p-12 text-center text-gray-500 text-xs font-bold uppercase italic">
-                Los ajustes de esta sesión aparecerán aquí
-              </div>
-            ) : (
-              history.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className="p-4 sm:p-5 flex items-center gap-3"
-                >
-                  <img
-                    src={toDisplayImageUrl(entry.imageUrl) || PRODUCT_PLACEHOLDER}
-                    alt=""
-                    className="w-12 h-12 object-cover rounded-xl bg-(--bg-main) shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold uppercase italic truncate">
-                      {entry.productName}
-                    </p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                      {formatVariantLabel(entry.size, entry.colorName)}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p
-                      className={`text-sm font-black tabular-nums ${
-                        entry.delta > 0 ? 'text-emerald-600' : 'text-red-500'
-                      }`}
-                    >
-                      {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
-                    </p>
-                    <p className="text-[10px] text-gray-400 font-bold tabular-nums">
-                      → {entry.resultingStock}
-                    </p>
-                  </div>
-                  {index === 0 && (
-                    <button
-                      type="button"
-                      onClick={() => undoMutation.mutate(entry)}
-                      disabled={busy}
-                      className="p-2 text-gray-400 hover:text-primary transition-colors disabled:opacity-40"
-                      aria-label="Deshacer este cambio"
-                      title="Deshacer"
-                    >
-                      <Undo2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+          {historyQuery.hasNextPage && (
+            <div className="p-4 border-t border-(--border-main)">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full text-[10px]"
+                isLoading={historyQuery.isFetchingNextPage}
+                onClick={() => historyQuery.fetchNextPage()}
+              >
+                Cargar más
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </>

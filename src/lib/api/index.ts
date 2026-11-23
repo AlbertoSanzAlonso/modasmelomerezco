@@ -18,6 +18,7 @@ import { colors } from './colors';
 import { labels } from './labels';
 import { discountCodes } from './discountCodes';
 import { analytics } from './analytics';
+import { stockMovements } from './stockMovements';
 
 export const api = {
   products,
@@ -39,6 +40,7 @@ export const api = {
   labels,
   discountCodes,
   analytics,
+  stockMovements,
 };
 
 

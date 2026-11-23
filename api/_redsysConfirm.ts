@@ -8,6 +8,7 @@ import {
   sendOrderPaidEmails,
 } from '../src/lib/emails/adminNewOrderNotification.js';
 import { isOrderPaid } from '../src/lib/orderPayment.js';
+import { insertStockMovements } from '../src/lib/stockMovementLog.js';
 
 export interface RedsysRawPayload {
   merchantParameters: string;
@@ -162,58 +163,120 @@ export function verifyRedsysSignature(
   return false;
 }
 
+function joinedProductName(row: {
+  products?: { name?: string | null } | { name?: string | null }[] | null;
+}): string {
+  const product = Array.isArray(row.products) ? row.products[0] : row.products;
+  return product?.name?.trim() || '';
+}
+
+function joinedProductImage(row: {
+  products?:
+    | { product_images?: { image_url?: string | null; orden?: number | null }[] | null }
+    | { product_images?: { image_url?: string | null; orden?: number | null }[] | null }[]
+    | null;
+}): string | null {
+  const product = Array.isArray(row.products) ? row.products[0] : row.products;
+  const images = product?.product_images;
+  if (!images?.length) return null;
+  const sorted = [...images].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  return sorted.find((img) => img.image_url?.trim())?.image_url?.trim() || null;
+}
+
+function joinedColorName(row: {
+  colors?: { name?: string | null } | { name?: string | null }[] | null;
+}): string | null {
+  const color = Array.isArray(row.colors) ? row.colors[0] : row.colors;
+  return color?.name?.trim() || null;
+}
+
+async function markSoldOutIfEmpty(
+  supabase: SupabaseClient,
+  productId: string
+): Promise<void> {
+  const { data: allVariants } = await supabase
+    .from('product_variants')
+    .select('stock')
+    .eq('product_id', productId);
+
+  const totalStock = (allVariants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
+  if (totalStock <= 0) {
+    await supabase
+      .from('products')
+      .update({ is_sold_out: true })
+      .eq('product_id', productId);
+  }
+}
+
 async function decrementVariantStock(
   supabase: SupabaseClient,
   variantId: string | number,
-  quantity: number
+  quantity: number,
+  orderUuid?: string
 ): Promise<void> {
   if (!variantId || !Number.isFinite(quantity) || quantity <= 0) return;
 
+  const { data: before, error: fetchError } = await supabase
+    .from('product_variants')
+    .select('stock, product_id, size, products(name, product_images(image_url, orden)), colors(name)')
+    .eq('variant_id', variantId)
+    .maybeSingle();
+
+  if (fetchError || !before) {
+    console.error('[redsys-confirm] No se pudo leer variante para descontar stock:', variantId, fetchError);
+    return;
+  }
+
+  const previousStock = before.stock || 0;
   const { error: rpcError } = await supabase.rpc('decrement_stock', {
     p_variant_id: variantId,
     p_quantity: quantity,
   });
 
-  if (!rpcError) return;
+  if (rpcError) {
+    console.warn('[redsys-confirm] RPC decrement_stock falló, usando actualización directa:', rpcError.message);
 
-  // Fallback directo si el RPC no está disponible o falla
-  console.warn('[redsys-confirm] RPC decrement_stock falló, usando actualización directa:', rpcError.message);
+    const newStock = Math.max(0, previousStock - Math.trunc(quantity));
+    const { error: updateError } = await supabase
+      .from('product_variants')
+      .update({ stock: newStock })
+      .eq('variant_id', variantId);
 
-  const { data: variant, error: fetchError } = await supabase
+    if (updateError) {
+      console.error('[redsys-confirm] Error actualizando stock de variante:', variantId, updateError);
+      return;
+    }
+  }
+
+  const { data: after } = await supabase
     .from('product_variants')
-    .select('stock, product_id')
+    .select('stock')
     .eq('variant_id', variantId)
     .maybeSingle();
 
-  if (fetchError || !variant) {
-    console.error('[redsys-confirm] No se pudo leer variante para descontar stock:', variantId, fetchError);
-    return;
+  const resultingStock = after?.stock ?? previousStock;
+  const appliedDelta = resultingStock - previousStock;
+
+  if (appliedDelta !== 0) {
+    const shortId = orderUuid?.split('-')[0]?.toUpperCase();
+    await insertStockMovements(supabase, [
+      {
+        variant_id: variantId,
+        product_id: before.product_id,
+        product_name: joinedProductName(before),
+        image_url: joinedProductImage(before),
+        size: before.size,
+        color_name: joinedColorName(before),
+        delta: appliedDelta,
+        resulting_stock: resultingStock,
+        kind: 'web_sale',
+        note: shortId ? `Pedido #${shortId}` : 'Venta web',
+      },
+    ]);
   }
 
-  const newStock = Math.max(0, (variant.stock || 0) - Math.trunc(quantity));
-  const { error: updateError } = await supabase
-    .from('product_variants')
-    .update({ stock: newStock })
-    .eq('variant_id', variantId);
-
-  if (updateError) {
-    console.error('[redsys-confirm] Error actualizando stock de variante:', variantId, updateError);
-    return;
-  }
-
-  if (newStock === 0 && variant.product_id) {
-    const { data: allVariants } = await supabase
-      .from('product_variants')
-      .select('stock')
-      .eq('product_id', variant.product_id);
-
-    const totalStock = (allVariants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
-    if (totalStock <= 0) {
-      await supabase
-        .from('products')
-        .update({ is_sold_out: true })
-        .eq('product_id', variant.product_id);
-    }
+  if (resultingStock === 0 && before.product_id) {
+    await markSoldOutIfEmpty(supabase, before.product_id);
   }
 }
 
@@ -391,7 +454,7 @@ export async function processRedsysPayment(
     const variantId = (item as OrderItem & { variant_id?: string | number }).variant_id;
     const qty = Number(item.quantity || 0);
     if (variantId && qty > 0) {
-      await decrementVariantStock(supabase, variantId, qty);
+      await decrementVariantStock(supabase, variantId, qty, orderUuid);
     }
   }
 

@@ -13,6 +13,7 @@ import {
 } from '../productVariants';
 import { isProductUuid, slugifyProductName } from '../productSlug';
 import { toDisplayImageUrl, toStoredImageUrl } from '../mediaUrl';
+import { insertStockMovements, type StockMovementKind } from '../stockMovementLog';
 import type { Color, ProductVariant } from '@/types';
 
 const PRODUCT_SELECT_BASE =
@@ -204,6 +205,20 @@ type ExistingVariantRow = {
   variant_id: number;
   size: string;
   color_id: number | null;
+  stock: number;
+};
+
+type VariantWriteResult = {
+  variantId: number;
+  previousStock: number;
+};
+
+type PendingStockMovement = {
+  variantId: number | null;
+  size: string;
+  colorId: number | null;
+  previousStock: number;
+  nextStock: number;
 };
 
 function normalizeColorId(colorId: unknown): number | null {
@@ -276,10 +291,10 @@ async function updateVariantRow(
   assertDbError(error, 'product_variants update');
 }
 
-async function updateVariantByNaturalKey(row: VariantDbRow): Promise<boolean> {
+async function updateVariantByNaturalKey(row: VariantDbRow): Promise<VariantWriteResult | null> {
   const { data, error: fetchError } = await supabase
     .from('product_variants')
-    .select('variant_id, size, color_id')
+    .select('variant_id, size, color_id, stock')
     .eq('product_id', row.product_id);
 
   assertDbError(fetchError, 'product_variants select');
@@ -290,34 +305,45 @@ async function updateVariantByNaturalKey(row: VariantDbRow): Promise<boolean> {
       variantSizeColorKey(existing.size, existing.color_id ?? null) === key
   );
 
-  if (!match) return false;
+  if (!match) return null;
 
   await updateVariantRow(match.variant_id, row);
-  return true;
+  return { variantId: match.variant_id, previousStock: match.stock ?? 0 };
 }
 
-async function insertVariantRow(row: VariantDbRow): Promise<void> {
-  const { error } = await supabase.from('product_variants').insert([row]);
+async function insertVariantRow(row: VariantDbRow): Promise<VariantWriteResult | null> {
+  const { data, error } = await supabase
+    .from('product_variants')
+    .insert([row])
+    .select('variant_id')
+    .maybeSingle();
 
-  if (!error) return;
+  if (!error && data?.variant_id != null) {
+    return { variantId: data.variant_id, previousStock: 0 };
+  }
 
-  if (error.code === '23505') {
+  if (error?.code === '23505') {
     if (isVariantIdConflict(error)) {
       let nextId = await getNextVariantId();
       for (let attempt = 0; attempt < 5; attempt += 1) {
-        const { error: retryError } = await supabase
+        const { data: retryData, error: retryError } = await supabase
           .from('product_variants')
-          .insert([{ ...row, variant_id: nextId + attempt }]);
-        if (!retryError) return;
-        if (!isVariantIdConflict(retryError)) break;
+          .insert([{ ...row, variant_id: nextId + attempt }])
+          .select('variant_id')
+          .maybeSingle();
+        if (!retryError && retryData?.variant_id != null) {
+          return { variantId: retryData.variant_id, previousStock: 0 };
+        }
+        if (retryError && !isVariantIdConflict(retryError)) break;
       }
     }
 
     const updated = await updateVariantByNaturalKey(row);
-    if (updated) return;
+    if (updated) return updated;
   }
 
   assertDbError(error, 'product_variants insert');
+  return null;
 }
 
 /**
@@ -347,7 +373,7 @@ async function syncSoldOutFromStock(product_id: string): Promise<void> {
   if (soldOutError) throw soldOutError;
 }
 
-async function deleteVariantRow(variantId: number): Promise<void> {
+async function deleteVariantRow(variantId: number): Promise<boolean> {
   const { error } = await supabase
     .from('product_variants')
     .delete()
@@ -358,16 +384,90 @@ async function deleteVariantRow(variantId: number): Promise<void> {
       '[product_variants delete] Variante en pedidos, no se elimina:',
       variantId
     );
-    return;
+    return false;
   }
 
   assertDbError(error, 'product_variants delete');
+  return true;
+}
+
+function queueStockChange(
+  pending: PendingStockMovement[],
+  change: PendingStockMovement
+): void {
+  if (change.nextStock === change.previousStock) return;
+  pending.push(change);
+}
+
+function firstProductImage(
+  images: { image_url?: string | null; orden?: number | null }[] | null | undefined
+): string | null {
+  if (!images?.length) return null;
+  const sorted = [...images].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  const url = sorted.find((img) => img.image_url?.trim())?.image_url;
+  return url?.trim() || null;
+}
+
+async function recordPendingStockMovements(
+  product_id: string,
+  pending: PendingStockMovement[],
+  note: string
+): Promise<void> {
+  if (pending.length === 0) return;
+
+  const { data: product } = await supabase
+    .from('products')
+    .select('name, product_images(image_url, orden)')
+    .eq('product_id', product_id)
+    .maybeSingle();
+
+  const colorIds = [
+    ...new Set(
+      pending
+        .map((row) => row.colorId)
+        .filter((id): id is number => id != null)
+    ),
+  ];
+
+  const colorNames = new Map<number, string>();
+  if (colorIds.length > 0) {
+    const { data: colors } = await supabase
+      .from('colors')
+      .select('id, name')
+      .in('id', colorIds);
+    for (const color of colors ?? []) {
+      if (color.name) colorNames.set(color.id, color.name);
+    }
+  }
+
+  const productName =
+    product && typeof product.name === 'string' ? product.name : '';
+  const imageUrl = firstProductImage(
+    (product as { product_images?: { image_url?: string | null; orden?: number | null }[] } | null)
+      ?.product_images
+  );
+
+  await insertStockMovements(
+    supabase,
+    pending.map((row) => ({
+      variant_id: row.variantId,
+      product_id,
+      product_name: productName,
+      image_url: imageUrl,
+      size: row.size,
+      color_name: row.colorId != null ? colorNames.get(row.colorId) ?? null : null,
+      delta: row.nextStock - row.previousStock,
+      resulting_stock: row.nextStock,
+      kind: row.nextStock > row.previousStock ? 'entry' : 'adjustment',
+      note,
+    }))
+  );
 }
 
 async function syncProductVariants(
   product_id: string,
   variants: any[],
-  options?: { allowColorRemoval?: boolean }
+  options?: { allowColorRemoval?: boolean; movementNote?: string }
 ): Promise<void> {
   const rows = toVariantDbRows(product_id, variants);
   const allowColorRemoval = options?.allowColorRemoval === true;
@@ -375,12 +475,12 @@ async function syncProductVariants(
 
   const { data: existing, error: fetchError } = await supabase
     .from('product_variants')
-    .select('variant_id, size, color_id')
+    .select('variant_id, size, color_id, stock')
     .eq('product_id', product_id);
 
   assertDbError(fetchError, 'product_variants select');
 
-  const existingRows = existing ?? [];
+  const existingRows = (existing ?? []) as ExistingVariantRow[];
   const existingColoredCount = existingRows.filter((r) => r.color_id != null).length;
   const groupedExisting = groupExistingVariantsByKey(existingRows);
 
@@ -389,6 +489,7 @@ async function syncProductVariants(
   );
 
   const consumedVariantIds = new Set<number>();
+  const pendingMovements: PendingStockMovement[] = [];
 
   for (const row of rows) {
     const key = variantSizeColorKey(row.size, row.color_id);
@@ -399,15 +500,40 @@ async function syncProductVariants(
       const [primary, ...duplicates] = available;
       await updateVariantRow(primary.variant_id, row);
       consumedVariantIds.add(primary.variant_id);
+      queueStockChange(pendingMovements, {
+        variantId: primary.variant_id,
+        size: row.size,
+        colorId: row.color_id,
+        previousStock: primary.stock ?? 0,
+        nextStock: row.stock,
+      });
 
       for (const duplicate of duplicates) {
-        await deleteVariantRow(duplicate.variant_id);
+        const removed = await deleteVariantRow(duplicate.variant_id);
         consumedVariantIds.add(duplicate.variant_id);
+        if (removed) {
+          queueStockChange(pendingMovements, {
+            variantId: null,
+            size: duplicate.size,
+            colorId: duplicate.color_id ?? null,
+            previousStock: duplicate.stock ?? 0,
+            nextStock: 0,
+          });
+        }
       }
       continue;
     }
 
-    await insertVariantRow(row);
+    const inserted = await insertVariantRow(row);
+    if (inserted) {
+      queueStockChange(pendingMovements, {
+        variantId: inserted.variantId,
+        size: row.size,
+        colorId: row.color_id,
+        previousStock: inserted.previousStock,
+        nextStock: row.stock,
+      });
+    }
   }
 
   for (const row of existingRows) {
@@ -416,7 +542,16 @@ async function syncProductVariants(
     const key = variantSizeColorKey(row.size, row.color_id ?? null);
 
     if (desiredKeys.has(key)) {
-      await deleteVariantRow(row.variant_id);
+      const removed = await deleteVariantRow(row.variant_id);
+      if (removed) {
+        queueStockChange(pendingMovements, {
+          variantId: null,
+          size: row.size,
+          colorId: row.color_id ?? null,
+          previousStock: row.stock ?? 0,
+          nextStock: 0,
+        });
+      }
       continue;
     }
 
@@ -433,8 +568,23 @@ async function syncProductVariants(
       continue;
     }
 
-    await deleteVariantRow(row.variant_id);
+    const removed = await deleteVariantRow(row.variant_id);
+    if (removed) {
+      queueStockChange(pendingMovements, {
+        variantId: null,
+        size: row.size,
+        colorId: row.color_id ?? null,
+        previousStock: row.stock ?? 0,
+        nextStock: 0,
+      });
+    }
   }
+
+  await recordPendingStockMovements(
+    product_id,
+    pendingMovements,
+    options?.movementNote?.trim() || 'Edición de inventario'
+  );
 }
 
 function isMissingRelation(
@@ -866,7 +1016,9 @@ export const products = {
 
     // 2. Create variants if any
     if (variants && variants.length > 0) {
-      await syncProductVariants(product.product_id, variants);
+      await syncProductVariants(product.product_id, variants, {
+        movementNote: 'Alta de producto',
+      });
       await syncSoldOutFromStock(product.product_id);
     }
 
@@ -937,7 +1089,10 @@ export const products = {
 
     // 2. Update variants if provided
     if (variants) {
-      await syncProductVariants(product_id, variants, _syncOptions);
+      await syncProductVariants(product_id, variants, {
+        ..._syncOptions,
+        movementNote: _syncOptions?.movementNote || 'Edición de inventario',
+      });
       // Al reponer stock editando el producto, quitar cartel Agotado (y viceversa)
       await syncSoldOutFromStock(product_id);
     }
@@ -1021,14 +1176,25 @@ export const products = {
    * Ajuste rápido de stock (±delta). Nunca baja de 0.
    * Devuelve el stock resultante y sincroniza `is_sold_out`.
    */
-  adjustStock: async (variant_id: string, delta: number): Promise<number> => {
+  adjustStock: async (
+    variant_id: string,
+    delta: number,
+    meta?: {
+      kind?: StockMovementKind;
+      note?: string;
+      productName?: string;
+      imageUrl?: string | null;
+      size?: string;
+      colorName?: string | null;
+    }
+  ): Promise<number> => {
     if (!Number.isFinite(delta) || delta === 0) {
       throw new Error('Cantidad de ajuste no válida');
     }
 
     const { data: variant, error: fetchError } = await supabase
       .from('product_variants')
-      .select('stock, product_id')
+      .select('stock, product_id, size, color_id, products(name, product_images(image_url, orden)), colors(name)')
       .eq('variant_id', variant_id)
       .maybeSingle();
 
@@ -1037,7 +1203,9 @@ export const products = {
       throw new Error('Variante no encontrada');
     }
 
-    const newStock = Math.max(0, (variant.stock || 0) + Math.trunc(delta));
+    const previousStock = variant.stock || 0;
+    const newStock = Math.max(0, previousStock + Math.trunc(delta));
+    const appliedDelta = newStock - previousStock;
 
     const { error: updateError } = await supabase
       .from('product_variants')
@@ -1047,6 +1215,43 @@ export const products = {
     if (updateError) throw updateError;
 
     await syncSoldOutFromStock(variant.product_id);
+
+    if (appliedDelta !== 0) {
+      const joinedProduct = Array.isArray(variant.products)
+        ? variant.products[0]
+        : variant.products;
+      const joinedColor = Array.isArray(variant.colors)
+        ? variant.colors[0]
+        : variant.colors;
+      const kind: StockMovementKind =
+        meta?.kind ?? (appliedDelta > 0 ? 'entry' : 'sale');
+
+      await insertStockMovements(supabase, [
+        {
+          variant_id,
+          product_id: variant.product_id,
+          product_name: meta?.productName || joinedProduct?.name || '',
+          image_url:
+            meta?.imageUrl ??
+            firstProductImage(joinedProduct?.product_images),
+          size: meta?.size || variant.size || '',
+          color_name: meta?.colorName ?? joinedColor?.name ?? null,
+          delta: appliedDelta,
+          resulting_stock: newStock,
+          kind,
+          note:
+            meta?.note ??
+            (kind === 'sale'
+              ? 'Venta en tienda'
+              : kind === 'entry'
+                ? 'Entrada en tienda'
+                : kind === 'undo'
+                  ? 'Deshacer'
+                  : null),
+        },
+      ]);
+    }
+
     return newStock;
   },
 
@@ -1140,6 +1345,7 @@ export const products = {
     await products.setSoldOut(product_id, false);
     await syncProductVariants(product_id, nextVariants, {
       allowColorRemoval: true,
+      movementNote: 'Reposición',
     });
 
     // Mantener product_colors alineado con variantes (sin tocar imágenes)

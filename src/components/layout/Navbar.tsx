@@ -32,12 +32,12 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
       <nav className="fixed top-0 w-full z-50 bg-accent/80 backdrop-blur-md border-b border-secondary/3">
         <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-20">
-            <div className="flex lg:hidden flex-1">
+            <div className="flex min-[1800px]:hidden flex-1">
               <button onClick={() => setIsMenuOpen(true)} aria-label="Abrir menú de navegación" className="p-2 -ml-2 text-secondary hover:text-primary transition-colors">
                 <Menu className="w-6 h-6" />
               </button>
             </div>
-            <div className="hidden lg:flex items-center gap-6 xl:gap-8 2xl:gap-10 flex-1">
+            <div className="hidden min-[1800px]:flex items-center gap-10 flex-1">
               <Link to="/" onClick={handleInicioClick} className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Inicio</Link>
               <Link to="/categoria/ropa" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Ropa</Link>
               <Link to="/categoria/oversize" className="text-[10px] font-bold tracking-[0.3em] uppercase text-secondary hover:text-primary transition-colors whitespace-nowrap">Oversize</Link>
@@ -113,10 +113,10 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
         <>
           <div
             onClick={() => setIsMenuOpen(false)}
-            className="fixed inset-0 bg-secondary/60 backdrop-blur-md z-60 lg:hidden animate-in fade-in duration-200"
+            className="fixed inset-0 bg-secondary/60 backdrop-blur-md z-60 min-[1800px]:hidden animate-in fade-in duration-200"
           />
           <div
-            className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white z-70 lg:hidden shadow-2xl flex flex-col animate-in slide-in-from-left duration-300"
+            className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white z-70 min-[1800px]:hidden shadow-2xl flex flex-col animate-in slide-in-from-left duration-300"
           >
             <div className="p-8 flex justify-between items-center border-b border-secondary/5">
               <img src="/assets/logo/logo-corona.webp" alt="Modas Me lo Merezco" width={48} height={48} className="h-12 w-auto brightness-0" />

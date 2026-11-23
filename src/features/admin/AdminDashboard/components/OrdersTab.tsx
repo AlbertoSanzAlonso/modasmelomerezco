@@ -2,7 +2,6 @@ import React from 'react';
 import { Trash2, X } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
-import { api } from '@/lib/api';
 import type { AdminOrderListFilter } from '@/lib/api/orders';
 import { canFulfillOrder } from '@/lib/orderPayment';
 import { getOrderContact } from '@/lib/orderContact';
@@ -18,6 +17,7 @@ interface OrdersTabProps {
   onPageChange: (page: number) => void;
   onOrderClick: (order: Order) => void;
   onGenerateLabel: (orderId: string) => void;
+  onViewLabel: (order: Order) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (orderId: string) => void;
   onClearSelection: () => void;
@@ -36,6 +36,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   onPageChange,
   onOrderClick,
   onGenerateLabel,
+  onViewLabel,
   onToggleSelectAll,
   onToggleSelect,
   onClearSelection,
@@ -206,7 +207,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                         className="text-[9px] font-black tracking-widest px-4 border-green-500/40 text-green-600 hover:bg-green-500 hover:text-white rounded-xl"
                         onClick={(e) => {
                           e.stopPropagation();
-                          api.shipping.openNacexLabel(undefined, order.tracking_number!);
+                          onViewLabel(order);
                         }}
                       >
                         VER ETIQUETA

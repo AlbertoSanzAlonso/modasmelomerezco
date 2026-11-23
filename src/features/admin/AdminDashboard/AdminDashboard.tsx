@@ -77,6 +77,7 @@ export const AdminDashboard: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [trackingInfo, setTrackingInfo] = useState({ number: '', carrier: 'NACEX' });
+  const [labelUnavailable, setLabelUnavailable] = useState(false);
   
   // Pagination and Selection
   const [productPage, setProductPage] = useState(1);
@@ -538,6 +539,22 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
+  const handleViewLabel = async (order: Order) => {
+    const tracking = order.tracking_number?.trim();
+    if (!tracking) return;
+
+    const opened = await api.shipping.openNacexLabel(undefined, tracking);
+    if (opened) {
+      setLabelUnavailable(false);
+      return;
+    }
+
+    setLabelUnavailable(true);
+    setSelectedOrder(order);
+    setTrackingInfo({ number: tracking, carrier: order.carrier || 'NACEX' });
+    setShowOrderDetails(true);
+  };
+
   const handleGenerateLabel = async (orderId: string) => {
     const order = orders?.find(o => o.order_id === orderId);
     if (order && !canFulfillOrder(order)) {
@@ -619,7 +636,7 @@ export const AdminDashboard: React.FC = () => {
         actionLabel: 'Ver Etiqueta',
         onAction: () => {
           if (res.trackingNumber) {
-            api.shipping.openNacexLabel(res.labelUrl, res.trackingNumber);
+            void handleViewLabel(orderWithTracking);
           } else {
             alert('URL de etiqueta no disponible en este momento.');
           }
@@ -784,12 +801,14 @@ export const AdminDashboard: React.FC = () => {
               setSelectedOrderIds([]);
               setOrderPage(page);
             }}
-            onOrderClick={(order) => { 
-              setSelectedOrder(order); 
+            onOrderClick={(order) => {
+              setLabelUnavailable(false);
+              setSelectedOrder(order);
               setTrackingInfo({ number: order.tracking_number || '', carrier: order.carrier || 'NACEX' });
-              setShowOrderDetails(true); 
+              setShowOrderDetails(true);
             }}
             onGenerateLabel={handleGenerateLabel}
+            onViewLabel={handleViewLabel}
             onToggleSelectAll={() => {
               const pageIds = orders?.map((o) => o.order_id) || [];
               const allSelected =
@@ -906,6 +925,8 @@ export const AdminDashboard: React.FC = () => {
             }
           }}
           onGenerateLabel={handleGenerateLabel}
+          onViewLabel={handleViewLabel}
+          labelUnavailable={labelUnavailable}
           onDelete={confirmDeleteOrder}
           isDeleting={deleteOrdersMutation.isPending}
         />

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Category, Subcategory } from '@/types';
 
-const menuEase = [0.22, 1, 0.36, 1] as const;
+const menuEase = [0.4, 0, 0.2, 1] as const;
 
 interface CatalogCategorySelectProps {
   categories: Category[];
@@ -62,7 +62,7 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
   const toggle = () => {
     setOpen((current) => {
       const next = !current;
-      setExpandedId(next ? (categoryFilter ?? null) : null);
+      if (!next) setExpandedId(null);
       return next;
     });
   };
@@ -78,7 +78,7 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
         className="flex w-full items-center justify-between gap-3 px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
       >
         <span className="truncate text-left">{label}</span>
-        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-500 ease-out ${open ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -86,17 +86,16 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
         <motion.div
           role="listbox"
           aria-label="Categorías"
-          initial={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.2, ease: menuEase }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.45, ease: menuEase }}
           className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(24rem,70vh)] origin-top overflow-y-auto rounded-2xl border-2 border-(--border-main) bg-(--bg-elevated) py-2 shadow-2xl"
         >
           <button
             type="button"
             role="option"
             aria-selected={!categoryFilter && !subcategoryFilter}
-            onMouseEnter={() => setExpandedId(null)}
             onClick={() => choose('')}
             className={`w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-widest transition-colors ${
               !categoryFilter && !subcategoryFilter
@@ -113,24 +112,16 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
             const categorySelected = categoryFilter === cat.id && !subcategoryFilter;
 
             return (
-              <div
-                key={cat.id}
-                onMouseEnter={() => setExpandedId(subs.length > 0 ? cat.id : null)}
-                onMouseLeave={() => {
-                  setExpandedId((current) => (current === cat.id ? null : current));
-                }}
-              >
+              <div key={cat.id}>
                 <div className="flex items-stretch">
                   <button
                     type="button"
                     role="option"
                     aria-selected={categorySelected}
-                    onFocus={() => {
-                      if (subs.length > 0) setExpandedId(cat.id);
-                    }}
+                    aria-expanded={subs.length > 0 ? expanded : undefined}
                     onClick={() => {
-                      if (subs.length > 0 && expandedId !== cat.id) {
-                        setExpandedId(cat.id);
+                      if (subs.length > 0) {
+                        setExpandedId((current) => (current === cat.id ? null : cat.id));
                         return;
                       }
                       choose(`c-${cat.id}`);
@@ -151,7 +142,7 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
                       onClick={() => setExpandedId((current) => (current === cat.id ? null : cat.id))}
                       className={`px-3 text-gray-400 transition-colors hover:text-primary ${expanded ? 'text-primary' : ''}`}
                     >
-                      <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-500 ease-out ${expanded ? 'rotate-90' : ''}`} />
                     </button>
                   )}
                 </div>
@@ -163,10 +154,24 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: menuEase }}
+                      transition={{ duration: 0.42, ease: menuEase }}
                       className="overflow-hidden"
                     >
                       <div className="ml-5 mr-2 mb-1 border-l border-primary/40">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={categorySelected}
+                          onClick={() => choose(`c-${cat.id}`)}
+                          className={`flex w-full items-center gap-2 py-2 pl-4 pr-3 text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                            categorySelected
+                              ? 'text-primary'
+                              : 'text-(--text-main) hover:text-primary'
+                          }`}
+                        >
+                          <span className="h-px w-3 shrink-0 bg-primary/50" />
+                          <span className="truncate">Toda {cat.name}</span>
+                        </button>
                         {subs.map((sub) => {
                           const selected = subcategoryFilter === sub.id;
                           return (

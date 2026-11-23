@@ -838,9 +838,9 @@ const ProductPage = () => {
               setShowFullscreen(false);
               setIsZoomed(false);
             }}
-            className="fixed top-4 right-4 z-120 rounded-full bg-white p-3.5 text-secondary shadow-xl ring-1 ring-black/10 transition-transform hover:scale-105 hover:bg-white sm:top-6 sm:right-6"
+            className="fixed top-4 right-4 z-120 rounded-full bg-white/5 p-2.5 text-white transition-all hover:bg-white/10 sm:top-6 sm:right-6 sm:p-4"
           >
-            <X className="h-6 w-6 stroke-[2.5]" />
+            <X className="h-5 w-5 stroke-[2.5] sm:h-6 sm:w-6" />
           </button>
 
           {/* Navigation Arrows (Desktop) */}

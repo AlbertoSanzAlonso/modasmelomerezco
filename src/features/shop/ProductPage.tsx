@@ -82,6 +82,7 @@ const ProductPage = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const galleryTouchStartX = useRef<number | null>(null);
+  const galleryTouchStartY = useRef<number | null>(null);
   const galleryDidSwipe = useRef(false);
 
   const changeActiveImage = (next: number | ((prev: number) => number)) => {
@@ -493,30 +494,40 @@ const ProductPage = () => {
               }}
               onTouchStart={(e) => {
                 galleryTouchStartX.current = e.touches[0].clientX;
+                galleryTouchStartY.current = e.touches[0].clientY;
                 galleryDidSwipe.current = false;
               }}
               onTouchMove={(e) => {
-                if (galleryTouchStartX.current === null) return;
-                if (Math.abs(e.touches[0].clientX - galleryTouchStartX.current) > 12) {
+                if (galleryTouchStartX.current === null || galleryTouchStartY.current === null) return;
+                const dx = e.touches[0].clientX - galleryTouchStartX.current;
+                const dy = e.touches[0].clientY - galleryTouchStartY.current;
+                // Solo cuenta como swipe si el gesto es claramente horizontal.
+                // Un scroll vertical (aunque derive un poco) no debe cambiar de foto.
+                if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
                   galleryDidSwipe.current = true;
                 }
               }}
               onTouchEnd={(e) => {
-                if (galleryTouchStartX.current === null || displayImages.length <= 1) {
-                  galleryTouchStartX.current = null;
-                  return;
-                }
-                const delta = e.changedTouches[0].clientX - galleryTouchStartX.current;
+                const startX = galleryTouchStartX.current;
+                const startY = galleryTouchStartY.current;
+                galleryTouchStartX.current = null;
+                galleryTouchStartY.current = null;
+                if (startX === null || startY === null || displayImages.length <= 1) return;
+                const deltaX = e.changedTouches[0].clientX - startX;
+                const deltaY = e.changedTouches[0].clientY - startY;
                 const threshold = 40;
-                if (Math.abs(delta) > threshold) {
+                if (Math.abs(deltaX) > threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
                   galleryDidSwipe.current = true;
-                  if (delta < 0) {
+                  if (deltaX < 0) {
                     changeActiveImage((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
                   } else {
                     changeActiveImage((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
                   }
                 }
+              }}
+              onTouchCancel={() => {
                 galleryTouchStartX.current = null;
+                galleryTouchStartY.current = null;
               }}
             >
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

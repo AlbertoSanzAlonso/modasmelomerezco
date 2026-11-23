@@ -31,6 +31,7 @@
   --text-main: #050505;
   --border-main: rgba(0, 0, 0, 0.05);
   --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-elevated: #ffffff;
 }
 
 .dark {
@@ -38,6 +39,7 @@
   --text-main: #faf9f6;
   --border-main: rgba(255, 255, 255, 0.05);
   --bg-card: rgba(20, 20, 20, 0.8);
+  --bg-elevated: #161616;
   
   --color-accent: #0a0a0a;
   --color-accent-dark: #000000;

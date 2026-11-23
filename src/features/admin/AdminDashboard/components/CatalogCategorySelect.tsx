@@ -1,6 +1,9 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Category, Subcategory } from '@/types';
+
+const menuEase = [0.22, 1, 0.36, 1] as const;
 
 interface CatalogCategorySelectProps {
   categories: Category[];
@@ -75,14 +78,19 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
         className="flex w-full items-center justify-between gap-3 px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
       >
         <span className="truncate text-left">{label}</span>
-        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
+      <AnimatePresence>
       {open && (
-        <div
+        <motion.div
           role="listbox"
           aria-label="Categorías"
-          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(24rem,70vh)] overflow-y-auto rounded-2xl border-2 border-(--border-main) bg-(--bg-card) py-2 shadow-xl"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2, ease: menuEase }}
+          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(24rem,70vh)] origin-top overflow-y-auto rounded-2xl border-2 border-(--border-main) bg-(--bg-elevated) py-2 shadow-2xl"
         >
           <button
             type="button"
@@ -143,40 +151,52 @@ export const CatalogCategorySelect: React.FC<CatalogCategorySelectProps> = ({
                       onClick={() => setExpandedId((current) => (current === cat.id ? null : cat.id))}
                       className={`px-3 text-gray-400 transition-colors hover:text-primary ${expanded ? 'text-primary' : ''}`}
                     >
-                      <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
                     </button>
                   )}
                 </div>
 
-                {expanded && (
-                  <div className="ml-5 mr-2 mb-1 border-l border-primary/30">
-                    {subs.map((sub) => {
-                      const selected = subcategoryFilter === sub.id;
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          onClick={() => choose(`s-${sub.id}`)}
-                          className={`flex w-full items-center gap-2 py-2 pl-4 pr-3 text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${
-                            selected
-                              ? 'text-primary'
-                              : 'text-(--text-main)/80 hover:text-primary'
-                          }`}
-                        >
-                          <span className="h-px w-3 shrink-0 bg-primary/40" />
-                          <span className="truncate">{sub.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {expanded && (
+                    <motion.div
+                      key={cat.id}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: menuEase }}
+                      className="overflow-hidden"
+                    >
+                      <div className="ml-5 mr-2 mb-1 border-l border-primary/40">
+                        {subs.map((sub) => {
+                          const selected = subcategoryFilter === sub.id;
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              onClick={() => choose(`s-${sub.id}`)}
+                              className={`flex w-full items-center gap-2 py-2 pl-4 pr-3 text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                                selected
+                                  ? 'text-primary'
+                                  : 'text-(--text-main) hover:text-primary'
+                              }`}
+                            >
+                              <span className="h-px w-3 shrink-0 bg-primary/50" />
+                              <span className="truncate">{sub.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };

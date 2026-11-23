@@ -14,6 +14,7 @@ import { useCartStore } from '@/store/useCartStore';
 
 import { PRODUCT_PLACEHOLDER } from '@/lib/constants';
 import { ResilientImage } from '@/components/ui/ResilientImage';
+import { CatalogCategorySelect } from './CatalogCategorySelect';
 
 interface ProductsTabProps {
   products?: Product[];
@@ -239,12 +240,19 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   : `Añade, edita o elimina artículos de la tienda. (${totalProducts} productos)`}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-stretch gap-3 min-w-0">
+            <CatalogCategorySelect
+              categories={categories}
+              subcategories={subcategories}
+              categoryFilter={categoryFilter}
+              subcategoryFilter={subcategoryFilter}
+              onSelect={handleCatalogSelectChange}
+            />
             <select
               value={catalogSelectValue}
               onChange={(e) => handleCatalogSelectChange(e.target.value)}
               aria-label="Categoría o subcategoría"
-              className="w-full sm:flex-1 min-w-0 max-w-full sm:max-w-md px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
+              className="md:hidden w-full sm:flex-1 min-w-0 max-w-full sm:max-w-md px-5 py-4 text-sm sm:text-base font-black uppercase tracking-widest border-2 border-(--border-main) rounded-2xl focus:outline-none focus:border-primary bg-(--bg-card) text-(--text-main) cursor-pointer shadow-sm"
             >
               <option value="">Todas las categorías</option>
               {categories.map((cat) => {
@@ -269,11 +277,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               })}
             </select>
             <Button
-              size="sm"
-              className="w-full sm:w-auto shrink-0 font-black tracking-widest text-[10px] px-8 py-4 h-auto"
+              className="w-full sm:w-auto shrink-0 self-stretch rounded-2xl font-black tracking-widest text-sm sm:text-base px-8 py-4 h-auto"
               onClick={onCreate}
             >
-              <Plus className="w-4 h-4 mr-2" /> NUEVO PRODUCTO
+              <Plus className="w-5 h-5 mr-2" /> NUEVO PRODUCTO
             </Button>
           </div>
         </div>

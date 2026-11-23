@@ -65,15 +65,6 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
               >
                 <Search className="w-5 h-5" />
               </button>
-              
-              <Link to="/cuenta/favoritos" aria-label="Mis favoritos" className="group relative flex items-center gap-3 text-secondary">
-                <Heart className="w-5 h-5 group-hover:text-primary transition-colors" />
-                {favoriteCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center animate-in zoom-in duration-300">
-                    {favoriteCount}
-                  </span>
-                )}
-              </Link>
 
               <Link to="/cuenta" aria-label="Mi cuenta" className="group flex items-center gap-3 text-secondary">
                 <div className={`relative ${isAuthenticated ? 'text-primary' : 'text-secondary'} transition-colors`}>

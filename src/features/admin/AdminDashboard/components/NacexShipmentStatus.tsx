@@ -33,9 +33,6 @@ export const NacexShipmentStatusPanel: React.FC<{
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError('');
-    setShipment(null);
 
     api.shipping.getNacexStatus(trackingNumber)
       .then((status) => {

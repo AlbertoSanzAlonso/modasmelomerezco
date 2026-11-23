@@ -284,6 +284,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               )}
               {order.tracking_number && (
                 <NacexShipmentStatusPanel
+                  key={order.tracking_number}
                   trackingNumber={order.tracking_number}
                   labelUnavailable={labelUnavailable}
                 />

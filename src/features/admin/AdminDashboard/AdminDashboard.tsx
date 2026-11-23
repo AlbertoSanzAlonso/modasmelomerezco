@@ -170,6 +170,7 @@ export const AdminDashboard: React.FC = () => {
     const fromLoaded = orders?.find((o) => o.order_id === deepLinkOrderId);
     if (fromLoaded) {
       lastAutoOpenedOrderId.current = deepLinkOrderId;
+      setLabelUnavailable(false);
       setSelectedOrder(fromLoaded);
       setTrackingInfo({
         number: fromLoaded.tracking_number || '',
@@ -185,6 +186,7 @@ export const AdminDashboard: React.FC = () => {
       .then((fetched) => {
         if (cancelled || !fetched) return;
         lastAutoOpenedOrderId.current = deepLinkOrderId;
+        setLabelUnavailable(false);
         setSelectedOrder(fetched);
         setTrackingInfo({
           number: fetched.tracking_number || '',

@@ -41,6 +41,10 @@ function nacexLabelUrl(labelUrl: string | undefined, trackingNumber: string): st
  */
 export async function openNacexLabel(labelUrl: string | undefined, trackingNumber: string): Promise<boolean> {
   const popup = window.open('', '_blank');
+  if (popup) {
+    popup.document.write('<p style="font-family:sans-serif">Cargando etiqueta Nacex…</p>');
+    popup.document.close();
+  }
   try {
     const response = await fetch(nacexLabelUrl(labelUrl, trackingNumber));
     const type = response.headers.get('content-type') || '';

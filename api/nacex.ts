@@ -396,44 +396,6 @@ export async function fetchNacexShipmentStatus(
   return { error: 'No se pudo consultar el estado del envío en Nacex.' };
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function renderShipmentStatusHtml(status: NacexShipmentStatus): string {
-  const events = [...status.events].reverse().map((event) => {
-    const when = escapeHtml([event.date, event.time].filter(Boolean).join(' '));
-    const place = event.place ? ` · ${escapeHtml(event.place)}` : '';
-    return `<li><strong>${escapeHtml(event.status)}</strong>${place}<br><span>${when}</span></li>`;
-  }).join('');
-
-  return `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Estado del envío Nacex</title>
-  <style>
-    body { font-family: Georgia, serif; margin: 2rem auto; max-width: 36rem; color: #1c1917; }
-    h1 { font-size: 1.4rem; letter-spacing: 0.04em; text-transform: uppercase; }
-    p { color: #57534e; }
-    ol { padding-left: 1.2rem; }
-    li { margin: 0.8rem 0; }
-    span { color: #78716c; font-size: 0.9rem; }
-  </style>
-</head>
-<body>
-  <h1>${escapeHtml(status.status)}</h1>
-  <p>${escapeHtml([status.detail, status.date, status.time].filter(Boolean).join(' · '))}</p>
-  <p>La etiqueta ya no está disponible. Este es el estado que devuelve Nacex.</p>
-  <ol>${events}</ol>
-</body>
-</html>`;
-}
-
 /** Guarda tracking con service role (el admin en cliente suele fallar por RLS). */
 async function saveOrderTracking(
   orderId: string,
@@ -526,12 +488,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const png = await fetchNacexLabelPng(NACEX_USER, NACEX_PASS, expeditionCode);
       if (!png?.length) {
-        const shipment = await fetchNacexShipmentStatus(NACEX_USER, NACEX_PASS, expeditionCode);
-        if (!('error' in shipment)) {
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 'private, no-store');
-          return res.status(200).send(renderShipmentStatusHtml(shipment));
-        }
         return res.status(404).json({ error: 'No se pudo obtener la etiqueta de Nacex.' });
       }
       res.setHeader('Content-Type', 'image/png');

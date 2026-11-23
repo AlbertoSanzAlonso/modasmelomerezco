@@ -1,9 +1,12 @@
-import { type FC, useState } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ShoppingBag, Search, Menu, X, User as UserIcon, Heart } from 'lucide-react';
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { SearchOverlay } from './SearchOverlay';
+
+const menuEase = [0.4, 0, 0.2, 1] as const;
 
 interface NavbarProps {
   setIsCartOpen: (open: boolean) => void;
@@ -18,6 +21,33 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
   const favoriteCount = user?.favorites?.length || 0;
   const location = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const menuOpenRef = useRef(isMenuOpen);
+  menuOpenRef.current = isMenuOpen;
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    document.body.style.overflow = 'hidden';
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  const unlockPageScroll = () => {
+    if (!menuOpenRef.current) {
+      document.body.style.overflow = '';
+    }
+  };
+
+  const panelTransition = reduceMotion
+    ? { duration: 0.01 }
+    : { duration: 0.42, ease: menuEase };
+  const fadeTransition = reduceMotion
+    ? { duration: 0.01 }
+    : { duration: 0.32, ease: menuEase };
 
   const handleInicioClick = (e: React.MouseEvent) => {
     if (location.pathname === '/') {
@@ -99,15 +129,26 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
+      <AnimatePresence onExitComplete={unlockPageScroll}>
       {isMenuOpen && (
-        <>
-          <div
-            onClick={() => setIsMenuOpen(false)}
-            className="fixed inset-0 bg-secondary/60 backdrop-blur-md z-60 min-[1800px]:hidden animate-in fade-in duration-200"
-          />
-          <div
-            className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white z-70 min-[1800px]:hidden shadow-2xl flex flex-col animate-in slide-in-from-left duration-300"
+        <motion.div
+          key="nav-menu-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={fadeTransition}
+          onClick={() => setIsMenuOpen(false)}
+          className="fixed inset-0 bg-secondary/60 backdrop-blur-md z-60 min-[1800px]:hidden"
+        />
+      )}
+      {isMenuOpen && (
+          <motion.div
+            key="nav-menu-panel"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={panelTransition}
+            className="fixed top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white z-70 min-[1800px]:hidden shadow-2xl flex flex-col"
           >
             <div className="p-8 flex justify-between items-center border-b border-secondary/5">
               <img src="/assets/logo/logo-corona.webp" alt="Modas Me lo Merezco" width={48} height={48} className="h-12 w-auto brightness-0" />
@@ -242,9 +283,9 @@ export const Navbar: FC<NavbarProps> = ({ setIsCartOpen, isMenuOpen, setIsMenuOp
                 </p>
               </div>
             </div>
-          </div>
-        </>
+          </motion.div>
       )}
+      </AnimatePresence>
     </>
   );
 };

@@ -1,4 +1,4 @@
-import { type FC, type ReactNode, useEffect } from 'react';
+import { type FC, type ReactNode } from 'react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { RouteSeo } from '@/components/seo/RouteSeo';
@@ -12,16 +12,6 @@ interface ShopLayoutProps {
 }
 
 export const ShopLayout: FC<ShopLayoutProps> = ({ children, setIsCartOpen, isMenuOpen, setIsMenuOpen }) => {
-  useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isMenuOpen]);
   return (
     <div className="min-h-screen bg-accent text-secondary selection:bg-primary selection:text-white flex flex-col overflow-x-hidden">
       <RouteSeo />

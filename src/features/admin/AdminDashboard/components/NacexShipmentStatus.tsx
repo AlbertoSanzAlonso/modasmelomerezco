@@ -15,9 +15,9 @@ function EventLine({ event }: { event: NacexTrackingEvent }) {
   return (
     <li className="grid grid-cols-[88px_1fr] gap-3">
       <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">{when}</span>
-      <span className="text-[10px] font-black uppercase leading-tight text-(--text-main)">
-        {event.status}
-        {event.place ? <span className="block font-bold normal-case text-gray-500">{event.place}</span> : null}
+      <span className="min-w-0">
+        <span className="block text-[10px] font-black uppercase leading-tight text-(--text-main)">{event.status}</span>
+        {event.place ? <span className="block text-[10px] font-bold leading-tight text-gray-500">{event.place}</span> : null}
       </span>
     </li>
   );

@@ -77,7 +77,7 @@ export const AdminDashboard: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [trackingInfo, setTrackingInfo] = useState({ number: '', carrier: 'NACEX' });
-  const [labelUnavailable, setLabelUnavailable] = useState(false);
+  const [autoloadLabel, setAutoloadLabel] = useState(false);
   
   // Pagination and Selection
   const [productPage, setProductPage] = useState(1);
@@ -157,6 +157,7 @@ export const AdminDashboard: React.FC = () => {
   );
 
   const openModal = useCartStore((state) => state.openModal);
+  const closeModal = useCartStore((state) => state.closeModal);
   const deepLinkOrderId = searchParams.get('order')?.trim() || null;
   const lastAutoOpenedOrderId = useRef<string | null>(null);
 
@@ -170,7 +171,7 @@ export const AdminDashboard: React.FC = () => {
     const fromLoaded = orders?.find((o) => o.order_id === deepLinkOrderId);
     if (fromLoaded) {
       lastAutoOpenedOrderId.current = deepLinkOrderId;
-      setLabelUnavailable(false);
+      setAutoloadLabel(false);
       setSelectedOrder(fromLoaded);
       setTrackingInfo({
         number: fromLoaded.tracking_number || '',
@@ -186,7 +187,7 @@ export const AdminDashboard: React.FC = () => {
       .then((fetched) => {
         if (cancelled || !fetched) return;
         lastAutoOpenedOrderId.current = deepLinkOrderId;
-        setLabelUnavailable(false);
+        setAutoloadLabel(false);
         setSelectedOrder(fetched);
         setTrackingInfo({
           number: fetched.tracking_number || '',
@@ -541,17 +542,11 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
-  const handleViewLabel = async (order: Order) => {
+  const handleViewLabel = (order: Order) => {
     const tracking = order.tracking_number?.trim();
     if (!tracking) return;
 
-    const opened = await api.shipping.openNacexLabel(undefined, tracking);
-    if (opened) {
-      setLabelUnavailable(false);
-      return;
-    }
-
-    setLabelUnavailable(true);
+    setAutoloadLabel(true);
     setSelectedOrder(order);
     setTrackingInfo({ number: tracking, carrier: order.carrier || 'NACEX' });
     setShowOrderDetails(true);
@@ -637,8 +632,9 @@ export const AdminDashboard: React.FC = () => {
         type: 'success',
         actionLabel: 'Ver Etiqueta',
         onAction: () => {
+          closeModal();
           if (res.trackingNumber) {
-            void handleViewLabel(orderWithTracking);
+            handleViewLabel(orderWithTracking);
           } else {
             alert('URL de etiqueta no disponible en este momento.');
           }
@@ -804,7 +800,7 @@ export const AdminDashboard: React.FC = () => {
               setOrderPage(page);
             }}
             onOrderClick={(order) => {
-              setLabelUnavailable(false);
+              setAutoloadLabel(false);
               setSelectedOrder(order);
               setTrackingInfo({ number: order.tracking_number || '', carrier: order.carrier || 'NACEX' });
               setShowOrderDetails(true);
@@ -914,6 +910,7 @@ export const AdminDashboard: React.FC = () => {
           trackingInfo={trackingInfo}
           onClose={() => {
             if (deleteOrdersMutation.isPending) return;
+            setAutoloadLabel(false);
             setShowOrderDetails(false);
             if (searchParams.has('order')) {
               setSearchParams(
@@ -927,8 +924,7 @@ export const AdminDashboard: React.FC = () => {
             }
           }}
           onGenerateLabel={handleGenerateLabel}
-          onViewLabel={handleViewLabel}
-          labelUnavailable={labelUnavailable}
+          autoloadLabel={autoloadLabel}
           onDelete={confirmDeleteOrder}
           isDeleting={deleteOrdersMutation.isPending}
         />

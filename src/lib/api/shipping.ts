@@ -34,40 +34,22 @@ function nacexLabelUrl(labelUrl: string | undefined, trackingNumber: string): st
   return url;
 }
 
-/**
- * Abre la etiqueta si Nacex aún la devuelve.
- * Si la expedición ya está en camino, no abre la página de error: devuelve false
- * para que el admin muestre el estado del envío.
- */
-export async function openNacexLabel(labelUrl: string | undefined, trackingNumber: string): Promise<boolean> {
-  const popup = window.open('', '_blank');
-  if (popup) {
-    popup.document.write('<p style="font-family:sans-serif">Cargando etiqueta Nacex…</p>');
-    popup.document.close();
-  }
+/** Descarga la etiqueta sin abrir otra pestaña. Devuelve una URL local o null si Nacex ya no la tiene. */
+export async function fetchNacexLabel(labelUrl: string | undefined, trackingNumber: string): Promise<string | null> {
   try {
     const response = await fetch(nacexLabelUrl(labelUrl, trackingNumber));
     const type = response.headers.get('content-type') || '';
-    if (!response.ok || !type.includes('image')) {
-      popup?.close();
-      return false;
-    }
+    if (!response.ok || !type.includes('image')) return null;
     const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    if (popup) {
-      popup.location.href = objectUrl;
-      return true;
-    }
-    window.open(objectUrl, '_blank', 'noopener,noreferrer');
-    return true;
+    if (!blob.size) return null;
+    return URL.createObjectURL(blob);
   } catch {
-    popup?.close();
-    return false;
+    return null;
   }
 }
 
 export const shipping = {
-  openNacexLabel,
+  fetchNacexLabel,
 
   createNacexExpedition: async (orderId: string, orderDetails?: any): Promise<NacexResponse> => {
     try {

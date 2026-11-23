@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Truck, FileImage, Copy, Check, Mail, Trash2 } from 'lucide-react';
+import { X, Truck, Copy, Check, Mail, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { api } from '@/lib/api';
@@ -12,15 +12,14 @@ import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { useCartStore } from '@/store/useCartStore';
 import { toDisplayImageUrl } from '@/lib/mediaUrl';
-import { NacexShipmentStatusPanel } from './NacexShipmentStatus';
+import { NacexLabelPreview, NacexShipmentStatusPanel } from './NacexShipmentStatus';
 
 interface OrderDetailsModalProps {
   order: Order;
   trackingInfo: { number: string; carrier: string };
   onClose: () => void;
   onGenerateLabel: (orderId: string) => void;
-  onViewLabel: (order: Order) => void;
-  labelUnavailable?: boolean;
+  autoloadLabel?: boolean;
   onDelete?: (order: Order) => void;
   isDeleting?: boolean;
 }
@@ -30,8 +29,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   trackingInfo,
   onClose,
   onGenerateLabel,
-  onViewLabel,
-  labelUnavailable = false,
+  autoloadLabel = false,
   onDelete,
   isDeleting = false,
 }) => {
@@ -286,18 +284,15 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 <NacexShipmentStatusPanel
                   key={order.tracking_number}
                   trackingNumber={order.tracking_number}
-                  labelUnavailable={labelUnavailable}
                 />
               )}
               <div className="flex gap-4 pt-2">
                 {order.tracking_number ? (
-                  <Button
-                    className="flex-1 py-4 text-[10px] font-black tracking-widest italic"
-                    onClick={() => onViewLabel(order)}
-                  >
-                    <FileImage className="w-4 h-4 mr-2" />
-                    VER ETIQUETA NACEX
-                  </Button>
+                  <NacexLabelPreview
+                    key={`${order.tracking_number}-${autoloadLabel ? 'auto' : 'manual'}`}
+                    trackingNumber={order.tracking_number}
+                    autoload={autoloadLabel}
+                  />
                 ) : canFulfillOrder(order) ? (
                   <Button
                     className="flex-1 py-4 text-[10px] font-black tracking-widest italic"

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { FileImage } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import type { NacexShipmentStatus, NacexTrackingEvent } from '@/lib/api/shipping';
 
@@ -25,8 +27,7 @@ function EventLine({ event }: { event: NacexTrackingEvent }) {
 
 export const NacexShipmentStatusPanel: React.FC<{
   trackingNumber: string;
-  labelUnavailable?: boolean;
-}> = ({ trackingNumber, labelUnavailable = false }) => {
+}> = ({ trackingNumber }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shipment, setShipment] = useState<NacexShipmentStatus | null>(null);
@@ -65,12 +66,6 @@ export const NacexShipmentStatusPanel: React.FC<{
         )}
       </div>
 
-      {labelUnavailable && (
-        <p className="text-[10px] font-bold leading-relaxed text-gray-500">
-          Nacex ya no devuelve la etiqueta de esta expedición. El estado del envío es el de abajo.
-        </p>
-      )}
-
       {loading && (
         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Consultando Nacex…</p>
       )}
@@ -92,6 +87,81 @@ export const NacexShipmentStatusPanel: React.FC<{
             </ol>
           )}
         </>
+      )}
+    </div>
+  );
+};
+
+export const NacexLabelPreview: React.FC<{
+  trackingNumber: string;
+  autoload?: boolean;
+}> = ({ trackingNumber, autoload = false }) => {
+  const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'missing'>(autoload ? 'loading' : 'idle');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (!autoload) return;
+    let cancelled = false;
+
+    api.shipping.fetchNacexLabel(undefined, trackingNumber).then((url) => {
+      if (cancelled) {
+        if (url) URL.revokeObjectURL(url);
+        return;
+      }
+      if (url) {
+        setImageUrl(url);
+        setPhase('ready');
+      } else {
+        setPhase('missing');
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoload, trackingNumber]);
+
+  const consultLabel = async () => {
+    setPhase('loading');
+    const url = await api.shipping.fetchNacexLabel(undefined, trackingNumber);
+    if (url) {
+      setImageUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return url;
+      });
+      setPhase('ready');
+      return;
+    }
+    setPhase('missing');
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      <Button
+        className="w-full py-4 text-[10px] font-black tracking-widest italic"
+        onClick={consultLabel}
+        disabled={phase === 'loading'}
+      >
+        <FileImage className="w-4 h-4 mr-2" />
+        {phase === 'loading' ? 'CONSULTANDO ETIQUETA…' : 'VER ETIQUETA NACEX'}
+      </Button>
+      {phase === 'missing' && (
+        <p className="text-[10px] font-bold leading-relaxed text-gray-500">
+          Nacex ya no tiene la etiqueta de este envío. El estado queda en este pedido, sin salir del admin.
+        </p>
+      )}
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt="Etiqueta Nacex"
+          className="w-full rounded-2xl border border-primary/20 bg-white"
+        />
       )}
     </div>
   );

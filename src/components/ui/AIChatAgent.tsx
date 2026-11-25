@@ -233,7 +233,7 @@ export const AIChatAgent = () => {
       ):
         | { kind: 'novelty' }
         | { kind: 'category'; name: string }
-        | { kind: 'subcategory'; name: string }
+        | { kind: 'subcategory'; name: string; categoryName?: string }
         | null => {
         const current = normalizeText(msg);
         const scope = isVagueFollowUp(msg)
@@ -259,8 +259,20 @@ export const AIChatAgent = () => {
         if (/\b(collar|collares)\b/.test(scope)) {
           return { kind: 'subcategory', name: 'collares' };
         }
-        if (/\b(pantalon|pantalones|jeans)\b/.test(scope)) {
-          return { kind: 'subcategory', name: 'pantalones' };
+        const garmentMatch = (() => {
+          if (/\bchaquetas\b/.test(scope)) return 'chaquetas';
+          if (/\b(sudadera|sudaderas)\b/.test(scope)) return 'sudaderas';
+          if (/\b(camiseta|camisetas)\b/.test(scope)) return 'camisetas';
+          if (/\b(conjunto|conjuntos)\b/.test(scope)) return 'conjuntos';
+          if (/\b(pantalon|pantalones|jeans)\b/.test(scope)) return 'pantalones';
+          return null;
+        })();
+        if (garmentMatch) {
+          return {
+            kind: 'subcategory',
+            name: garmentMatch,
+            categoryName: /\b(oversize|over\s*size)\b/.test(scope) ? 'Oversize' : 'Ropa',
+          };
         }
         if (/\b(vestido|vestidos)\b/.test(scope)) {
           return { kind: 'subcategory', name: 'vestidos' };
@@ -373,18 +385,33 @@ export const AIChatAgent = () => {
             matchedProducts = mapRowsWithVariants(rows || []);
           }
         } else if (catalogFilter?.kind === 'subcategory') {
-          const { data: sub, error: subError } = await supabase
+          const { data: subs, error: subError } = await supabase
             .from('subcategories')
-            .select('id, name')
-            .ilike('name', catalogFilter.name)
-            .maybeSingle();
+            .select('id, name, categories(name)')
+            .ilike('name', catalogFilter.name);
           if (subError) throw subError;
 
-          if (sub?.id) {
+          const categoryOf = (row: {
+            categories?: { name?: string } | { name?: string }[] | null;
+          }) => {
+            const cat = row.categories;
+            const name = Array.isArray(cat) ? cat[0]?.name : cat?.name;
+            return name?.toLowerCase() ?? '';
+          };
+
+          let list = subs || [];
+          const preferred = catalogFilter.categoryName?.toLowerCase();
+          if (preferred) {
+            const narrowed = list.filter((row) => categoryOf(row) === preferred);
+            if (narrowed.length > 0) list = narrowed;
+          }
+
+          const ids = list.map((row) => row.id);
+          if (ids.length > 0) {
             const { data: rows, error: rowsError } = await supabase
               .from('products')
               .select(PRODUCT_CHAT_SELECT)
-              .eq('subcategory_id', sub.id)
+              .in('subcategory_id', ids)
               .eq('is_published', true)
               .order(maxPrice != null ? 'price' : 'name', { ascending: true })
               .limit(30);

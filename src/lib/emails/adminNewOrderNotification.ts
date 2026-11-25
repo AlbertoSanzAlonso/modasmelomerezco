@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import type { Order, OrderItem } from '../../types/index.js';
 import { getOrderContact } from '../orderContact.js';
+import { formatCarrierLabel, isStorePickup } from '../orderFulfillment.js';
 import {
   buildOrderItemsEmailRows,
   buildOrderItemsEmailTableHead,
@@ -76,7 +77,8 @@ export function buildAdminNewOrderEmailHtml(
   const totalsHtml = buildOrderTotalsEmailHtml({ ...order, items });
   const adminUrl = buildAdminOrderUrl(adminBaseUrl, order.order_id);
   const paymentLabel = order.payment_method || order.payment_status || '—';
-  const carrierLabel = order.carrier || '—';
+  const storePickup = isStorePickup(order);
+  const carrierLabel = formatCarrierLabel(order.carrier);
 
   const addressLines = [
     order.shipping_street,
@@ -97,7 +99,10 @@ export function buildAdminNewOrderEmailHtml(
         Nuevo pedido <span style="color: #ff3366;">#${orderId}</span>
       </h1>
       <p style="text-align: center; font-size: 15px; color: #333;">
-        Hay un pedido pagado listo para preparar. <strong>Genera la etiqueta Nacex</strong> desde el panel de administración.
+        Hay un pedido pagado listo para preparar.
+        ${storePickup
+          ? ' El cliente lo recogerá en tienda (C/ Sol, 5, Benalmádena). Márcalo como recogido en el panel cuando se lo lleve.'
+          : ' <strong>Genera la etiqueta Nacex</strong> desde el panel de administración.'}
       </p>
 
       <div style="text-align: center; margin: 28px 0;">

@@ -3,6 +3,7 @@ import React from 'react';
 import type { Order, Product } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { getOrderContact } from '@/lib/orderContact';
+import { getAdminOrderStatusLabel } from '@/lib/orderFulfillment';
 
 interface OverviewTabProps {
   orders?: Order[];
@@ -49,6 +50,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     </p>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">
                       {new Date(order.order_date).toLocaleDateString()} • {order.items?.length || 0} artículos
+                    </p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mt-1">
+                      {getAdminOrderStatusLabel(order)}
                     </p>
                   </div>
                 </div>

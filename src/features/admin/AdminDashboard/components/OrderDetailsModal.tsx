@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { X, Truck, Copy, Check, Mail, Trash2 } from 'lucide-react';
+import { X, Truck, Copy, Check, Mail, Trash2, Store } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types";
 import { api } from '@/lib/api';
 import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
+import {
+  STORE_PICKUP_ADDRESS,
+  STORE_PICKUP_LABEL,
+  isOrderPickedUp,
+  isStorePickup,
+} from '@/lib/orderFulfillment';
 import { absoluteUrl } from '@/lib/seo/constants';
 import { OrderLinePricing } from '@/components/orders/OrderLinePricing';
 import { OrderItemVariantInfo } from '@/components/orders/OrderItemVariantInfo';
@@ -19,6 +25,7 @@ interface OrderDetailsModalProps {
   trackingInfo: { number: string; carrier: string };
   onClose: () => void;
   onGenerateLabel: (orderId: string) => void;
+  onMarkPickedUp: (order: Order) => void;
   autoloadLabel?: boolean;
   onDelete?: (order: Order) => void;
   isDeleting?: boolean;
@@ -29,6 +36,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   trackingInfo,
   onClose,
   onGenerateLabel,
+  onMarkPickedUp,
   autoloadLabel = false,
   onDelete,
   isDeleting = false,
@@ -36,6 +44,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const contact = getOrderContact(order);
   const openModal = useCartStore((s) => s.openModal);
   const paymentPending = !canFulfillOrder(order);
+  const storePickup = isStorePickup(order);
+  const pickedUp = isOrderPickedUp(order);
   const paymentLink = absoluteUrl(`/pagar/${order.order_id}`);
   const [linkCopied, setLinkCopied] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -124,9 +134,23 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
 
             <div className="space-y-6">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Dirección de Envío</h4>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+                {storePickup ? 'Recogida en tienda' : 'Dirección de Envío'}
+              </h4>
               <div className="bg-(--bg-card) p-6 border border-(--border-main) rounded-2xl text-xs text-gray-500 font-bold leading-relaxed space-y-1">
-                {order.shipping_street ? (
+                {storePickup ? (
+                  <>
+                    <p className="text-(--text-main) uppercase">{STORE_PICKUP_LABEL}</p>
+                    <p>{STORE_PICKUP_ADDRESS}</p>
+                    <p className={`text-[9px] font-black uppercase tracking-widest mt-3 ${pickedUp ? 'text-green-600' : 'text-primary'}`}>
+                      {pickedUp
+                        ? `Recogido${order.delivery_date ? ` el ${new Date(order.delivery_date).toLocaleString()}` : ''}`
+                        : paymentPending
+                          ? 'Esperando pago'
+                          : 'Pendiente de recogida'}
+                    </p>
+                  </>
+                ) : order.shipping_street ? (
                   <>
                     <p className="text-(--text-main) uppercase">{order.shipping_street}</p>
                     {(order.shipping_floor || order.shipping_door) && (
@@ -267,7 +291,38 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
           {/* Logística */}
           <div className="space-y-6">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Logística y Seguimiento</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+              {storePickup ? 'Recogida del cliente' : 'Logística y Seguimiento'}
+            </h4>
+            {storePickup ? (
+              <div className="bg-primary/5 p-8 border border-primary/20 rounded-4xl space-y-4">
+                <div className="flex items-start gap-3">
+                  <Store className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-black uppercase italic text-(--text-main)">{STORE_PICKUP_LABEL}</p>
+                    <p className="text-xs font-bold text-gray-500">{STORE_PICKUP_ADDRESS}</p>
+                  </div>
+                </div>
+                {pickedUp ? (
+                  <p className="text-[10px] font-black uppercase tracking-widest text-green-600">
+                    El cliente ya ha recogido este pedido
+                    {order.delivery_date ? ` el ${new Date(order.delivery_date).toLocaleString()}` : ''}.
+                  </p>
+                ) : canFulfillOrder(order) ? (
+                  <Button
+                    className="w-full py-4 text-[10px] font-black tracking-widest italic"
+                    onClick={() => onMarkPickedUp(order)}
+                  >
+                    <Store className="w-4 h-4 mr-2" />
+                    MARCAR COMO RECOGIDO
+                  </Button>
+                ) : (
+                  <p className="text-center text-[10px] font-black uppercase tracking-widest text-yellow-600 py-2">
+                    La recogida se confirma cuando el pago esté en Redsys
+                  </p>
+                )}
+              </div>
+            ) : (
             <div className="bg-primary/5 p-8 border border-primary/20 rounded-4xl space-y-6">
               {order.tracking_number && (
                 <div className="space-y-2">
@@ -308,6 +363,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 )}
               </div>
             </div>
+            )}
           </div>
           </div>
         </ScrollArea>

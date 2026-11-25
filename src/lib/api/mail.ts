@@ -5,6 +5,7 @@ import {
   buildOrderTotalsEmailHtml,
 } from '@/lib/orderEmailHtml';
 import { SITE_LOGO } from '@/lib/seo/constants';
+import { isStorePickup } from '@/lib/orderFulfillment';
 
 export interface SendEmailParams {
   to: string;
@@ -194,7 +195,8 @@ export const mailApi = {
       'Delivered': 'Entregado',
       'Cancelled': 'Cancelado'
     };
-    const statusName = statusMap[newStatus] || newStatus;
+    const pickupDone = newStatus === 'Delivered' && isStorePickup(order);
+    const statusName = pickupDone ? 'Recogido en tienda' : (statusMap[newStatus] || newStatus);
     
     // Tracking info
     const trackingNumber = order.tracking_number;
@@ -212,6 +214,9 @@ export const mailApi = {
         <p style="text-align: center;">Hola <strong>${order.customer?.name || 'cliente'}</strong>,</p>
         <p style="text-align: center;">El estado de tu pedido ha cambiado a: <strong style="color: #ff3366; text-transform: uppercase;">${statusName}</strong></p>
         
+        ${pickupDone ? `
+          <p style="text-align: center;">Tu pedido ya está recogido en la tienda (C/ Sol, 5, Benalmádena).</p>
+        ` : ''}
         ${newStatus === 'Shipped' ? `
           <div style="background: #f9f9f9; padding: 25px; border-radius: 10px; margin: 25px 0; text-align: center; border: 1px dashed #ddd;">
             <p style="margin: 0 0 10px 0; font-weight: bold; text-transform: uppercase; font-size: 12px; color: #888;">Información de Seguimiento</p>

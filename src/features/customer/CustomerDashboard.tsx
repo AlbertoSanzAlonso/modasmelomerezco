@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
+import { getCustomerOrderStatusLabel } from '@/lib/orderFulfillment';
 
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -119,9 +120,7 @@ export const CustomerDashboard: React.FC = () => {
                     <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
                       order.order_status === 'Paid' || order.order_status === 'Shipped' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-500'
                     }`}>
-                      {order.order_status === 'Paid' ? 'Pagado' : 
-                       order.order_status === 'Shipped' ? 'Enviado' : 
-                       order.order_status === 'Delivered' ? 'Entregado' : 'Pendiente'}
+                      {getCustomerOrderStatusLabel(order)}
                     </span>
                   </div>
                 </div>

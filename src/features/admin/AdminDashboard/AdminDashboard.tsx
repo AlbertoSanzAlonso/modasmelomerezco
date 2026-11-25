@@ -21,6 +21,7 @@ import { api } from "@/lib/api";
 import type { AdminOrderListFilter } from "@/lib/api/orders";
 import { getOrderContact } from '@/lib/orderContact';
 import { canFulfillOrder } from '@/lib/orderPayment';
+import { isStorePickup } from '@/lib/orderFulfillment';
 import { useCartStore } from "@/store/useCartStore";
 import { getProductPath } from '@/lib/productSlug';
 import type { Product, Order, Customer } from "@/types";
@@ -658,6 +659,68 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleMarkPickedUp = (order: Order) => {
+    if (!isStorePickup(order) || order.order_status === 'Delivered') return;
+
+    if (!canFulfillOrder(order)) {
+      openModal({
+        title: 'Pago pendiente',
+        message: 'Solo se puede marcar la recogida cuando Redsys haya confirmado el pago.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    const shortId = order.order_id.split('-')[0].toUpperCase();
+    const contactName = getOrderContact(order).name?.trim();
+    openModal({
+      title: 'Confirmar recogida',
+      message: `¿El cliente${contactName ? ` ${contactName}` : ''} ya ha recogido el pedido #${shortId} en tienda?`,
+      type: 'action',
+      onAction: async () => {
+        try {
+          const deliveryDate = new Date().toISOString();
+          const updatedOrder = await api.orders.update(order.order_id, {
+            order_status: 'Delivered',
+            delivery_date: deliveryDate,
+          });
+          const merged: Order = {
+            ...order,
+            ...updatedOrder,
+            order_status: 'Delivered',
+            delivery_date: updatedOrder?.delivery_date || deliveryDate,
+          };
+          setSelectedOrder((current) =>
+            current?.order_id === order.order_id ? merged : current
+          );
+          queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+          queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+          const recipient = getOrderContact(merged).email || merged.customer_email;
+          if (recipient) {
+            try {
+              await api.mail.sendStatusUpdate(merged, recipient, 'Delivered');
+            } catch (emailErr) {
+              console.error('Error al avisar de la recogida:', emailErr);
+            }
+          }
+
+          openModal({
+            title: 'Pedido recogido',
+            message: `El pedido #${shortId} queda marcado como recogido en tienda.`,
+            type: 'info',
+          });
+        } catch (err) {
+          openModal({
+            title: 'Error',
+            message: err instanceof Error ? err.message : 'No se pudo marcar la recogida.',
+            type: 'warning',
+          });
+        }
+      },
+    });
+  };
+
   const handleSaveTracking = async (orderId: string, number: string, carrier: string) => {
     try {
       const updatedOrder = await api.orders.update(orderId, {
@@ -816,6 +879,7 @@ export const AdminDashboard: React.FC = () => {
               setShowOrderDetails(true);
             }}
             onGenerateLabel={handleGenerateLabel}
+            onMarkPickedUp={handleMarkPickedUp}
             onViewLabel={handleViewLabel}
             onToggleSelectAll={() => {
               const pageIds = orders?.map((o) => o.order_id) || [];
@@ -934,6 +998,7 @@ export const AdminDashboard: React.FC = () => {
             }
           }}
           onGenerateLabel={handleGenerateLabel}
+          onMarkPickedUp={handleMarkPickedUp}
           autoloadLabel={autoloadLabel}
           onDelete={confirmDeleteOrder}
           isDeleting={deleteOrdersMutation.isPending}

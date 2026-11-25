@@ -5,6 +5,11 @@ import type { Order } from "@/types";
 import type { AdminOrderListFilter } from '@/lib/api/orders';
 import { canFulfillOrder } from '@/lib/orderPayment';
 import { getOrderContact } from '@/lib/orderContact';
+import {
+  getAdminOrderStatusLabel,
+  isOrderPickedUp,
+  isStorePickup,
+} from '@/lib/orderFulfillment';
 
 interface OrdersTabProps {
   orders?: Order[];
@@ -17,6 +22,7 @@ interface OrdersTabProps {
   onPageChange: (page: number) => void;
   onOrderClick: (order: Order) => void;
   onGenerateLabel: (orderId: string) => void;
+  onMarkPickedUp: (order: Order) => void;
   onViewLabel: (order: Order) => void;
   onToggleSelectAll: () => void;
   onToggleSelect: (orderId: string) => void;
@@ -36,6 +42,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   onPageChange,
   onOrderClick,
   onGenerateLabel,
+  onMarkPickedUp,
   onViewLabel,
   onToggleSelectAll,
   onToggleSelect,
@@ -161,11 +168,15 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
               {orders?.map((order) => {
                 const contact = getOrderContact(order);
                 const isSelected = selectedIds.includes(order.order_id);
+                const statusLabel = getAdminOrderStatusLabel(order);
                 const isPaidStatus =
-                  order.order_status === 'Paid' ||
-                  order.order_status === 'Shipped' ||
-                  order.order_status === 'Delivered';
+                  statusLabel === 'PAGADO' ||
+                  statusLabel === 'ENVIADO' ||
+                  statusLabel === 'ENTREGADO' ||
+                  statusLabel === 'RECOGIDO';
+                const isAwaitingPickup = statusLabel === 'PENDIENTE RECOGIDA';
                 const isCancelled = order.order_status === 'Cancelled';
+                const storePickup = isStorePickup(order);
                 return (
                 <tr key={order.order_id} 
                     onClick={() => onOrderClick(order)}
@@ -192,15 +203,46 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                     <span className={`text-[10px] font-black uppercase px-3 py-1 border rounded-lg ${
                       isPaidStatus
                         ? 'border-green-500/30 bg-green-500/5 text-green-500'
-                        : isCancelled
-                          ? 'border-red-500/30 bg-red-500/5 text-red-500'
-                          : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'
+                        : isAwaitingPickup
+                          ? 'border-primary/40 bg-primary/10 text-primary'
+                          : isCancelled
+                            ? 'border-red-500/30 bg-red-500/5 text-red-500'
+                            : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'
                     }`}>
-                      {order.order_status === 'Pending' ? 'ESPERANDO PAGO' : (order.order_status || '').toUpperCase()}
+                      {statusLabel}
                     </span>
                   </td>
                   <td className="px-6 py-6 text-right">
-                    {order.tracking_number ? (
+                    {storePickup ? (
+                      isOrderPickedUp(order) ? (
+                        <span className="text-[9px] font-black uppercase tracking-widest text-green-600 px-2">
+                          Recogido
+                          {order.delivery_date
+                            ? ` · ${new Date(order.delivery_date).toLocaleDateString()}`
+                            : ''}
+                        </span>
+                      ) : canFulfillOrder(order) ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-[9px] font-black tracking-widest px-4 border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMarkPickedUp(order);
+                          }}
+                        >
+                          MARCAR RECOGIDO
+                        </Button>
+                      ) : isCancelled ? (
+                        <span className="text-[9px] font-black uppercase tracking-widest text-red-500 px-2">
+                          Cancelado
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-black uppercase tracking-widest text-yellow-600 px-2">
+                          Pago pendiente
+                        </span>
+                      )
+                    ) : order.tracking_number ? (
                       <Button
                         size="sm"
                         variant="outline"

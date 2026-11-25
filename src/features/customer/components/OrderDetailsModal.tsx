@@ -5,6 +5,12 @@ import type { Order, Customer } from '@/types';
 import { OrderLinePricing } from '@/components/orders/OrderLinePricing';
 import { OrderItemVariantInfo } from '@/components/orders/OrderItemVariantInfo';
 import { OrderTotalsSummary } from '@/components/orders/OrderTotalsSummary';
+import {
+  STORE_PICKUP_ADDRESS,
+  STORE_PICKUP_LABEL,
+  getCustomerOrderStatusLabel,
+  isStorePickup,
+} from '@/lib/orderFulfillment';
 
 interface OrderDetailsModalProps {
   order: Order;
@@ -40,12 +46,26 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           <div className="space-y-8 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 border-y border-(--border-main)">
               <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Información de Envío</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  {isStorePickup(order) ? 'Recogida' : 'Información de Envío'}
+                </h4>
                 <div className="text-sm font-medium text-(--text-main)/70 space-y-1">
                   <p className="text-(--text-main) font-bold uppercase">{user?.name} {user?.surname}</p>
-                  <p>{order.shipping_street}</p>
-                  <p>{order.shipping_zip} {order.shipping_city}</p>
-                  <p>{order.shipping_province}</p>
+                  {isStorePickup(order) ? (
+                    <>
+                      <p>{STORE_PICKUP_LABEL}</p>
+                      <p>{STORE_PICKUP_ADDRESS}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary pt-1">
+                        {getCustomerOrderStatusLabel(order)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p>{order.shipping_street}</p>
+                      <p>{order.shipping_zip} {order.shipping_city}</p>
+                      <p>{order.shipping_province}</p>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="space-y-4">

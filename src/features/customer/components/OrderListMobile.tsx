@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Eye, Download } from 'lucide-react';
 import type { Order } from '@/types';
+import { getCustomerOrderStatusLabel, isOrderPickedUp } from '@/lib/orderFulfillment';
 
 interface OrderListMobileProps {
   orders: Order[];
@@ -35,14 +36,15 @@ export const OrderListMobile: React.FC<OrderListMobileProps> = ({
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Estado</p>
               <div className="flex flex-col gap-1">
                 {(() => {
-                  const isPaid = order.payment_status?.toLowerCase() === 'paid' || order.order_status === 'Paid';
+                  const pickedUp = isOrderPickedUp(order);
+                  const isPaid = order.payment_status?.toLowerCase() === 'paid' || order.order_status === 'Paid' || pickedUp;
                   return (
                     <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border w-fit ${
                       isPaid 
                         ? 'border-green-500/30 text-green-500 bg-green-500/5' 
                         : 'border-orange-500/30 text-orange-500 bg-orange-500/5'
                     }`}>
-                      {isPaid ? 'Pagado' : 'Pendiente'}
+                      {pickedUp ? 'Recogido' : isPaid ? 'Pagado' : getCustomerOrderStatusLabel(order)}
                     </span>
                   );
                 })()}

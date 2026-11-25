@@ -264,6 +264,12 @@ export const AIChatAgent = () => {
           if (/\b(sudadera|sudaderas)\b/.test(scope)) return 'sudaderas';
           if (/\b(camiseta|camisetas)\b/.test(scope)) return 'camisetas';
           if (/\b(conjunto|conjuntos)\b/.test(scope)) return 'conjuntos';
+          if (
+            /\bmonos\b/.test(scope) ||
+            (/\bmono\b/.test(scope) && /\b(oversize|over\s*size)\b/.test(scope))
+          ) {
+            return 'monos';
+          }
           if (/\b(pantalon|pantalones|jeans)\b/.test(scope)) return 'pantalones';
           return null;
         })();
